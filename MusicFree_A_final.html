@@ -661,7 +661,7 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
 }
 
     function PlayerPage(props) {
-      const { currentSong, isPlaying, onTogglePlay, onNext, onPrev, openQuality, openShare, openSleep, onHideSong, onDeleteSong, onLyrics, progress, onSeek } = props;
+      const { currentSong, isPlaying, onTogglePlay, onNext, onPrev, openQuality, openShare, openSleep, onHideSong, onLyrics, progress, onSeek } = props;
       const [menuOpen, setMenuOpen] = React.useState(false);
       if (!currentSong) return <div className="page active player-page"><div className="player-header"><button className="player-header-btn" onClick={()=>props.onNavigate('home')}>←</button><div className="player-header-title">无歌曲</div></div></div>;
       const prog = progress || 0;
@@ -682,7 +682,6 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
                   <div style={{fontSize:12,color:'var(--text-secondary)'}}>{currentSong.artist} · {currentSong.album}</div>
                 </div>
                 <div onClick={()=>{setMenuOpen(false);onHideSong(currentSong.id);}} style={{padding:'12px 16px',fontSize:14,color:'var(--text)',cursor:'pointer',display:'flex',alignItems:'center',gap:8}}>👁 隐藏歌曲</div>
-                <div onClick={()=>{setMenuOpen(false);onDeleteSong(currentSong.id);}} style={{padding:'12px 16px',fontSize:14,color:'#ff4d4d',cursor:'pointer',display:'flex',alignItems:'center',gap:8}}>✕ 删除歌曲</div>
               </div>
             )}
           </div>
@@ -712,7 +711,6 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
             <button className="player-action-btn" onClick={openShare} title="分享">↗</button>
             <button className="player-action-btn" onClick={openSleep} title="睡眠">☽</button>
             <button className="player-action-btn" onClick={()=>onHideSong(currentSong.id)} title="隐藏">👁</button>
-            <button className="player-action-btn danger-btn" onClick={()=>onDeleteSong(currentSong.id)} title="删除">✕</button>
           </div>
           <div className="player-progress">
             <div className="player-progress-bar" onClick={(e)=>{const r=e.currentTarget.getBoundingClientRect();onSeek && onSeek(Math.round((e.clientX-r.left)/r.width*100));}}>
