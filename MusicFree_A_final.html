@@ -290,6 +290,7 @@
       return (
         <div className="modal-overlay active" onClick={onClose}>
           <div className="modal" style={{width:'280px'}} onClick={e=>e.stopPropagation()}>
+            <button className="modal-close" onClick={onClose}>✕</button>
             <div className="modal-title" style={{marginBottom:'16px',fontSize:'16px'}}>睡眠模式</div>
             <div style={{display:'flex',flexDirection:'column'}}>
               {options.map(opt=>(
@@ -693,6 +694,7 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
   return (
     <div className="modal-overlay active" onClick={onClose}>
       <div className="modal" style={{width:'280px'}} onClick={e=>e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>✕</button>
         <div className="modal-title" style={{marginBottom:'16px',fontSize:'16px'}}>保存自定义预设</div>
         <div style={{marginBottom:'20px'}}>
           <label style={{display:'block',fontSize:'12px',color:'var(--text-secondary)',marginBottom:'6px'}}>预设名称</label>
