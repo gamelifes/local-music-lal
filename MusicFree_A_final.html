@@ -753,7 +753,7 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
             <span className="player-artist-name">{currentSong.artist}</span>
           </div>
           <div className="player-cover-area" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} style={{cursor:'pointer',position:'relative',overflow:'hidden'}}>
-            {viewMode === 'vinyl' ? (
+            <div style={{position:'absolute',inset:0,transition:'opacity 0.35s ease,transform 0.35s ease',opacity:viewMode==='vinyl'?1:0,transform:viewMode==='vinyl'?'translateX(0) scale(1)':'translateX(-30px) scale(0.95)',pointerEvents:viewMode==='vinyl'?'auto':'none'}}>
               <div className="player-cover-wrapper">
                 <div className={`player-cover-outer ${isPlaying?'playing':''}`}>
                   <div className="player-cover">
@@ -766,13 +766,14 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
                   </div>
                 </div>
               </div>
-            ) : (
+            </div>
+            <div style={{position:'absolute',inset:0,transition:'opacity 0.35s ease,transform 0.35s ease',opacity:viewMode==='lyrics'?1:0,transform:viewMode==='lyrics'?'translateX(0) scale(1)':'translateX(30px) scale(0.95)',pointerEvents:viewMode==='lyrics'?'auto':'none',overflow:'auto'}}>
               <div className="lyrics-container" style={{width:'100%',height:'100%',padding:'8px 16px'}}>
                 {LYRICS_LINES.map((line, li) => (
                   <div key={li} className={`lyrics-line ${li===0?'active':''}`}>{line.split('').map((c,ci)=><span key={ci} className="word">{c}</span>)}</div>
                 ))}
               </div>
-            )}
+            </div>
           </div>
           <div className="player-lyrics-dots">
             <div className={`player-lyrics-dot ${viewMode==='vinyl'?'active':''}`} onClick={()=>setViewMode('vinyl')}></div>
