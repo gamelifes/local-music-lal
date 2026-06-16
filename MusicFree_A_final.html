@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MusicFree A - 主原�?+ 拆分视图</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+    :root{
+      --accent: oklch(0.72 0.16 82); --accent-glow: oklch(0.72 0.16 82 / 0.4);
+      --bg: #0F0F0A; --bg-card: rgba(255,255,255,0.03); --bg-card-hover: rgba(255,255,255,0.06);
+      --glass-border: rgba(255,255,255,0.12); --text: rgba(255,255,255,0.92); --text-secondary: rgba(255,255,255,0.6);
+      --divider: rgba(255,255,255,0.12); --radius-md:12px; --ease: cubic-bezier(0.16,1,0.3,1);
+    }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh;padding:20px;overflow:hidden;}
+     .workspace{display:flex;flex-direction:column;align-items:center;gap:24px;padding:20px 0;height:100vh;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.2) transparent;}
+     .workspace-row{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;justify-content:center;}
+     .workspace-main{flex:0 0 auto;}
+     .workspace-side{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; position:relative;}
+     .dev-controls{width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;}
+     .tab-bar{display:flex;gap:6px;flex-wrap:wrap;max-width:375px;justify-content:center;padding:8px;background:var(--bg-card);border:1px solid var(--glass-border);border-radius:var(--radius-md);margin-bottom:8px;text-align:center;}
+     .section-title{font-size:12px;color:var(--text-secondary);opacity:0.7;margin-bottom:4px;}
+     .tab-btn{padding:6px 12px;border-radius:8px;background:transparent;border:1px solid transparent;color:var(--text-secondary);font-size:12px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+     .tab-btn.active{background:var(--bg-card-hover);border-color:var(--glass-border);color:var(--text);}
+    .phone{width:375px;height:812px;background:var(--bg);border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;border:6px solid #1a1a1a;}
+    .phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:28px;background:#000;border-bottom-left-radius:16px;border-bottom-right-radius:16px;z-index:100;}
+    .status-bar{padding:12px 0 8px;text-align:center;font-size:12px;color:var(--text-secondary);font-weight:600;}
+    .phone-content{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+    .page{position:absolute;inset:0;display:none;flex-direction:column;}
+    .page.active{display:flex;}
+    .page-content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px;padding-bottom:88px;scrollbar-width:none;-ms-overflow-style:none;}
+    .page-content::-webkit-scrollbar{display:none;}
+    h1,h2,h3{font-family:'Space Grotesk',sans-serif;font-weight:700;}
+    .text-sm{font-size:13px;color:var(--text-secondary);}
+    .btn{padding:12px 20px;border-radius:var(--radius-md);border:1px solid var(--glass-border);background:var(--bg-card);color:var(--text);font-weight:600;font-size:14px;cursor:pointer;transition:all 0.18s var(--ease);}
+    .btn:hover{background:var(--bg-card-hover);}
+    .btn.primary{background:var(--accent);color:#000;border-color:var(--accent);}
+    .btn.danger{border-color:#ff4d4d;color:#ff4d4d;}
+    .drawer-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:2000;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+    .drawer-overlay.active{opacity:1;pointer-events:auto;}
+    .drawer{position:absolute;left:0;top:0;bottom:0;width:260px;background:rgba(18,18,16,0.95);backdrop-filter:blur(24px);border-right:1px solid var(--glass-border);z-index:2001;transform:translateX(-100%);transition:transform 0.35s var(--ease);padding:24px 16px;}
+    .drawer.active{transform:translateX(0);}
+    .drawer-header{display:flex;align-items:center;gap:12px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--glass-border);}
+    .drawer-avatar{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:18px;}
+    .drawerNav{display:flex;flex-direction:column;gap:4px;}
+    .drawer-item{padding:12px 16px;border-radius:var(--radius-md);cursor:pointer;transition:background 0.2s;display:flex;justify-content:space-between;align-items:center;}
+    .drawer-item:hover{background:var(--bg-card-hover);}
+    .drawer-item.active{background:var(--bg-card);color:var(--accent);}
+    .song-table{width:100%;border-collapse:separate;border-spacing:0;}
+    .song-table th{text-align:left;padding:8px 12px;font-size:12px;font-weight:700;color:var(--text-secondary);border-bottom:1px solid var(--divider);}
+    .song-table th:first-child{width:64px;text-align:center;}
+    .song-table td{padding:10px 12px;border-bottom:1px solid var(--divider);vertical-align:middle;transition:background 0.15s;}
+    .song-table tr:hover td{background:var(--bg-card-hover);}
+    .song-table tr:last-child td{border-bottom:none;}
+    .col-cover{width:64px;padding:8px;text-align:center;}
+    .cover-thumb{width:48px;height:48px;border-radius:9999px;background:linear-gradient(135deg,#e8b43c,#d4a017);}
+    .col-song{font-weight:600;}
+    .col-artist{color:var(--text-secondary);}
+     .col-duration{font-variant-numeric:tabular-nums;text-align:right;}
+     .col-actions{width:80px;text-align:right;}
+    .quality-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.05em;text-transform:uppercase;margin-left:8px;vertical-align:middle;}
+    .quality-lossless{background:oklch(0.72 0.14 85 / 0.15);color:var(--accent);border:1px solid oklch(0.72 0.14 85 / 0.2);}
+    .quality-high{background:oklch(0.68 0.16 55 / 0.15);color:var(--accent);border:1px solid oklch(0.68 0.16 55 / 0.2);}
+    .quality-standard{background:oklch(0.62 0.15 250 / 0.15);color:var(--accent);border:1px solid oklch(0.62 0.15 250 / 0.2);}
+    .quality-low{background:rgba(255,77,77,0.12);color:#ff6b6b;border:1px solid rgba(255,77,77,0.2);}
+    .song-playing .col-song{color:var(--accent);}
+    .song-playing .cover-thumb{box-shadow:0 0 12px var(--accent-glow);}
+    .group-header{display:flex;align-items:center;gap:12px;padding:12px;margin-bottom:8px;background:var(--bg-card);border-radius:var(--radius-md);border:1px solid var(--glass-border);cursor:pointer;transition:background 0.2s;}
+    .group-header:hover{background:var(--bg-card-hover);}
+     .group-cover{width:48px;height:48px;border-radius:var(--radius-md);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:24px;}
+     .group-info{flex:1;}
+     .group-name{font-weight:700;font-size:14px;margin-bottom:4px;}
+     .group-count{font-size:12px;color:var(--text-secondary);}
+     .group-arrow{font-size:20px;color:var(--text-secondary);}
+    .player-page{display:flex;flex-direction:column;height:100%;background:rgba(255,255,255,0.15);backdrop-filter:blur(40px) saturate(1.8);-webkit-backdrop-filter:blur(40px) saturate(1.8);box-shadow:inset 0 1px 0 rgba(255,255,255,0.1),0 0 40px rgba(0,0,0,0.3);}
+    .player-header{display:flex;align-items:center;padding:16px 20px 8px;gap:12px;}
+    .player-header-btn{background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;}
+    .player-header-title{flex:1;text-align:center;font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .player-artist-row{display:flex;align-items:center;justify-content:center;padding:0 16px 16px;}
+    .player-artist-name{font-size:14px;color:var(--text-secondary);}
+    .player-cover-area{display:flex;align-items:center;justify-content:center;padding:8px 16px 12px;flex:1 1 auto;min-height:0;}
+    .player-cover-wrapper{position:relative;width:240px;height:240px;}
+    .player-cover-outer{width:240px;height:240px;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,255,255,0.12),rgba(255,255,255,0.03),rgba(255,255,255,0.12),rgba(255,255,255,0.03),rgba(255,255,255,0.12));padding:6px;animation:spin 20s linear infinite;animation-play-state:paused;box-shadow:0 0 30px rgba(0,0,0,0.4),inset 0 0 20px rgba(0,0,0,0.2);transition:transform 0.3s ease;}
+    .player-cover{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at center,#1a1a1a 30%,#0d0d0d 60%,#000 100%);overflow:hidden;position:relative;box-shadow:0 4px 20px rgba(0,0,0,0.5),inset 0 0 30px rgba(0,0,0,0.3);}
+    .player-cover-art{width:50%;height:50%;border-radius:50%;background:linear-gradient(135deg,var(--accent),#b8860b,#d4a017,var(--accent-glow));display:flex;align-items:center;justify-content:center;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);overflow:hidden;z-index:1;box-shadow:0 2px 10px rgba(0,0,0,0.3);}
+    .player-cover-art::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,0.3),transparent 60%);pointer-events:none;}
+    .player-cover-art-icon{font-size:32px;opacity:0.5;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4));}
+    .player-cover-grooves{position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle at center,transparent 0,transparent 1px,rgba(255,255,255,0.4) 1px,rgba(255,255,255,0.4) 1.5px,transparent 2px);pointer-events:none;z-index:0;}
+    .player-cover-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,0.6);border:2px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;z-index:2;}
+    .player-cover-label-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.4);}
+    .player-cover-shine{position:absolute;inset:0;border-radius:50%;background:linear-gradient(135deg,rgba(255,255,255,0.12) 0%,transparent 40%,rgba(0,0,0,0.05) 100%);pointer-events:none;z-index:4;}
+    @keyframes pulse-glow{0%,100%{box-shadow:0 0 30px rgba(0,0,0,0.4),inset 0 0 20px rgba(0,0,0,0.2);}50%{box-shadow:0 0 40px var(--accent-glow),0 0 60px rgba(0,0,0,0.3),inset 0 0 20px rgba(0,0,0,0.2);}}
+    .player-cover-outer.playing{animation:spin 20s linear infinite;animation-play-state:running;}
+    .player-cover-outer:not(.playing){transform:scale(0.98);}
+    .player-lyrics-dots{display:flex;justify-content:center;gap:6px;padding:12px 0 8px;flex:0 0 auto;}
+    .player-lyrics-dot{width:6px;height:6px;border-radius:50%;background:var(--text-secondary);opacity:0.3;cursor:pointer;}
+    .player-lyrics-dot.active{opacity:1;}
+    .player-actions{display:flex;justify-content:center;gap:20px;padding:8px 16px 12px;flex:0 0 auto;}
+    .player-action-btn{width:40px;height:40px;border:none;background:none;color:var(--text-secondary);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color 0.2s;}
+    .player-action-btn:hover{color:var(--text);}
+    .player-action-btn.active{color:var(--accent);}
+    .player-action-btn.danger-btn{color:#ff4d4d;}
+    .player-action-btn.danger-btn:hover{color:#ff6b6b;}
+    .player-progress{padding:4px 28px 0;flex:0 0 auto;}
+    .player-progress-bar{width:100%;height:3px;background:rgba(255,255,255,0.15);border-radius:3px;position:relative;cursor:pointer;}
+    .player-progress-fill{height:100%;background:var(--accent);border-radius:3px;position:relative;transition:width 0.1s linear;}
+    .player-progress-thumb{position:absolute;right:-5px;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 6px rgba(0,0,0,0.3);}
+    .player-progress-time{display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);font-variant-numeric:tabular-nums;margin-top:6px;}
+    .player-controls{display:flex;align-items:center;justify-content:center;gap:20px;padding:16px 28px 32px;flex:0 0 auto;}
+    .player-ctrl-btn{width:40px;height:40px;border-radius:50%;border:none;background:none;color:var(--text-secondary);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.18s var(--ease);}
+    .player-ctrl-btn:hover{color:var(--text);}
+    .player-btn-play{width:60px;height:60px;background:var(--accent);color:#fff;border-radius:50%;box-shadow:0 0 24px var(--accent-glow);font-size:22px;}
+    .player-btn-play:hover{transform:scale(1.05);box-shadow:0 0 32px var(--accent-glow);}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .lyrics-container{height:100%;overflow-y:auto;padding:24px 16px;scroll-behavior:smooth;mask-image:linear-gradient(transparent,rgba(0,0,0,1) 10%,rgba(0,0,0,1) 90%,transparent 100%);-webkit-mask-image:linear-gradient(transparent,rgba(0,0,0,1) 10%,rgba(0,0,0,1) 90%,transparent 100%);}
+    .lyrics-line{margin:12px 0;font-size:18px;line-height:1.8;text-align:center;color:var(--text-secondary);transition:all 0.4s var(--ease);opacity:0.5;transform:scale(1);}
+    .lyrics-line.active{opacity:1;transform:scale(1.05);font-weight:700;}
+    .word{display:inline-block;transition:color 0.3s;}
+    .word.active{color:var(--text);text-shadow:0 0 12px var(--accent);}
+    .lyrics-line.sung .word{color:var(--accent);}
+    .eq-presets{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 12px;}
+    .eq-preset-btn{flex:0 0 auto;padding:8px 16px;border-radius:var(--radius-md);background:var(--bg-card);border:1px solid var(--glass-border);color:var(--text-secondary);font-size:13px;cursor:pointer;transition:all 0.2s;}
+    .eq-preset-btn.active{background:var(--accent);color:#000;border-color:var(--accent);}
+    .eq-canvas-wrap{position:relative;width:100%;height:220px;margin:8px 0 16px;border-radius:var(--radius-md);background:rgba(255,255,255,0.03);border:1px solid var(--glass-border);overflow:hidden;cursor:crosshair;touch-action:none;}
+    .eq-canvas{width:100%;height:100%;display:block;}
+    .scan-hero{display:flex;flex-direction:column;align-items:center;padding:40px 20px;}
+    .scan-icon{font-size:64px;margin-bottom:16px;}
+    .scan-circle{width:160px;height:160px;border-radius:50%;position:relative;margin:32px 0;background:conic-gradient(var(--accent),var(--accent-glow),var(--accent));animation:spin 3s linear infinite;}
+    .scan-circle::before{content:'';position:absolute;inset:8px;border-radius:50%;background:var(--bg);}
+    .scan-circle div{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-secondary);z-index:1;}
+    .search-bar{width:100%;padding:12px 16px;border-radius:var(--radius-md);border:1px solid var(--glass-border);background:var(--bg-card);color:var(--text);font-size:16px;outline:none;}
+    .search-bar:focus{border-color:var(--accent);}
+    .hidden-actions{display:flex;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid var(--divider);}
+    .context-menu-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.5);z-index:3000;opacity:0;pointer-events:none;transition:opacity 0.25s;}
+    .context-menu-overlay.active{opacity:1;pointer-events:auto;}
+    .context-menu{position:absolute;bottom:0;left:0;right:0;background:rgba(20,20,18,0.95);backdrop-filter:blur(24px);border-top-left-radius:20px;border-top-right-radius:20px;padding:16px 24px 32px;border:1px solid var(--glass-border);transform:translateY(100%);transition:transform 0.35s var(--ease);z-index:3001;}
+    .context-menu.active{transform:translateY(0);}
+    .context-menu-item{padding:14px 0;border-bottom:1px solid var(--glass-border);font-size:16px;cursor:pointer;display:flex;justify-content:space-between;}
+    .context-menu-item:last-child{border-bottom:none;}
+    .context-menu-item.danger{color:#ff4d4d;}
+    .context-menu-title{color:var(--text-secondary);font-size:13px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;}
+    .modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:4000;opacity:0;pointer-events:none;transition:opacity 0.3s;display:flex;align-items:center;justify-content:center;}
+    .modal-overlay.active{opacity:1;pointer-events:auto;}
+    .modal{width:280px;background:rgba(22,22,20,0.95);backdrop-filter:blur(24px);border-radius:20px;border:1px solid var(--glass-border);padding:20px;transform:scale(0.92);transition:transform 0.3s var(--ease);position:relative;}
+    .modal-overlay.active .modal{transform:scale(1);}
+    .modal-title{font-size:18px;font-weight:700;margin-bottom:12px;text-align:center;}
+    .modal-close{position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:50%;background:var(--bg-card);border:1px solid var(--glass-border);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+    .share-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;text-align:center;}
+    .share-icon{width:48px;height:48px;border-radius:var(--radius-md);background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 4px;}
+    .share-name{font-size:12px;color:var(--text-secondary);}
+    .share-cancel{background:var(--text-secondary);color:#000;}
+    .musicbar{position:absolute;bottom:0;left:0;right:0;height:72px;background:rgba(255,255,255,0.06);backdrop-filter:blur(32px) saturate(1.5);border-top:1px solid var(--glass-border);display:flex;align-items:center;padding:0 20px;gap:14px;box-shadow:0 -4px 24px rgba(0,0,0,0.35);z-index:9000;}
+    .musicbar-cover{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#e8b43c,#d4a017);box-shadow:0 0 12px var(--accent-glow);}
+    .musicbar-info{flex:1;min-width:0;cursor:pointer;}
+    .musicbar-song{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .musicbar-artist{font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .musicbar-controls{display:flex;align-items:center;gap:2px;}
+    .musicbar-btn{width:38px;height:38px;border-radius:50%;border:1px solid transparent;background:transparent;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.18s var(--ease);}
+    .musicbar-btn:hover{background:rgba(255,255,255,0.06);color:var(--text-primary);border-color:var(--glass-border);}
+    .musicbar-btn-play{width:42px;height:42px;background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 18px var(--accent-glow);}
+    .musicbar-btn-play:hover{transform:scale(1.06);box-shadow:0 0 24px var(--accent-glow);}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    const SONGS = [
+      { id:1, title:'晴天', artist:'周杰伦', album:'叶惠美', duration:'4:29', quality:'lossless', folder:'本地音乐' },
+      { id:2, title:'七里香', artist:'周杰伦', album:'七里香', duration:'4:57', quality:'high', folder:'本地音乐' },
+      { id:3, title:'夜曲', artist:'周杰伦', album:'十一月的萧邦', duration:'3:46', quality:'lossless', folder:'本地音乐' },
+      { id:4, title:'稻香', artist:'周杰伦', album:'魔杰座', duration:'3:43', quality:'standard', folder:'本地音乐' },
+      { id:5, title:'青花瓷', artist:'周杰伦', album:'我很忙', duration:'3:59', quality:'high', folder:'本地音乐' },
+      { id:6, title:'Lose Yourself', artist:'Eminem', album:'8 Mile Soundtrack', duration:'5:20', quality:'standard', folder:'英文专辑' },
+      { id:7, title:'Bohemian Rhapsody', artist:'Queen', album:'A Night at the Opera', duration:'5:55', quality:'lossless', folder:'英文专辑' },
+      { id:8, title:'Blinding Lights', artist:'The Weeknd', album:'After Hours', duration:'3:20', quality:'high', folder:'英文专辑' },
+      { id:9, title:'光年之外', artist:'邓紫棋', album:'光年之外', duration:'3:55', quality:'low', folder:'华语流行' },
+      { id:10, title:'平凡之路', artist:'朴树', album:'平凡之路', duration:'5:02', quality:'standard', folder:'华语流行' },
+    ];
+    const LYRICS_LINES = [
+      "故事的小黄花","从出生那年就飘着","童年的荡秋千","随记忆一直晃到现在",
+      "Re So So Si Do Si La","So La Si Si Si Si La Si La So","吹着前奏望着天空","我想起圆周测验忘了写答案",
+    ];
+
+    // Components
+    function Drawer({open,onClose,activePage,onNavigate}) {
+      const navItems = [
+        {id:'home',icon:'🏠',label:'全部'},
+        {id:'artists',icon:'🎤',label:'歌手'},
+        {id:'albums',icon:'💿',label:'专辑'},
+        {id:'hidden',icon:'🔒',label:'已隐藏'},
+        {id:'search',icon:'🔍',label:'搜索'},
+        {id:'equalizer',icon:'🎛',label:'均衡器'},
+        {id:'scan',icon:'📡',label:'扫描'},
+      ];
+      return (
+        <>
+          <div className={`drawer-overlay ${open?'active':''}`} onClick={onClose}></div>
+          <div className={`drawer ${open?'active':''}`}>
+            <div className="drawer-header">
+              <div className="drawer-avatar">♫</div>
+              <div className="drawer-user"><div className="name">MusicFree</div><div className="status">极简 · 自由 · 无广告</div></div>
+            </div>
+            <div className="drawerNav">
+              {navItems.map(item => (
+                <div key={item.id} className={`drawer-item ${activePage===item.id?'active':''}`} onClick={()=>onNavigate(item.id)}>
+                  <span>{item.icon} {item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    function MusicBar({song,onNavigate,isPlaying,onTogglePlay,onNext,onPrev}) {
+      if (!song) return null;
+      return (
+        <div className="musicbar" onClick={()=>onNavigate('player')}>
+          <div className="musicbar-cover"></div>
+          <div className="musicbar-info">
+            <div className="musicbar-song">{song.title}</div>
+            <div className="musicbar-artist">{song.artist}</div>
+          </div>
+          <div className="musicbar-controls" onClick={e=>e.stopPropagation()}>
+            <button className="musicbar-btn" onClick={onPrev}>�?/button>
+            <button className="musicbar-btn musicbar-btn-play" onClick={onTogglePlay}>{isPlaying?'�?:'�?}</button>
+            <button className="musicbar-btn" onClick={onNext}>�?/button>
+          </div>
+        </div>
+      );
+    }
+
+    function ContextMenu({visible,pos,onClose,onSelect}) {
+      if (!visible) return null;
+      return (
+        <>
+          <div className="context-menu-overlay active" onClick={onClose}></div>
+          <div className="context-menu active" style={{left:Math.min(pos.x,300),top:Math.max(pos.y,80)}}>
+            <div className="context-menu-title">更多操作</div>
+            <div className="context-menu-item" onClick={()=>{onSelect('next');onClose();}}>下一首播放</div>
+            <div className="context-menu-item" onClick={()=>{onSelect('info');onClose();}}>歌曲信息</div>
+            <div className="context-menu-item" onClick={()=>{onSelect('hide');onClose();}}>隐藏歌曲</div>
+            <div className="context-menu-item danger" onClick={()=>{onSelect('delete');onClose();}}>删除</div>
+          </div>
+        </>
+      );
+    }
+
+    function SleepModal({visible,onClose}) {
+      if (!visible) return null;
+      const [selected,setSelected]=useState('一小时后');
+      const options=['不开启','15分钟后','30分钟后','一小时后','自定义'];
+      return (
+        <div className="modal-overlay active" onClick={onClose}>
+          <div className="modal" style={{width:'280px'}} onClick={e=>e.stopPropagation()}>
+            <div className="modal-title" style={{marginBottom:'16px',fontSize:'16px'}}>睡眠模式</div>
+            <div style={{display:'flex',flexDirection:'column'}}>
+              {options.map(opt=>(
+                <div key={opt} style={{padding:'14px 0',borderBottom:'1px solid var(--glass-border)',display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer',fontSize:'15px',color:selected===opt?'var(--text)':'var(--text-secondary)'}}
+                  onClick={()=>setSelected(opt)}>
+                  <span>{opt}</span>
+                  {selected===opt && <span style={{color:'var(--accent)',fontSize:'18px'}}>✓</span>}
+                </div>
+              ))}
+                <div style={{padding:'14px 0',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:'15px',color:'var(--text-secondary)'}}>播放完当前歌曲再关闭</span>
+                <div style={{width:36,height:20,borderRadius:10,background:'var(--accent)',position:'relative',cursor:'pointer'}}>
+                  <div style={{position:'absolute',right:2,top:2,width:16,height:16,borderRadius:'50%',background:'#fff'}}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function QualityModal({visible,onClose}) {
+      if (!visible) return null;
+      return (
+        <div className="modal-overlay active" onClick={onClose}>
+          <div className="modal">
+            <button className="modal-close" onClick={onClose}>✕</button></button>
+            <div className="modal-title">选择音质</div>
+            <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+              <button className="btn primary">无损 (FLAC)</button>
+              <button className="btn">高品质 (320k)</button>
+              <button className="btn">标准 (192k)</button>
+              <button className="btn">流畅 (128k)</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ShareModal({visible,onClose,song}) {
+      if (!visible) return null;
+      return (
+        <div className="modal-overlay active" onClick={onClose}>
+          <div className="modal" style={{width:'300px'}}>
+            <button className="modal-close" onClick={onClose}>�?/button>
+            <div className="modal-title">歌曲信息</div>
+            <div style={{display:'flex',alignItems:'center',gap:'16px',marginBottom:'16px',padding:'16px',background:'var(--bg-card)',borderRadius:'var(--radius-md)',border:'1px solid var(--glass-border)'}}>
+              <div style={{width:64,height:64,borderRadius:'50%',background:'linear-gradient(135deg,var(--accent),var(--accent-glow))',flexShrink:0,display:'flex',alignItems:'center',justify-content:'center',fontSize:'28px'}}>�?/div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:'16px',fontWeight:'600',marginBottom:'4px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{song?.title || '未知歌曲'}</div>
+                <div style={{fontSize:'13px',color:'var(--text-secondary)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{song?.artist || '未知歌手'}</div>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:'10px'}}>
+              <button className="btn" onClick={onClose} style={{flex:1}}>查看信息</button>
+              <button className="btn primary" onClick={()=>{navigator.clipboard?.writeText(`${song?.title} - ${song?.artist}`);onClose();}} style={{flex:1}}>复制信息</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+function SearchPage({ songs, onNavigate, onPlaySong, onContextMenu }) {
+  const [query, setQuery] = useState('');
+  const results = query ? songs.filter(s => s.title.includes(query) || s.artist.includes(query)) : [];
+  return (
+    <div className="page active">
+      <div className="page-content" style={{paddingTop:'8px'}}>
+        <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
+          <button onClick={()=>onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
+          <input type="text" className="search-bar" placeholder="搜索歌曲、歌手、专辑...." value={query} onChange={e=>setQuery(e.target.value)} />
+        </div>
+        {!query && <p className="text-sm" style={{textAlign:'center',marginTop:'48px',color:'var(--text-secondary)'}}>输入关键词开始搜索?/p>}
+        {query && results.length===0 && <p className="text-sm" style={{textAlign:'center',marginTop:'48px',color:'var(--text-secondary)'}}>无搜索结果?/p>}
+        {query && results.length>0 && (
+          <table className="song-table">
+            <tbody>
+              {results.map(s=>(
+                <tr key={s.id} data-song-id={s.id} onContextMenu={()=>onContextMenu(s.id)} onClick={()=>onPlaySong(s.id)}>
+                  <td className="col-cover"><div className="cover-thumb"></div></td>
+                  <td className="col-song">{s.title}</td>
+                  <td className="col-artist">{s.artist}</td>
+                  <td className="col-duration">{s.duration}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ScanPage({ songs, onNavigate }) {
+  const folders = [...new Set(songs.map(s=>s.folder))];
+  const [folderList,setFolderList]=React.useState(folders);
+  const [scanning,setScanning]=React.useState(false);
+  const [selectedFolder,setSelectedFolder]=React.useState('');
+  const [scannedCount,setScannedCount]=React.useState(0);
+  const [completed,setCompleted]=React.useState(false);
+  const [showAdd,setShowAdd]=React.useState(false);
+  const timerRef=React.useRef(null);
+  const total=songs.filter(s=>s.folder===selectedFolder).length;
+  const clearTimer=()=>{ if(timerRef.current){ clearInterval(timerRef.current); timerRef.current=null; } };
+  React.useEffect(()=>()=>clearTimer(),[]);
+  const removeFolder=(f)=>{ setFolderList(prev=>prev.filter(x=>x!==f)); if(selectedFolder===f)setSelectedFolder(''); };
+  const startScan=()=>{ if(!selectedFolder)return; setScanning(true); setCompleted(false); setScannedCount(0); let count=0; const folderSongs=songs.filter(s=>s.folder===selectedFolder);   const totalSongs=folderSongs.length||1; timerRef.current=setInterval(()=>{ count++; setScannedCount(count); if(count>=totalSongs){ clearTimer(); setTimeout(()=>{ setScanning(false); setCompleted(true); },500); }},300); };
+  const stopScan=()=>{ clearTimer(); setScanning(false); };
+  return (
+    <div className="page active">
+      <div className="page-content" style={{display:'flex',flexDirection:'column',justifyContent:'center'}}>
+        <div className="scan-hero">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px',width:'100%',maxWidth:'280px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+              <button onClick={()=>onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
+              <h2 style={{fontSize:'18px',margin:0}}>{scanning?'正在扫描':'扫描音乐'}</h2>
+            </div>
+            {!scanning && !completed && <button onClick={()=>setShowAdd(!showAdd)} style={{background:'none',border:'none',color:'var(--accent)',fontSize:'22px',cursor:'pointer',lineHeight:1}}>+</button>}
+          </div>
+          {showAdd && !scanning && !completed && (
+            <div style={{width:'100%',maxWidth:'280px',marginBottom:'16px'}}>
+              <div style={{padding:'16px',borderRadius:'var(--radius-md)',border:'1px dashed var(--glass-border)',background:'var(--bg-card)',textAlign:'center',cursor:'pointer',transition:'all 0.2s'}}
+                onClick={()=>{const mockFolders=['我的音乐','下载歌曲','收藏列表','蓝牙传输'];const f=mockFolders[folderList.length%mockFolders.length];setFolderList(prev=>[...prev,f]);setShowAdd(false);}}>
+                <div style={{fontSize:'28px',marginBottom:'8px',opacity:0.5}}>📂</div>
+                <div style={{fontSize:'13px',color:'var(--text-secondary)'}}>点击选择文件�?/div>
+                <div style={{fontSize:'11px',color:'var(--text-secondary)',opacity:0.5,marginTop:'4px'}}>将调用系统文件管理器</div>
+              </div>
+            </div>
+          )}
+          <div className="scan-icon">{completed?'�?:scanning?'📡':'📁'}</div>
+          <h2 style={{fontSize:'22px',marginBottom:'8px'}}>{completed?'扫描完成':scanning?'正在扫描...':'选择扫描文件�?}</h2>
+          <p className="text-sm" style={{marginBottom:'24px'}}>{completed?`共发现?${total} 首歌曲曲`:scanning?`已发现?${scannedCount} 首歌曲曲`:'选择或新增文件夹后自动扫描音频文件?}</p>
+          {scanning && <div className="scan-circle"><div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px',color:'var(--text-secondary)'}}>{scannedCount} / {total}</div></div>}
+          {!scanning && !completed && (
+            <div style={{width:'100%',maxWidth:'280px',display:'flex',flexDirection:'column',gap:'8px',marginBottom:'24px'}}>
+              {folderList.length===0 && <p style={{textAlign:'center',color:'var(--text-secondary)',fontSize:'13px',padding:'16px 0'}}>暂无文件夹，点击右上角?+ 添加</p>}
+              {folderList.map(f=>{
+                const count=songs.filter(s=>s.folder===f).length;
+                const isNew=!songs.some(s=>s.folder===f);
+                return (
+                  <div key={f} onClick={()=>setSelectedFolder(f)}
+                    style={{padding:'14px 16px',borderRadius:'var(--radius-md)',border:'1px solid '+(selectedFolder===f?'var(--accent)':'var(--glass-border)'),background:selectedFolder===f?'rgba(255,255,255,0.06)':'var(--bg-card)',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',transition:'all 0.2s'}}>
+                    <span style={{display:'flex',alignItems:'center',gap:'10px'}}><span>📁</span><span>{f}</span>{isNew && <span style={{fontSize:'10px',color:'var(--accent)',border:'1px solid var(--accent)',borderRadius:'8px',padding:'1px 6px'}}>新增</span>}</span>
+                    <span style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                      <span style={{fontSize:'12px',color:'var(--text-secondary)'}}>{count} �?/span>
+                      {isNew && <button onClick={e=>{e.stopPropagation();removeFolder(f);}} style={{background:'none',border:'none',color:'#ff4d4d',fontSize:'14px',cursor:'pointer',padding:'0 4px'}}>�?/button>}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {completed && (
+            <div style={{display:'flex',gap:'12px',marginBottom:'16px'}}>
+              <button className="btn primary" onClick={()=>onNavigate('home')}>查看歌曲</button>
+              <button className="btn" onClick={()=>{ setCompleted(false); setSelectedFolder(''); }}>重新扫描</button>
+            </div>
+          )}
+          {!completed && (
+            <div style={{display:'flex',gap:'12px'}}>
+              <button className="btn primary" onClick={startScan} disabled={!selectedFolder||scanning}>{scanning?'扫描�?..':'开始扫描}</button>
+              {scanning && <button className="btn" onClick={stopScan}>停止</button>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+function EqCurve({ values, onChange }) {
+  const wrapRef = React.useRef(null);
+  const canvasRef = React.useRef(null);
+  const dragging = React.useRef(-1);
+  const dragStartY = React.useRef(0);
+  const PAD_X = 24, PAD_Y = 20;
+  const barCount = 32;
+  const barGap = 2;
+
+  const getCanvasSize = () => {
+    const wrap = wrapRef.current;
+    if (!wrap) return { w: 320, h: 200 };
+    return { w: wrap.clientWidth, h: wrap.clientHeight };
+  };
+  const getPointX = (i) => { const {w}=getCanvasSize(); return PAD_X + (i / (values.length - 1)) * (w - PAD_X * 2); };
+  const getPointY = (v) => { const {h}=getCanvasSize(); return PAD_Y + ((12 - v) / 24) * (h - PAD_Y * 2); };
+  const getValueFromY = (y) => { const {h}=getCanvasSize(); return Math.round(((1 - (y - PAD_Y) / (h - PAD_Y * 2)) * 24 - 12) * 2) / 2; };
+
+  const draw = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const {w:W,h:H} = getCanvasSize();
+    if (W < 10 || H < 10) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = PAD_Y + (i / 4) * (H - PAD_Y * 2);
+      ctx.beginPath(); ctx.moveTo(PAD_X, y); ctx.lineTo(W - PAD_X, y); ctx.stroke();
+    }
+    // 0dB line
+    const zeroY = getPointY(0);
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(PAD_X, zeroY); ctx.lineTo(W - PAD_X, zeroY); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Bar frequency background
+    const barW = (W - PAD_X * 2) / barCount - barGap;
+    for (let i = 0; i < barCount; i++) {
+      const x = PAD_X + i * ((W - PAD_X * 2) / barCount);
+      const normalizedI = i / (barCount - 1);
+      const segIdx = normalizedI * (values.length - 1);
+      const segFloor = Math.floor(segIdx);
+      const segFrac = segIdx - segFloor;
+      const v = segFloor < values.length - 1
+        ? values[segFloor] * (1 - segFrac) + values[segFloor + 1] * segFrac
+        : values[values.length - 1];
+      const barH = Math.max(4, ((v + 12) / 24) * (H - PAD_Y * 2) * 0.8);
+      const barY = H - PAD_Y - barH;
+      const alpha = 0.15 + (v + 12) / 24 * 0.25;
+      ctx.fillStyle = `rgba(232,180,60,${alpha})`;
+      ctx.beginPath(); ctx.roundRect(x, barY, barW, barH, 2); ctx.fill();
+    }
+
+    // EQ curve fill
+    ctx.beginPath();
+    ctx.moveTo(getPointX(0), getPointY(values[0]));
+    for (let i = 1; i < values.length; i++) {
+      const x0 = getPointX(i - 1), y0 = getPointY(values[i - 1]);
+      const x1 = getPointX(i), y1 = getPointY(values[i]);
+      const cpx = (x0 + x1) / 2;
+      ctx.bezierCurveTo(cpx, y0, cpx, y1, x1, y1);
+    }
+    ctx.lineTo(getPointX(values.length - 1), H - PAD_Y);
+    ctx.lineTo(getPointX(0), H - PAD_Y);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, 'rgba(232,180,60,0.25)');
+    grad.addColorStop(1, 'rgba(232,180,60,0.02)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // EQ curve stroke
+    ctx.beginPath();
+    ctx.moveTo(getPointX(0), getPointY(values[0]));
+    for (let i = 1; i < values.length; i++) {
+      const x0 = getPointX(i - 1), y0 = getPointY(values[i - 1]);
+      const x1 = getPointX(i), y1 = getPointY(values[i]);
+      const cpx = (x0 + x1) / 2;
+      ctx.bezierCurveTo(cpx, y0, cpx, y1, x1, y1);
+    }
+    ctx.strokeStyle = '#e8b43c';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(232,180,60,0.5)';
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Control points
+    values.forEach((v, i) => {
+      const x = getPointX(i), y = getPointY(v);
+      ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(232,180,60,0.15)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#e8b43c'; ctx.fill();
+    });
+
+    // Frequency labels
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ['60', '230', '910', '3.6k', '14k'].forEach((label, i) => {
+      ctx.fillText(label + 'Hz', getPointX(i), H - 4);
+    });
+  };
+
+  const getPos = (e) => {
+    const touch = e.touches ? e.touches[0] : e;
+    // Use offsetX/offsetY if available (relative to target element)
+    if (touch.offsetX !== undefined) {
+      return { x: touch.offsetX, y: touch.offsetY };
+    }
+    // Fallback: use clientX/clientY with bounding rect
+    const wrap = wrapRef.current;
+    if (!wrap) return {x:0,y:0};
+    const rect = wrap.getBoundingClientRect();
+    return {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top
+    };
+  };
+
+  const findClosest = (x, y) => {
+    let closest = -1, minDist = 50;
+    values.forEach((v, i) => {
+      const dx = x - getPointX(i), dy = y - getPointY(v);
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < minDist) { minDist = dist; closest = i; }
+    });
+    return closest;
+  };
+
+  const handleDown = (e) => {
+    const {x,y} = getPos(e);
+    const idx = findClosest(x, y);
+    if (idx >= 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      dragging.current = idx;
+      dragStartY.current = y;
+    }
+  };
+
+  const handleMove = (e) => {
+    if (dragging.current < 0) return;
+    e.preventDefault();
+    const {y} = getPos(e);
+    // Only trigger onChange if user actually dragged (moved more than 3px)
+    if (Math.abs(y - dragStartY.current) < 3) return;
+    const newVal = getValueFromY(y);
+    const clamped = Math.max(-12, Math.min(12, newVal));
+    if (values[dragging.current] !== clamped) {
+      const newValues = [...values];
+      newValues[dragging.current] = clamped;
+      onChange(newValues);
+    }
+  };
+
+  const handleUp = () => { dragging.current = -1; };
+
+  React.useEffect(() => { draw(); }, [values]);
+  React.useEffect(() => {
+    const timer = setTimeout(() => draw(), 100);
+    return () => clearTimeout(timer);
+  }, []);
+  React.useEffect(() => {
+    const ro = new ResizeObserver(() => draw());
+    if (wrapRef.current) ro.observe(wrapRef.current);
+    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('touchend', handleUp);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('touchend', handleUp);
+    };
+  }, []);
+
+  return (
+    <div ref={wrapRef} className="eq-canvas-wrap"
+      onMouseDown={handleDown}
+      onMouseMove={handleMove}
+      onTouchStart={handleDown}
+      onTouchMove={handleMove}>
+      <canvas ref={canvasRef} className="eq-canvas" style={{pointerEvents:'none'}} />
+    </div>
+  );
+}
+
+const EQ_FREQUENCIES = [60, 230, 910, 3600, 14000];
+const EQ_LABELS = ['低音', '中低', '中音', '中高', '高音'];
+const EQ_PRESETS = {
+  '正常': [0,0,0,0,0],
+  '流行': [2,4,5,3,1],
+  '摇滚': [5,3,0,3,5],
+  '爵士': [3,1,2,4,2],
+  '古典': [4,3,0,2,4],
+  '人声': [-1,2,5,4,1],
+  '自定义: null,
+};
+
+function SavePresetModal({ visible, onClose, onSave, initialName }) {
+  const [name, setName] = React.useState('');
+  React.useEffect(() => { if (visible) setName(initialName || ''); }, [visible, initialName]);
+  if (!visible) return null;
+  return (
+    <div className="modal-overlay active" onClick={onClose}>
+      <div className="modal" style={{width:'280px'}} onClick={e=>e.stopPropagation()}>
+        <div className="modal-title" style={{marginBottom:'16px',fontSize:'16px'}}>保存自定义义义预�?/div>
+        <div style={{marginBottom:'20px'}}>
+          <label style={{display:'block',fontSize:'12px',color:'var(--text-secondary)',marginBottom:'6px'}}>预设名称</label>
+          <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="输入预设名称..."
+            style={{width:'100%',padding:'10px 14px',borderRadius:'var(--radius-md)',border:'1px solid var(--glass-border)',background:'var(--bg-card)',color:'var(--text)',fontSize:'14px',outline:'none',boxSizing:'border-box'}} />
+        </div>
+        <div style={{display:'flex',gap:'10px'}}>
+          <button className="btn" onClick={onClose} style={{flex:1}}>取消</button>
+          <button className="btn primary" onClick={()=>{if(name.trim())onSave(name.trim());}} disabled={!name.trim()} style={{flex:1}}>保存</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Page Renderers (used by both Main and Dev)
+const pageRenderers = {
+  home: (props) => {
+    const { songs, currentSong, onPlaySong, onContextMenu } = props;
+        return (
+          <div className="page active">
+            <div className="page-content" style={{paddingTop:0}}>
+              <div style={{position:'sticky',top:0,zIndex:10,background:'#0F0F0A',padding:'8px 0 0'}}>
+                <div style={{padding:'8px 0'}}>
+                  <button onClick={()=>props.onToggleDrawer && props.onToggleDrawer()} style={{background:'none',border:'none',color:'var(--text)',fontSize:'24px',cursor:'pointer'}}>�?/button>
+                </div>
+                <h2 style={{fontSize:'24px',margin:'0 0 8px'}}>全部歌曲</h2>
+                <table className="song-table" style={{margin:'0 -16px'}}>
+                  <thead><tr><th></th><th>歌名</th><th>歌手</th><th className="col-duration">时长</th></tr></thead>
+                </table>
+              </div>
+              <table className="song-table">
+                <tbody>
+                  {songs.map(s => (
+                    <tr key={s.id} data-song-id={s.id} className={currentSong && s.id===currentSong.id?'song-playing':''}
+                      onContextMenu={(e)=>{e.preventDefault();onContextMenu(s.id);}} onClick={()=>onPlaySong(s.id)}>
+                      <td className="col-cover"><div className="cover-thumb"></div></td>
+                      <td className="col-song">{s.title}<span className={`quality-badge quality-${s.quality}`}>{s.quality}</span></td>
+                      <td className="col-artist">{s.artist}</td>
+                      <td className="col-duration">{s.duration}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      },
+        player: (props) => {
+          const { currentSong, isPlaying, onTogglePlay, onNext, onPrev, openQuality, openShare, openSleep, onHideSong, onDeleteSong, onLyrics, progress, onSeek } = props;
+          if (!currentSong) return <div className="page active player-page"><div className="player-header"><button className="player-header-btn" onClick={()=>props.onNavigate('home')}>�?/button><div className="player-header-title">无歌�?/div></div></div>;
+          const prog = progress || 0;
+          const parseDur = (d)=>{ if(!d) return 0; const p=d.split(':'); return parseInt(p[0])*60+parseInt(p[1]); };
+          const totalSec = parseDur(currentSong?.duration);
+         const curSec = Math.floor(totalSec * prog / 100);
+         const fmt = (s)=> Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+         return (
+           <div className="page active player-page">
+             <div className="player-header">
+               <button className="player-header-btn" onClick={()=>props.onNavigate('home')}>�?/button>
+               <div className="player-header-title">{currentSong.title}</div>
+               <button className="player-header-btn" onClick={onLyrics}>�?/button>
+             </div>
+             <div className="player-artist-row">
+               <span className="player-artist-name">{currentSong.artist}</span>
+             </div>
+             <div className="player-cover-area" onClick={onLyrics} style={{cursor:'pointer'}}>
+               <div className="player-cover-wrapper">
+                 <div className={`player-cover-outer ${isPlaying?'playing':''}`}>
+                   <div className="player-cover">
+                     <div className="player-cover-art">
+                       <span className="player-cover-art-icon">�?/span>
+                     </div>
+                     <div className="player-cover-grooves"></div>
+                     <div className="player-cover-label"><div className="player-cover-label-dot"></div></div>
+                     <div className="player-cover-shine"></div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+             <div className="player-lyrics-dots">
+               <div className="player-lyrics-dot"></div>
+               <div className="player-lyrics-dot active"></div>
+             </div>
+             <div className="player-actions">
+               <button className="player-action-btn" onClick={openQuality} title="音质">🎛</button>
+               <button className="player-action-btn" onClick={openShare} title="分享">�?/button>
+               <button className="player-action-btn" onClick={openSleep} title="睡眠">�?/button>
+               <button className="player-action-btn" onClick={()=>onHideSong(currentSong.id)} title="隐藏">👁</button>
+               <button className="player-action-btn danger-btn" onClick={()=>onDeleteSong(currentSong.id)} title="删除">�?/button>
+             </div>
+             <div className="player-progress">
+               <div className="player-progress-bar" onClick={(e)=>{const r=e.currentTarget.getBoundingClientRect();onSeek && onSeek(Math.round((e.clientX-r.left)/r.width*100));}}>
+                 <div className="player-progress-fill" style={{width:prog+'%'}}>
+                   <div className="player-progress-thumb"></div>
+                 </div>
+               </div>
+               <div className="player-progress-time">
+                 <span>{fmt(curSec)}</span>
+                  <span>{currentSong?.duration || '0:00'}</span>
+               </div>
+             </div>
+             <div className="player-controls">
+               <button className="player-ctrl-btn">�?/button>
+               <button className="player-ctrl-btn" onClick={onPrev}>�?/button>
+               <button className="player-btn-play player-ctrl-btn" onClick={onTogglePlay}>{isPlaying?'�?:'�?}</button>
+               <button className="player-ctrl-btn" onClick={onNext}>�?/button>
+               <button className="player-ctrl-btn">�?/button>
+             </div>
+           </div>
+         );
+       },
+      lyrics: (props) => {
+        const { currentSong, onBack } = props;
+        return (
+          <div className="page active">
+            <div className="page-content" style={{padding:0,display:'flex',flexDirection:'column'}}>
+              <div style={{padding:'16px',display:'flex',alignItems:'center',gap:'12px',borderBottom:'1px solid var(--divider)'}}>
+                <button onClick={onBack} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
+                <div>
+                  <div style={{fontWeight:'700',fontSize:'14px'}}>{currentSong.title}</div>
+                  <div style={{fontSize:'12px',color:'var(--text-secondary)'}}>{currentSong.artist}</div>
+                </div>
+              </div>
+              <div className="lyrics-container">
+                {LYRICS_LINES.map((line, li) => (
+                  <div key={li} className={`lyrics-line ${li===0?'active':''}`}>{line.split('').map((c,ci)=><span key={ci} className="word">{c}</span>)}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      },
+       equalizer: (props) => {
+         const { eqPreset, eqValues, onSetPreset, onSetEqValue, customName, savedPresets, onSavePreset, showSaveModal, onShowSaveModal, onLoadSavedPreset } = props;
+         const handleCurveChange = (v) => { onSetEqValue(-1, v); };
+         const isCustom = eqPreset === '自定义;
+         const isSavedPreset = eqPreset.startsWith('custom_');
+         return (
+           <div className="page active">
+             <div className="page-content">
+               <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 12px'}}>
+                 <button onClick={()=>props.onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
+                 <h2 style={{fontSize:'18px',flex:1}}>均衡器/h2>
+                 {isCustom && (
+                   <button onClick={()=>onShowSaveModal(false)}
+                     style={{background:'var(--accent)',border:'1px solid var(--accent)',color:'#000',borderRadius:'var(--radius-md)',padding:'6px 14px',fontSize:'12px',cursor:'pointer',fontWeight:'600'}}>
+                     保存
+                   </button>
+                 )}
+                 {isSavedPreset && (
+                   <button onClick={()=>onShowSaveModal(true)}
+                     style={{background:'transparent',border:'1px solid var(--accent)',color:'var(--accent)',borderRadius:'var(--radius-md)',padding:'6px 14px',fontSize:'12px',cursor:'pointer',fontWeight:'600'}}>
+                     更新
+                   </button>
+                 )}
+               </div>
+               <div className="eq-presets">
+                 {Object.entries(EQ_PRESETS).map(([name, presetValues]) => (
+                   <button key={name} className={`eq-preset-btn ${eqPreset===name?'active':''}`}
+                     onClick={()=>onSetPreset(name)}>
+                     {name}
+                   </button>
+                 ))}
+                 {(savedPresets||[]).map((sp,i) => (
+                   <button key={'sp'+i} className={`eq-preset-btn ${eqPreset===('custom_'+i)?'active':''}`}
+                     onClick={()=>onLoadSavedPreset(i)}>
+                     {sp.name}
+                   </button>
+                 ))}
+               </div>
+               <EqCurve values={eqValues} onChange={handleCurveChange} />
+               <div style={{display:'flex',justifyContent:'space-between',padding:'0 4px'}}>
+                 {EQ_LABELS.map((label,i)=>(
+                   <span key={i} style={{fontSize:'11px',color:'var(--text-secondary)',textAlign:'center',flex:1}}>
+                     {label}<br/><span style={{fontSize:'10px',opacity:0.5,color:eqValues[i]>0?'var(--accent)':eqValues[i]<0?'#ff6b6b':'var(--text-secondary)'}}>{eqValues[i]>0?'+':''}{eqValues[i].toFixed(0)}dB</span>
+                   </span>
+                 ))}
+               </div>
+             </div>
+           </div>
+         );
+       },
+      scan: (props) => <ScanPage songs={props.songs} onNavigate={props.onNavigate} />,
+       hidden: (props) => {
+         const hiddenSongs = SONGS.filter(s=>props.hiddenIds.has(s.id));
+         return (
+           <div className="page active">
+             <div className="page-content">
+               <div style={{padding:'8px 0 16px'}}>
+                 <h2 style={{fontSize:'20px'}}>已隐藏藏的歌曲</h2>
+                 <p className="text-sm" style={{marginTop:'4px'}}>隐藏的歌曲不会出现在列表中，可以随时恢复</p>
+               </div>
+               {hiddenSongs.length === 0 && <p className="text-sm" style={{textAlign:'center',marginTop:'32px',color:'var(--text-secondary)'}}>暂无隐藏歌曲</p>}
+               {hiddenSongs.length > 0 && (
+                 <>
+                   <table className="song-table">
+                     <thead><tr><th></th><th>歌名</th><th>歌手</th><th className="col-duration">时长</th><th className="col-actions"></th></tr></thead>
+                     <tbody>
+                       {hiddenSongs.map(s=>(
+                         <tr key={s.id}>
+                           <td className="col-cover"><div className="cover-thumb"></div></td>
+                           <td className="col-song">{s.title}</td>
+                           <td className="col-artist">{s.artist}</td>
+                           <td className="col-duration">{s.duration}</td>
+                           <td className="col-actions"><button className="btn" style={{padding:'4px 8px',fontSize:'12px'}} onClick={()=>props.onRestoreSong(s.id)}>恢复</button></td>
+                         </tr>
+                       ))}
+                     </tbody>
+                   </table>
+                   <div className="hidden-actions" style={{display:'flex'}}>
+                     <button className="btn" onClick={props.onRestoreAll}>恢复全部</button>
+                     <button className="btn danger" onClick={props.onClearAll}>清空列表</button>
+                   </div>
+                 </>
+               )}
+             </div>
+           </div>
+         );
+       },
+  search: (props) => <SearchPage {...props} />,
+
+  artists: (props) => {
+  const groups = Object.entries(props.songs.reduce((acc,s)=>{ (acc[s.artist]=(acc[s.artist]||[])).push(s); return acc; },{}))
+  .map(([k,v])=>({name:k,count:v.length}))
+  .sort((a,b)=>b.count-a.count);
+        return (
+          <div className="page active">
+            <div className="page-content">
+              <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
+                <button onClick={()=>props.onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
+                <h2 style={{fontSize:'18px'}}>歌手</h2>
+              </div>
+              {groups.map(g => (
+                <div key={g.name} className="group-header" onClick={()=>props.onSelectArtist && props.onSelectArtist(g.name)}>
+                  <div className="group-cover">🎤</div>
+                  <div className="group-info"><div className="group-name">{g.name}</div><div className="group-count">{g.count} 首歌曲/div></div>
+                  <div className="group-arrow">�?/div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      },
+       albums: (props) => {
+         const groups = Object.entries(props.songs.reduce((acc,s)=>{ (acc[s.album]=(acc[s.album]||[])).push(s); return acc; },{}))
+         .map(([k,v])=>({name:k,count:v.length}))
+         .sort((a,b)=>b.count-a.count);
+        return (
+          <div className="page active">
+            <div className="page-content">
+              <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
+                <button onClick={()=>props.onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
+                <h2 style={{fontSize:'18px'}}>专辑</h2>
+              </div>
+              {groups.map(g => (
+                <div key={g.name} className="group-header" onClick={()=>props.onSelectAlbum && props.onSelectAlbum(g.name)}>
+                  <div className="group-cover">💿</div>
+                  <div className="group-info"><div className="group-name">{g.name}</div><div className="group-count">{g.count} 首歌曲/div></div>
+                  <div className="group-arrow">�?/div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      },
+       'artist-detail': (props) => {
+         const artist = props.selectedArtist || (props.currentSong ? props.currentSong.artist : '');
+         const filtered = props.songs.filter(s=>s.artist===artist);
+        return (
+          <div className="page active">
+            <div className="page-content">
+              <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
+                <button onClick={()=>props.onNavigate('artists')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
+                <h2 style={{fontSize:'18px'}}>{artist}</h2>
+              </div>
+              <table className="song-table">
+                <thead><tr><th></th><th>歌名</th><th>专辑</th><th className="col-duration">时长</th></tr></thead>
+                <tbody>
+                  {filtered.map(s=>(
+                    <tr key={s.id} data-song-id={s.id} onContextMenu={(e)=>{e.preventDefault();props.onContextMenu(s.id);}} onClick={()=>props.onPlaySong(s.id)}>
+                      <td className="col-cover"><div className="cover-thumb"></div></td>
+                      <td className="col-song">{s.title}</td><td className="col-artist">{s.album}</td><td className="col-duration">{s.duration}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      },
+       'album-detail': (props) => {
+         const album = props.selectedAlbum || (props.currentSong ? props.currentSong.album : '');
+         const filtered = props.songs.filter(s=>s.album===album);
+        return (
+          <div className="page active">
+            <div className="page-content">
+              <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
+                <button onClick={()=>props.onNavigate('albums')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
+                <h2 style={{fontSize:'18px'}}>{album}</h2>
+              </div>
+              <table className="song-table">
+                <thead><tr><th></th><th>歌名</th><th>歌手</th><th className="col-duration">时长</th></tr></thead>
+                <tbody>
+                  {filtered.map(s=>(
+                    <tr key={s.id} data-song-id={s.id} onContextMenu={(e)=>{e.preventDefault();props.onContextMenu(s.id);}} onClick={()=>props.onPlaySong(s.id)}>
+                      <td className="col-cover"><div className="cover-thumb"></div></td><td className="col-song">{s.title}</td><td className="col-artist">{s.artist}</td><td className="col-duration">{s.duration}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      },
+    };
+
+    // Main App (Left)
+     function MainApp({ sharedState }) {
+       const [page,setPage]=useState('home');
+       const [drawerOpen,setDrawerOpen]=useState(false);
+       const [hiddenIds,setHiddenIds]=useState(new Set());
+       const [deletedIds,setDeletedIds]=useState(new Set());
+       const [currentSongIdx,setCurrentSongIdx]=useState(0);
+       const [isPlaying,setIsPlaying]=useState(false);
+       const [contextMenu,setContextMenu]=useState({visible:false,x:0,y:0,songId:null});
+       const [modals,setModals]=useState({sleep:false,quality:false,share:false});
+       const [selectedArtist,setSelectedArtist]=useState('');
+       const [selectedAlbum,setSelectedAlbum]=useState('');
+       const [selectedFolder,setSelectedFolder]=useState('');
+       const [eqPreset,setEqPreset]=useState('正常');
+       const [eqValues,setEqValues]=useState([...EQ_PRESETS['正常']]);
+       const [customValues,setCustomValues]=useState(null);
+       const [customName,setCustomName]=useState('');
+       const [savedPresets,setSavedPresets]=useState([]);
+    const [showSaveModal,setShowSaveModal]=useState(false);
+    const [isUpdating,setIsUpdating]=useState(false);
+    const [progress,setProgress]=useState(35);
+
+        const navigateTo=(p)=>{ setPage(p); setDrawerOpen(false); };
+        const onBack=()=>navigateTo('player');
+        const currentSong = sharedState ? SONGS[sharedState.currentSong]||SONGS[0] : SONGS[currentSongIdx]||SONGS[0];
+       const visibleSongs = SONGS.filter(s=>!hiddenIds.has(s.id) && !deletedIds.has(s.id));
+
+        const playSong=(id)=>{
+          const idx=SONGS.findIndex(s=>s.id===id);
+          if(idx>=0){ 
+            if(sharedState) sharedState.onPlaySong(id);
+            else { setCurrentSongIdx(idx); setIsPlaying(true); }
+            setPage('player'); 
+          }
+        };
+        const goBack=()=>setPage('player');
+        const togglePlay=()=>{ if(sharedState) sharedState.onTogglePlay(); else setIsPlaying(p=>!p); };
+         const nextSong=()=>{ if(sharedState) sharedState.onNext(); else setCurrentSongIdx(i=>(i+1)%SONGS.length); };
+        const prevSong=()=>{ if(sharedState) sharedState.onPrev(); else setCurrentSongIdx(i=>i===0? SONGS.length-1 : i-1); };
+        const hideSong=(id)=>setHiddenIds(h=>new Set([...h,id]));
+        const deleteSong=(id)=>setDeletedIds(d=>new Set([...d,id]));
+        const restoreSong=(id)=>{
+          setHiddenIds(h=>{ const nh=new Set(h); nh.delete(id); return nh; });
+          setDeletedIds(d=>{ const nd=new Set(d); nd.delete(id); return nd; });
+        };
+        const restoreAllHidden=()=>setHiddenIds(new Set());
+        const clearAllHidden=()=>{
+          setHiddenIds(h=>{
+            setDeletedIds(d=>new Set([...d, ...h]));
+            return new Set();
+          });
+        };
+        const openQuality=()=>setModals(m=>({...m,quality:true}));
+        const openShare=()=>setModals(m=>({...m,share:true}));
+        const openSleep=()=>setModals(m=>({...m,sleep:true}));
+        const openLyrics=()=>setPage('lyrics');
+        const selectArtist=(name)=>{ setSelectedArtist(name); setPage('artist-detail'); };
+        const selectAlbum=(name)=>{ setSelectedAlbum(name); setPage('album-detail'); };
+        const selectFolder=(name)=>{ setSelectedFolder(name); navigateTo('home'); };
+        const setPreset=(name)=>{ 
+          if(name==='自定义) { 
+            setEqPreset('自定义); 
+            setEqValues([0,0,0,0,0]);
+            setCustomName('');
+          } else if(EQ_PRESETS[name]) { 
+            setEqPreset(name); 
+            setEqValues([...EQ_PRESETS[name]]); 
+            setCustomName('');
+          } else if(name.startsWith('custom_')) {
+            const idx = parseInt(name.replace('custom_',''));
+            if(savedPresets[idx]) {
+              setEqPreset(name);
+              setEqValues([...savedPresets[idx].values]);
+              setCustomName(savedPresets[idx].name);
+            }
+          }
+        };
+        const setEqValue=(i,v)=>{ 
+          if(Array.isArray(v)){
+            setEqValues(v);
+          } else {
+            setEqValues(vals=>{ const n=[...vals]; n[i]=v; return n; });
+          }
+        };
+        const saveCustom=()=>{ setCustomValues([...eqValues]); };
+        const savePreset=(name)=>{ 
+          if(isUpdating && customName) {
+            setSavedPresets(prev=>{
+              const next=[...prev];
+              const idx = next.findIndex(sp => sp.name === customName);
+              if(idx >= 0) next[idx] = {name, values:[...eqValues]};
+              else next.push({name, values:[...eqValues]});
+              return next;
+            });
+          } else {
+            setSavedPresets(prev=>[...prev,{name,values:[...eqValues]}]);
+          }
+          setCustomName(name); 
+          setShowSaveModal(false);
+        };
+        const loadSavedPreset=(idx)=>{
+          if(savedPresets[idx]) {
+            setEqPreset('custom_'+idx);
+            setEqValues([...savedPresets[idx].values]);
+            setCustomName(savedPresets[idx].name);
+          }
+        };
+        const seekTo=(pct)=>setProgress(pct);
+
+      return (
+        <div className="phone">
+          <div className="phone-notch"></div>
+          <div className="status-bar">9:41</div>
+          <div className="phone-content">
+            <Drawer open={drawerOpen} onClose={()=>setDrawerOpen(false)} activePage={page} onNavigate={navigateTo} />
+               {pageRenderers[page]({
+                 songs: visibleSongs, currentSong, currentSongIdx, onPlaySong: playSong,
+                 onContextMenu: (id)=>setContextMenu({visible:true,x:0,y:0,songId:id}),
+                 onToggleDrawer: ()=>setDrawerOpen(o=>!o), onNavigate: navigateTo, onBack,
+                 hiddenIds, onRestoreSong: restoreSong, onRestoreAll: restoreAllHidden, onClearAll: clearAllHidden,
+                  isPlaying: sharedState ? sharedState.isPlaying : isPlaying, onTogglePlay: togglePlay, onNext: nextSong, onPrev: prevSong,
+                 openQuality, openShare, openSleep, onLyrics: openLyrics, onHideSong: hideSong, onDeleteSong: deleteSong,
+                 onSelectArtist: selectArtist, onSelectAlbum: selectAlbum, onSelectFolder: selectFolder,
+                 selectedArtist, selectedAlbum, selectedFolder,
+                 eqPreset, eqValues, onSetPreset: setPreset, onSetEqValue: setEqValue,
+                 customValues, customName, savedPresets, onSavePreset: savePreset, onLoadSavedPreset: loadSavedPreset,
+                 showSaveModal, onShowSaveModal: (isUpdate)=>{setIsUpdating(isUpdate);setShowSaveModal(true);},
+                 progress, onSeek: seekTo
+               })}
+          </div>
+          {page!=='player' && <MusicBar song={currentSong} onNavigate={navigateTo} isPlaying={sharedState ? sharedState.isPlaying : isPlaying} onTogglePlay={togglePlay} onNext={nextSong} onPrev={prevSong} />}
+          <SleepModal visible={modals.sleep} onClose={()=>setModals(m=>({...m,sleep:false}))} />
+          <QualityModal visible={modals.quality} onClose={()=>setModals(m=>({...m,quality:false}))} />
+          <ShareModal visible={modals.share} onClose={()=>setModals(m=>({...m,share:false}))} song={currentSong} />
+           <ContextMenu visible={contextMenu.visible} pos={contextMenu} onClose={()=>setContextMenu(c=>({...c,visible:false}))} onSelect={(act)=>{ if(act==='hide') hideSong(contextMenu.songId); if(act==='delete') deleteSong(contextMenu.songId); }} />
+           <SavePresetModal visible={showSaveModal} onClose={()=>setShowSaveModal(false)} onSave={savePreset} initialName={customName} />
+         </div>
+       );
+     }
+
+ // Dev Phone (Right)
+  function DevPhone({ initialPage, mainState }) {
+    const [page,setPage]=useState(initialPage);
+    useEffect(()=>{ setPage(initialPage); setShowSaveModal(false); },[initialPage]);
+    const [hiddenIds,setHiddenIds]=useState(new Set());
+    const [deletedIds,setDeletedIds]=useState(new Set());
+    const [currentSongIdx,setCurrentSongIdx]=useState(0);
+    const [isPlaying,setIsPlaying]=useState(false);
+    const [modals,setModals]=useState({sleep:false,quality:false,share:false});
+    const [contextMenu,setContextMenu]=useState({visible:false,x:0,y:0,songId:null});
+    const [selectedArtist,setSelectedArtist]=useState('');
+    const [selectedAlbum,setSelectedAlbum]=useState('');
+    const [selectedFolder,setSelectedFolder]=useState('');
+    const [eqPreset,setEqPreset]=useState('正常');
+    const [eqValues,setEqValues]=useState([...EQ_PRESETS['正常']]);
+    const [customValues,setCustomValues]=useState(null);
+    const [customName,setCustomName]=useState('');
+    const [savedPresets,setSavedPresets]=useState([]);
+    const [showSaveModal,setShowSaveModal]=useState(false);
+    const [isUpdating,setIsUpdating]=useState(false);
+    const [progress,setProgress]=useState(35);
+
+    // Use mainState for player page if available
+    const currentSong = mainState ? SONGS[mainState.currentSong]||SONGS[0] : SONGS[currentSongIdx]||SONGS[0];
+    const visibleSongs = SONGS.filter(s=>!hiddenIds.has(s.id) && !deletedIds.has(s.id));
+    const actualIsPlaying = mainState ? mainState.isPlaying : isPlaying;
+
+    const playSong=(id)=>{
+      const idx=SONGS.findIndex(s=>s.id===id);
+      if(idx>=0){ setCurrentSongIdx(idx); setIsPlaying(true); setPage('player'); }
+    };
+    const goBack=()=>setPage('player');
+    const togglePlay=()=>setIsPlaying(p=>!p);
+    const nextSong=()=>setCurrentSongIdx(i=>(i+1)%SONGS.length);
+    const prevSong=()=>setCurrentSongIdx(i=>i===0? SONGS.length-1 : i-1);
+    const hideSong=(id)=>setHiddenIds(h=>new Set([...h,id]));
+    const deleteSong=(id)=>setDeletedIds(d=>new Set([...d,id]));
+    const restoreSong=(id)=>{
+      setHiddenIds(h=>{ const nh=new Set(h); nh.delete(id); return nh; });
+      setDeletedIds(d=>{ const nd=new Set(d); nd.delete(id); return nd; });
+    };
+    const restoreAllHidden=()=>setHiddenIds(new Set());
+    const clearAllHidden=()=>{
+      setHiddenIds(h=>{
+        setDeletedIds(d=>new Set([...d, ...h]));
+        return new Set();
+      });
+    };
+
+    const openQuality=()=>setModals(m=>({...m,quality:true}));
+    const openShare=()=>setModals(m=>({...m,share:true}));
+    const openSleep=()=>setModals(m=>({...m,sleep:true}));
+    const openLyrics=()=>setPage('lyrics');
+    const selectArtist=(name)=>{ setSelectedArtist(name); setPage('artist-detail'); };
+    const selectAlbum=(name)=>{ setSelectedAlbum(name); setPage('album-detail'); };
+    const selectFolder=(name)=>{ setSelectedFolder(name); setPage('home'); };
+    const setPreset=(name)=>{ 
+      if(name==='自定义) { 
+        setEqPreset('自定义); 
+        setEqValues([0,0,0,0,0]);
+        setCustomName('');
+      } else if(EQ_PRESETS[name]) { 
+        setEqPreset(name); 
+        setEqValues([...EQ_PRESETS[name]]); 
+        setCustomName('');
+      } else if(name.startsWith('custom_')) {
+        const idx = parseInt(name.replace('custom_',''));
+        if(savedPresets[idx]) {
+          setEqPreset(name);
+          setEqValues([...savedPresets[idx].values]);
+          setCustomName(savedPresets[idx].name);
+        }
+      }
+    };
+    const setEqValue=(i,v)=>{ 
+      if(Array.isArray(v)){
+        setEqValues(v);
+      } else {
+        setEqValues(vals=>{ const n=[...vals]; n[i]=v; return n; });
+      }
+    };
+    const saveCustom=()=>{ setCustomValues([...eqValues]); };
+    const savePreset=(name)=>{ 
+      if(isUpdating && customName) {
+        setSavedPresets(prev=>{
+          const next=[...prev];
+          const idx = next.findIndex(sp => sp.name === customName);
+          if(idx >= 0) next[idx] = {name, values:[...eqValues]};
+          else next.push({name, values:[...eqValues]});
+          return next;
+        });
+      } else {
+        setSavedPresets(prev=>[...prev,{name,values:[...eqValues]}]);
+      }
+      setCustomName(name); 
+      setShowSaveModal(false);
+    };
+    const loadSavedPreset=(idx)=>{
+      if(savedPresets[idx]) {
+        setEqPreset('custom_'+idx);
+        setEqValues([...savedPresets[idx].values]);
+        setCustomName(savedPresets[idx].name);
+      }
+    };
+    const seekTo=(pct)=>setProgress(pct);
+
+    return (
+      <div className="phone">
+        <div className="phone-notch"></div>
+        <div className="status-bar">Dev 9:41</div>
+        <div className="phone-content">
+              {pageRenderers[page]({
+                songs: visibleSongs, currentSong, currentSongIdx, onPlaySong: playSong,
+                onContextMenu: (id)=>setContextMenu({visible:true,x:0,y:0,songId:id}),
+                onNavigate: (p)=>setPage(p), onToggleDrawer: null, onBack: goBack,
+                hiddenIds, onRestoreSong: restoreSong, onRestoreAll: restoreAllHidden, onClearAll: clearAllHidden,
+                isPlaying: actualIsPlaying,
+                onTogglePlay: togglePlay,
+                onNext: nextSong,
+                onPrev: prevSong,
+                openQuality, openShare, openSleep, onLyrics: openLyrics,
+                onHideSong: hideSong, onDeleteSong: deleteSong,
+                onSelectArtist: selectArtist, onSelectAlbum: selectAlbum, onSelectFolder: selectFolder,
+                selectedArtist, selectedAlbum, selectedFolder,
+                eqPreset, eqValues, onSetPreset: setPreset, onSetEqValue: setEqValue,
+                customValues, customName, savedPresets, onSavePreset: savePreset, onLoadSavedPreset: loadSavedPreset,
+                showSaveModal, onShowSaveModal: (isUpdate)=>{setIsUpdating(isUpdate);setShowSaveModal(true);},
+                progress, onSeek: seekTo
+              })}
+        </div>
+        {page!=='player' && <MusicBar song={currentSong} onNavigate={(p)=>setPage(p)} isPlaying={actualIsPlaying} onTogglePlay={togglePlay} onNext={nextSong} onPrev={prevSong} />}
+        <SleepModal visible={modals.sleep} onClose={()=>setModals(m=>({...m,sleep:false}))} />
+        <QualityModal visible={modals.quality} onClose={()=>setModals(m=>({...m,quality:false}))} />
+         <ShareModal visible={modals.share} onClose={()=>setModals(m=>({...m,share:false}))} song={currentSong} />
+           <ContextMenu visible={contextMenu.visible} pos={contextMenu} onClose={()=>setContextMenu(c=>({...c,visible:false}))} onSelect={(act)=>{ if(act==='hide') hideSong(contextMenu.songId); if(act==='delete') deleteSong(contextMenu.songId); }} />
+           <SavePresetModal visible={showSaveModal} onClose={()=>setShowSaveModal(false)} onSave={savePreset} initialName={customName} />
+         </div>
+       );
+    }
+
+    // Workspace
+    const PAGES = ['home','player','lyrics','equalizer','scan','hidden','search','artists','albums','artist-detail','album-detail'];
+
+    function Workspace() {
+      const [devPage,setDevPage]=useState('player');
+      const [sharedCurrentSongIdx,setSharedCurrentSongIdx]=useState(0);
+      const [sharedIsPlaying,setSharedIsPlaying]=useState(false);
+      const sharedCurrentSong = SONGS[sharedCurrentSongIdx]||SONGS[0];
+      const toggleSharedPlay=()=>setSharedIsPlaying(p=>!p);
+      const nextSharedSong=()=>setSharedCurrentSongIdx(i=>(i+1)%SONGS.length);
+      const prevSharedSong=()=>setSharedCurrentSongIdx(i=>i===0? SONGS.length-1 : i-1);
+      const playSharedSong=(id)=>{
+        const idx=SONGS.findIndex(s=>s.id===id);
+        if(idx>=0){ setSharedCurrentSongIdx(idx); setSharedIsPlaying(true); }
+      };
+
+      return (
+        <div className="workspace">
+          {/* Dev Controls */}
+          <div className="dev-controls">
+            <div className="tab-bar">
+              {PAGES.map(p=>(
+                <button key={p} className={`tab-btn ${devPage===p?'active':''}`} onClick={()=>setDevPage(p)}>{p.replace('-',' ')}</button>
+              ))}
+            </div>
+            <div className="section-title">拆分页面</div>
+          </div>
+
+          {/* Apps Row */}
+          <div className="workspace-row">
+            {/* Main App */}
+            <div className="workspace-main"><MainApp sharedState={{currentSong:sharedCurrentSongIdx,isPlaying:sharedIsPlaying,onTogglePlay:toggleSharedPlay,onNext:nextSharedSong,onPrev:prevSharedSong,onPlaySong:playSharedSong}} /></div>
+
+            {/* Dev Phone */}
+            <div className="workspace-side">
+               <DevPhone key={devPage} initialPage={devPage} mainState={{currentSong:sharedCurrentSongIdx,isPlaying:sharedIsPlaying}} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<Workspace />);
+  </script>
+</body>
+</html>
