@@ -871,7 +871,10 @@ const pageRenderers = {
       <div className="page active">
         <div className="page-content">
           <div style={{padding:'8px 0 16px'}}>
-            <h2 style={{fontSize:'20px'}}>已隐藏的歌曲</h2>
+            <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'8px'}}>
+              <button onClick={()=>props.onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>←</button>
+              <h2 style={{fontSize:'20px',margin:0}}>已隐藏的歌曲</h2>
+            </div>
             <p className="text-sm" style={{marginTop:'4px'}}>隐藏的歌曲不会出现在列表中，可以随时恢复</p>
           </div>
           {hiddenSongs.length === 0 && <p className="text-sm" style={{textAlign:'center',marginTop:'32px',color:'var(--text-secondary)'}}>暂无隐藏歌曲</p>}
