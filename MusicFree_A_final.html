@@ -723,7 +723,7 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
       const fileSize = (currentSong.id * 3.2 + 5).toFixed(1);
       const filePath = `/storage/emulated/0/Music/${currentSong.artist}/${currentSong.title}.flac`;
       return (
-          <div className="page active player-page" style={{background:'#F2F0ED'}}>
+          <div className="page active player-page" style={{background:'#8A8580'}}>
           <div className="player-header" style={{position:'relative'}}>
             <button className="player-header-btn" onClick={()=>props.onNavigate('home')}>←</button>
             <div className="player-header-title">{currentSong.title}</div>
