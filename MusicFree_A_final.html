@@ -775,8 +775,8 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
             )}
           </div>
           <div className="player-lyrics-dots">
-            <div className={`player-lyrics-dot ${viewMode==='vinyl'?'active':''}`}></div>
-            <div className={`player-lyrics-dot ${viewMode==='lyrics'?'active':''}`}></div>
+            <div className={`player-lyrics-dot ${viewMode==='vinyl'?'active':''}`} onClick={()=>setViewMode('vinyl')}></div>
+            <div className={`player-lyrics-dot ${viewMode==='lyrics'?'active':''}`} onClick={()=>setViewMode('lyrics')}></div>
           </div>
           <div className="player-actions">
             <button className="player-action-btn" onClick={openQuality} title="音质">🎛️</button>
