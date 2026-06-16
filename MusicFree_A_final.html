@@ -193,7 +193,7 @@
         {id:'albums',icon:'💿',label:'专辑'},
         {id:'hidden',icon:'🔒',label:'已隐藏'},
         {id:'search',icon:'🔍',label:'搜索'},
-        {id:'equalizer',icon:'🎛',label:'均衡器'},
+        {id:'equalizer',icon:'🎛️',label:'均衡器'},
         {id:'scan',icon:'📡',label:'扫描'},
       ];
       return (
@@ -226,9 +226,9 @@
             <div className="musicbar-artist">{song.artist}</div>
           </div>
           <div className="musicbar-controls" onClick={e=>e.stopPropagation()}>
-            <button className="musicbar-btn" onClick={onPrev}>�?/button>
-            <button className="musicbar-btn musicbar-btn-play" onClick={onTogglePlay}>{isPlaying?'�?:'�?}</button>
-            <button className="musicbar-btn" onClick={onNext}>�?/button>
+            <button className="musicbar-btn" onClick={onPrev}>⏮</button>
+            <button className="musicbar-btn musicbar-btn-play" onClick={onTogglePlay}>{isPlaying?'⏸':'▶'}</button>
+            <button className="musicbar-btn" onClick={onNext}>⏭</button>
           </div>
         </div>
       );
@@ -252,7 +252,7 @@
 
     function SleepModal({visible,onClose}) {
       if (!visible) return null;
-      const [selected,setSelected]=useState('一小时后');
+      const [selected,setSelected]=useState('不开启');
       const options=['不开启','15分钟后','30分钟后','一小时后','自定义'];
       return (
         <div className="modal-overlay active" onClick={onClose}>
@@ -266,7 +266,7 @@
                   {selected===opt && <span style={{color:'var(--accent)',fontSize:'18px'}}>✓</span>}
                 </div>
               ))}
-                <div style={{padding:'14px 0',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <div style={{padding:'14px 0',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <span style={{fontSize:'15px',color:'var(--text-secondary)'}}>播放完当前歌曲再关闭</span>
                 <div style={{width:36,height:20,borderRadius:10,background:'var(--accent)',position:'relative',cursor:'pointer'}}>
                   <div style={{position:'absolute',right:2,top:2,width:16,height:16,borderRadius:'50%',background:'#fff'}}></div>
@@ -283,7 +283,7 @@
       return (
         <div className="modal-overlay active" onClick={onClose}>
           <div className="modal">
-            <button className="modal-close" onClick={onClose}>✕</button></button>
+            <button className="modal-close" onClick={onClose}>✕</button>
             <div className="modal-title">选择音质</div>
             <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
               <button className="btn primary">无损 (FLAC)</button>
@@ -301,10 +301,10 @@
       return (
         <div className="modal-overlay active" onClick={onClose}>
           <div className="modal" style={{width:'300px'}}>
-            <button className="modal-close" onClick={onClose}>�?/button>
+            <button className="modal-close" onClick={onClose}>✕</button>
             <div className="modal-title">歌曲信息</div>
             <div style={{display:'flex',alignItems:'center',gap:'16px',marginBottom:'16px',padding:'16px',background:'var(--bg-card)',borderRadius:'var(--radius-md)',border:'1px solid var(--glass-border)'}}>
-              <div style={{width:64,height:64,borderRadius:'50%',background:'linear-gradient(135deg,var(--accent),var(--accent-glow))',flexShrink:0,display:'flex',alignItems:'center',justify-content:'center',fontSize:'28px'}}>�?/div>
+              <div style={{width:64,height:64,borderRadius:'50%',background:'linear-gradient(135deg,var(--accent),var(--accent-glow))',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'28px'}}>♫</div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:'16px',fontWeight:'600',marginBottom:'4px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{song?.title || '未知歌曲'}</div>
                 <div style={{fontSize:'13px',color:'var(--text-secondary)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{song?.artist || '未知歌手'}</div>
@@ -319,113 +319,113 @@
       );
     }
 
-function SearchPage({ songs, onNavigate, onPlaySong, onContextMenu }) {
-  const [query, setQuery] = useState('');
-  const results = query ? songs.filter(s => s.title.includes(query) || s.artist.includes(query)) : [];
-  return (
-    <div className="page active">
-      <div className="page-content" style={{paddingTop:'8px'}}>
-        <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
-          <button onClick={()=>onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
-          <input type="text" className="search-bar" placeholder="搜索歌曲、歌手、专辑...." value={query} onChange={e=>setQuery(e.target.value)} />
-        </div>
-        {!query && <p className="text-sm" style={{textAlign:'center',marginTop:'48px',color:'var(--text-secondary)'}}>输入关键词开始搜索?/p>}
-        {query && results.length===0 && <p className="text-sm" style={{textAlign:'center',marginTop:'48px',color:'var(--text-secondary)'}}>无搜索结果?/p>}
-        {query && results.length>0 && (
-          <table className="song-table">
-            <tbody>
-              {results.map(s=>(
-                <tr key={s.id} data-song-id={s.id} onContextMenu={()=>onContextMenu(s.id)} onClick={()=>onPlaySong(s.id)}>
-                  <td className="col-cover"><div className="cover-thumb"></div></td>
-                  <td className="col-song">{s.title}</td>
-                  <td className="col-artist">{s.artist}</td>
-                  <td className="col-duration">{s.duration}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ScanPage({ songs, onNavigate }) {
-  const folders = [...new Set(songs.map(s=>s.folder))];
-  const [folderList,setFolderList]=React.useState(folders);
-  const [scanning,setScanning]=React.useState(false);
-  const [selectedFolder,setSelectedFolder]=React.useState('');
-  const [scannedCount,setScannedCount]=React.useState(0);
-  const [completed,setCompleted]=React.useState(false);
-  const [showAdd,setShowAdd]=React.useState(false);
-  const timerRef=React.useRef(null);
-  const total=songs.filter(s=>s.folder===selectedFolder).length;
-  const clearTimer=()=>{ if(timerRef.current){ clearInterval(timerRef.current); timerRef.current=null; } };
-  React.useEffect(()=>()=>clearTimer(),[]);
-  const removeFolder=(f)=>{ setFolderList(prev=>prev.filter(x=>x!==f)); if(selectedFolder===f)setSelectedFolder(''); };
-  const startScan=()=>{ if(!selectedFolder)return; setScanning(true); setCompleted(false); setScannedCount(0); let count=0; const folderSongs=songs.filter(s=>s.folder===selectedFolder);   const totalSongs=folderSongs.length||1; timerRef.current=setInterval(()=>{ count++; setScannedCount(count); if(count>=totalSongs){ clearTimer(); setTimeout(()=>{ setScanning(false); setCompleted(true); },500); }},300); };
-  const stopScan=()=>{ clearTimer(); setScanning(false); };
-  return (
-    <div className="page active">
-      <div className="page-content" style={{display:'flex',flexDirection:'column',justifyContent:'center'}}>
-        <div className="scan-hero">
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px',width:'100%',maxWidth:'280px'}}>
-            <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
-              <button onClick={()=>onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
-              <h2 style={{fontSize:'18px',margin:0}}>{scanning?'正在扫描':'扫描音乐'}</h2>
+    function SearchPage({ songs, onNavigate, onPlaySong, onContextMenu }) {
+      const [query, setQuery] = useState('');
+      const results = query ? songs.filter(s => s.title.includes(query) || s.artist.includes(query)) : [];
+      return (
+        <div className="page active">
+          <div className="page-content" style={{paddingTop:'8px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
+              <button onClick={()=>onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>←</button>
+              <input type="text" className="search-bar" placeholder="搜索歌曲、歌手、专辑...." value={query} onChange={e=>setQuery(e.target.value)} />
             </div>
-            {!scanning && !completed && <button onClick={()=>setShowAdd(!showAdd)} style={{background:'none',border:'none',color:'var(--accent)',fontSize:'22px',cursor:'pointer',lineHeight:1}}>+</button>}
+            {!query && <p className="text-sm" style={{textAlign:'center',marginTop:'48px',color:'var(--text-secondary)'}}>输入关键词开始搜索</p>}
+            {query && results.length===0 && <p className="text-sm" style={{textAlign:'center',marginTop:'48px',color:'var(--text-secondary)'}}>无搜索结果</p>}
+            {query && results.length>0 && (
+              <table className="song-table">
+                <tbody>
+                  {results.map(s=>(
+                    <tr key={s.id} data-song-id={s.id} onContextMenu={()=>onContextMenu(s.id)} onClick={()=>onPlaySong(s.id)}>
+                      <td className="col-cover"><div className="cover-thumb"></div></td>
+                      <td className="col-song">{s.title}</td>
+                      <td className="col-artist">{s.artist}</td>
+                      <td className="col-duration">{s.duration}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-          {showAdd && !scanning && !completed && (
-            <div style={{width:'100%',maxWidth:'280px',marginBottom:'16px'}}>
-              <div style={{padding:'16px',borderRadius:'var(--radius-md)',border:'1px dashed var(--glass-border)',background:'var(--bg-card)',textAlign:'center',cursor:'pointer',transition:'all 0.2s'}}
-                onClick={()=>{const mockFolders=['我的音乐','下载歌曲','收藏列表','蓝牙传输'];const f=mockFolders[folderList.length%mockFolders.length];setFolderList(prev=>[...prev,f]);setShowAdd(false);}}>
-                <div style={{fontSize:'28px',marginBottom:'8px',opacity:0.5}}>📂</div>
-                <div style={{fontSize:'13px',color:'var(--text-secondary)'}}>点击选择文件�?/div>
-                <div style={{fontSize:'11px',color:'var(--text-secondary)',opacity:0.5,marginTop:'4px'}}>将调用系统文件管理器</div>
-              </div>
-            </div>
-          )}
-          <div className="scan-icon">{completed?'�?:scanning?'📡':'📁'}</div>
-          <h2 style={{fontSize:'22px',marginBottom:'8px'}}>{completed?'扫描完成':scanning?'正在扫描...':'选择扫描文件�?}</h2>
-          <p className="text-sm" style={{marginBottom:'24px'}}>{completed?`共发现?${total} 首歌曲曲`:scanning?`已发现?${scannedCount} 首歌曲曲`:'选择或新增文件夹后自动扫描音频文件?}</p>
-          {scanning && <div className="scan-circle"><div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px',color:'var(--text-secondary)'}}>{scannedCount} / {total}</div></div>}
-          {!scanning && !completed && (
-            <div style={{width:'100%',maxWidth:'280px',display:'flex',flexDirection:'column',gap:'8px',marginBottom:'24px'}}>
-              {folderList.length===0 && <p style={{textAlign:'center',color:'var(--text-secondary)',fontSize:'13px',padding:'16px 0'}}>暂无文件夹，点击右上角?+ 添加</p>}
-              {folderList.map(f=>{
-                const count=songs.filter(s=>s.folder===f).length;
-                const isNew=!songs.some(s=>s.folder===f);
-                return (
-                  <div key={f} onClick={()=>setSelectedFolder(f)}
-                    style={{padding:'14px 16px',borderRadius:'var(--radius-md)',border:'1px solid '+(selectedFolder===f?'var(--accent)':'var(--glass-border)'),background:selectedFolder===f?'rgba(255,255,255,0.06)':'var(--bg-card)',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',transition:'all 0.2s'}}>
-                    <span style={{display:'flex',alignItems:'center',gap:'10px'}}><span>📁</span><span>{f}</span>{isNew && <span style={{fontSize:'10px',color:'var(--accent)',border:'1px solid var(--accent)',borderRadius:'8px',padding:'1px 6px'}}>新增</span>}</span>
-                    <span style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                      <span style={{fontSize:'12px',color:'var(--text-secondary)'}}>{count} �?/span>
-                      {isNew && <button onClick={e=>{e.stopPropagation();removeFolder(f);}} style={{background:'none',border:'none',color:'#ff4d4d',fontSize:'14px',cursor:'pointer',padding:'0 4px'}}>�?/button>}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          {completed && (
-            <div style={{display:'flex',gap:'12px',marginBottom:'16px'}}>
-              <button className="btn primary" onClick={()=>onNavigate('home')}>查看歌曲</button>
-              <button className="btn" onClick={()=>{ setCompleted(false); setSelectedFolder(''); }}>重新扫描</button>
-            </div>
-          )}
-          {!completed && (
-            <div style={{display:'flex',gap:'12px'}}>
-              <button className="btn primary" onClick={startScan} disabled={!selectedFolder||scanning}>{scanning?'扫描�?..':'开始扫描}</button>
-              {scanning && <button className="btn" onClick={stopScan}>停止</button>}
-            </div>
-          )}
         </div>
-      </div>
-    </div>
-  );
-}
+      );
+    }
+
+    function ScanPage({ songs, onNavigate }) {
+      const folders = [...new Set(songs.map(s=>s.folder))];
+      const [folderList,setFolderList]=React.useState(folders);
+      const [scanning,setScanning]=React.useState(false);
+      const [selectedFolder,setSelectedFolder]=React.useState('');
+      const [scannedCount,setScannedCount]=React.useState(0);
+      const [completed,setCompleted]=React.useState(false);
+      const [showAdd,setShowAdd]=React.useState(false);
+      const timerRef=React.useRef(null);
+      const total=songs.filter(s=>s.folder===selectedFolder).length;
+      const clearTimer=()=>{ if(timerRef.current){ clearInterval(timerRef.current); timerRef.current=null; } };
+      React.useEffect(()=>()=>clearTimer(),[]);
+      const removeFolder=(f)=>{ setFolderList(prev=>prev.filter(x=>x!==f)); if(selectedFolder===f)setSelectedFolder(''); };
+      const startScan=()=>{ if(!selectedFolder)return; setScanning(true); setCompleted(false); setScannedCount(0); let count=0; const folderSongs=songs.filter(s=>s.folder===selectedFolder); const totalSongs=folderSongs.length||1; timerRef.current=setInterval(()=>{ count++; setScannedCount(count); if(count>=totalSongs){ clearTimer(); setTimeout(()=>{ setScanning(false); setCompleted(true); },500); }},300); };
+      const stopScan=()=>{ clearTimer(); setScanning(false); };
+      return (
+        <div className="page active">
+          <div className="page-content" style={{display:'flex',flexDirection:'column',justifyContent:'center'}}>
+            <div className="scan-hero">
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px',width:'100%',maxWidth:'280px'}}>
+                <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+                  <button onClick={()=>onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>←</button>
+                  <h2 style={{fontSize:'18px',margin:0}}>{scanning?'正在扫描':'扫描音乐'}</h2>
+                </div>
+                {!scanning && !completed && <button onClick={()=>setShowAdd(!showAdd)} style={{background:'none',border:'none',color:'var(--accent)',fontSize:'22px',cursor:'pointer',lineHeight:1}}>+</button>}
+              </div>
+              {showAdd && !scanning && !completed && (
+                <div style={{width:'100%',maxWidth:'280px',marginBottom:'16px'}}>
+                  <div style={{padding:'16px',borderRadius:'var(--radius-md)',border:'1px dashed var(--glass-border)',background:'var(--bg-card)',textAlign:'center',cursor:'pointer',transition:'all 0.2s'}}
+                    onClick={()=>{const mockFolders=['我的音乐','下载歌曲','收藏列表','蓝牙传输'];const f=mockFolders[folderList.length%mockFolders.length];setFolderList(prev=>[...prev,f]);setShowAdd(false);}}>
+                    <div style={{fontSize:'28px',marginBottom:'8px',opacity:0.5}}>📂</div>
+                    <div style={{fontSize:'13px',color:'var(--text-secondary)'}}>点击选择文件夹</div>
+                    <div style={{fontSize:'11px',color:'var(--text-secondary)',opacity:0.5,marginTop:'4px'}}>将调用系统文件管理器</div>
+                  </div>
+                </div>
+              )}
+              <div className="scan-icon">{completed?'✅':scanning?'📡':'📁'}</div>
+              <h2 style={{fontSize:'22px',marginBottom:'8px'}}>{completed?'扫描完成':scanning?'正在扫描...':'选择扫描文件夹'}</h2>
+              <p className="text-sm" style={{marginBottom:'24px'}}>{completed?`共发现 ${total} 首歌曲`:scanning?`已发现 ${scannedCount} 首歌曲`:'选择或新增文件夹后自动扫描音频文件'}</p>
+              {scanning && <div className="scan-circle"><div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px',color:'var(--text-secondary)'}}>{scannedCount} / {total}</div></div>}
+              {!scanning && !completed && (
+                <div style={{width:'100%',maxWidth:'280px',display:'flex',flexDirection:'column',gap:'8px',marginBottom:'24px'}}>
+                  {folderList.length===0 && <p style={{textAlign:'center',color:'var(--text-secondary)',fontSize:'13px',padding:'16px 0'}}>暂无文件夹，点击右上角 + 添加</p>}
+                  {folderList.map(f=>{
+                    const count=songs.filter(s=>s.folder===f).length;
+                    const isNew=!songs.some(s=>s.folder===f);
+                    return (
+                      <div key={f} onClick={()=>setSelectedFolder(f)}
+                        style={{padding:'14px 16px',borderRadius:'var(--radius-md)',border:'1px solid '+(selectedFolder===f?'var(--accent)':'var(--glass-border)'),background:selectedFolder===f?'rgba(255,255,255,0.06)':'var(--bg-card)',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',transition:'all 0.2s'}}>
+                        <span style={{display:'flex',alignItems:'center',gap:'10px'}}><span>📁</span><span>{f}</span>{isNew && <span style={{fontSize:'10px',color:'var(--accent)',border:'1px solid var(--accent)',borderRadius:'8px',padding:'1px 6px'}}>新增</span>}</span>
+                        <span style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                          <span style={{fontSize:'12px',color:'var(--text-secondary)'}}>{count} 首</span>
+                          {isNew && <button onClick={e=>{e.stopPropagation();removeFolder(f);}} style={{background:'none',border:'none',color:'#ff4d4d',fontSize:'14px',cursor:'pointer',padding:'0 4px'}}>✕</button>}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {completed && (
+                <div style={{display:'flex',gap:'12px',marginBottom:'16px'}}>
+                  <button className="btn primary" onClick={()=>onNavigate('home')}>查看歌曲</button>
+                  <button className="btn" onClick={()=>{ setCompleted(false); setSelectedFolder(''); }}>重新扫描</button>
+                </div>
+              )}
+              {!completed && (
+                <div style={{display:'flex',gap:'12px'}}>
+                  <button className="btn primary" onClick={startScan} disabled={!selectedFolder||scanning}>{scanning?'扫描中...':'开始扫描'}</button>
+                  {scanning && <button className="btn" onClick={stopScan}>停止</button>}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
 function EqCurve({ values, onChange }) {
   const wrapRef = React.useRef(null);
   const canvasRef = React.useRef(null);
@@ -635,7 +635,7 @@ const EQ_PRESETS = {
   '爵士': [3,1,2,4,2],
   '古典': [4,3,0,2,4],
   '人声': [-1,2,5,4,1],
-  '自定义: null,
+  '自定义': null,
 };
 
 function SavePresetModal({ visible, onClose, onSave, initialName }) {
@@ -645,7 +645,7 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
   return (
     <div className="modal-overlay active" onClick={onClose}>
       <div className="modal" style={{width:'280px'}} onClick={e=>e.stopPropagation()}>
-        <div className="modal-title" style={{marginBottom:'16px',fontSize:'16px'}}>保存自定义义义预�?/div>
+        <div className="modal-title" style={{marginBottom:'16px',fontSize:'16px'}}>保存自定义预设</div>
         <div style={{marginBottom:'20px'}}>
           <label style={{display:'block',fontSize:'12px',color:'var(--text-secondary)',marginBottom:'6px'}}>预设名称</label>
           <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="输入预设名称..."
@@ -664,303 +664,302 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
 const pageRenderers = {
   home: (props) => {
     const { songs, currentSong, onPlaySong, onContextMenu } = props;
-        return (
-          <div className="page active">
-            <div className="page-content" style={{paddingTop:0}}>
-              <div style={{position:'sticky',top:0,zIndex:10,background:'#0F0F0A',padding:'8px 0 0'}}>
-                <div style={{padding:'8px 0'}}>
-                  <button onClick={()=>props.onToggleDrawer && props.onToggleDrawer()} style={{background:'none',border:'none',color:'var(--text)',fontSize:'24px',cursor:'pointer'}}>�?/button>
+    return (
+      <div className="page active">
+        <div className="page-content" style={{paddingTop:0}}>
+          <div style={{position:'sticky',top:0,zIndex:10,background:'#0F0F0A',padding:'8px 0 0'}}>
+            <div style={{padding:'8px 0'}}>
+              <button onClick={()=>props.onToggleDrawer && props.onToggleDrawer()} style={{background:'none',border:'none',color:'var(--text)',fontSize:'24px',cursor:'pointer'}}>☰</button>
+            </div>
+            <h2 style={{fontSize:'24px',margin:'0 0 8px'}}>全部歌曲</h2>
+            <table className="song-table" style={{margin:'0 -16px'}}>
+              <thead><tr><th></th><th>歌名</th><th>歌手</th><th className="col-duration">时长</th></tr></thead>
+            </table>
+          </div>
+          <table className="song-table">
+            <tbody>
+              {songs.map(s => (
+                <tr key={s.id} data-song-id={s.id} className={currentSong && s.id===currentSong.id?'song-playing':''}
+                  onContextMenu={(e)=>{e.preventDefault();onContextMenu(s.id);}} onClick={()=>onPlaySong(s.id)}>
+                  <td className="col-cover"><div className="cover-thumb"></div></td>
+                  <td className="col-song">{s.title}<span className={`quality-badge quality-${s.quality}`}>{s.quality}</span></td>
+                  <td className="col-artist">{s.artist}</td>
+                  <td className="col-duration">{s.duration}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  },
+  player: (props) => {
+    const { currentSong, isPlaying, onTogglePlay, onNext, onPrev, openQuality, openShare, openSleep, onHideSong, onDeleteSong, onLyrics, progress, onSeek } = props;
+    if (!currentSong) return <div className="page active player-page"><div className="player-header"><button className="player-header-btn" onClick={()=>props.onNavigate('home')}>←</button><div className="player-header-title">无歌曲</div></div></div>;
+    const prog = progress || 0;
+    const parseDur = (d)=>{ if(!d) return 0; const p=d.split(':'); return parseInt(p[0])*60+parseInt(p[1]); };
+    const totalSec = parseDur(currentSong?.duration);
+    const curSec = Math.floor(totalSec * prog / 100);
+    const fmt = (s)=> Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+    return (
+      <div className="page active player-page">
+        <div className="player-header">
+          <button className="player-header-btn" onClick={()=>props.onNavigate('home')}>←</button>
+          <div className="player-header-title">{currentSong.title}</div>
+          <button className="player-header-btn" onClick={onLyrics}>⋮</button>
+        </div>
+        <div className="player-artist-row">
+          <span className="player-artist-name">{currentSong.artist}</span>
+        </div>
+        <div className="player-cover-area" onClick={onLyrics} style={{cursor:'pointer'}}>
+          <div className="player-cover-wrapper">
+            <div className={`player-cover-outer ${isPlaying?'playing':''}`}>
+              <div className="player-cover">
+                <div className="player-cover-art">
+                  <span className="player-cover-art-icon">♫</span>
                 </div>
-                <h2 style={{fontSize:'24px',margin:'0 0 8px'}}>全部歌曲</h2>
-                <table className="song-table" style={{margin:'0 -16px'}}>
-                  <thead><tr><th></th><th>歌名</th><th>歌手</th><th className="col-duration">时长</th></tr></thead>
-                </table>
+                <div className="player-cover-grooves"></div>
+                <div className="player-cover-label"><div className="player-cover-label-dot"></div></div>
+                <div className="player-cover-shine"></div>
               </div>
+            </div>
+          </div>
+        </div>
+        <div className="player-lyrics-dots">
+          <div className="player-lyrics-dot"></div>
+          <div className="player-lyrics-dot active"></div>
+        </div>
+        <div className="player-actions">
+          <button className="player-action-btn" onClick={openQuality} title="音质">🎛️</button>
+          <button className="player-action-btn" onClick={openShare} title="分享">↗</button>
+          <button className="player-action-btn" onClick={openSleep} title="睡眠">☽</button>
+          <button className="player-action-btn" onClick={()=>onHideSong(currentSong.id)} title="隐藏">👁</button>
+          <button className="player-action-btn danger-btn" onClick={()=>onDeleteSong(currentSong.id)} title="删除">✕</button>
+        </div>
+        <div className="player-progress">
+          <div className="player-progress-bar" onClick={(e)=>{const r=e.currentTarget.getBoundingClientRect();onSeek && onSeek(Math.round((e.clientX-r.left)/r.width*100));}}>
+            <div className="player-progress-fill" style={{width:prog+'%'}}>
+              <div className="player-progress-thumb"></div>
+            </div>
+          </div>
+          <div className="player-progress-time">
+            <span>{fmt(curSec)}</span>
+            <span>{currentSong?.duration || '0:00'}</span>
+          </div>
+        </div>
+        <div className="player-controls">
+          <button className="player-ctrl-btn">↻</button>
+          <button className="player-ctrl-btn" onClick={onPrev}>⏮</button>
+          <button className="player-btn-play player-ctrl-btn" onClick={onTogglePlay}>{isPlaying?'⏸':'▶'}</button>
+          <button className="player-ctrl-btn" onClick={onNext}>⏭</button>
+          <button className="player-ctrl-btn">☰</button>
+        </div>
+      </div>
+    );
+  },
+  lyrics: (props) => {
+    const { currentSong, onBack } = props;
+    return (
+      <div className="page active">
+        <div className="page-content" style={{padding:0,display:'flex',flexDirection:'column'}}>
+          <div style={{padding:'16px',display:'flex',alignItems:'center',gap:'12px',borderBottom:'1px solid var(--divider)'}}>
+            <button onClick={onBack} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>←</button>
+            <div>
+              <div style={{fontWeight:'700',fontSize:'14px'}}>{currentSong.title}</div>
+              <div style={{fontSize:'12px',color:'var(--text-secondary)'}}>{currentSong.artist}</div>
+            </div>
+          </div>
+          <div className="lyrics-container">
+            {LYRICS_LINES.map((line, li) => (
+              <div key={li} className={`lyrics-line ${li===0?'active':''}`}>{line.split('').map((c,ci)=><span key={ci} className="word">{c}</span>)}</div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  },
+  equalizer: (props) => {
+    const { eqPreset, eqValues, onSetPreset, onSetEqValue, customName, savedPresets, onSavePreset, showSaveModal, onShowSaveModal, onLoadSavedPreset } = props;
+    const handleCurveChange = (v) => { onSetEqValue(-1, v); };
+    const isCustom = eqPreset === '自定义';
+    const isSavedPreset = eqPreset.startsWith('custom_');
+    return (
+      <div className="page active">
+        <div className="page-content">
+          <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 12px'}}>
+            <button onClick={()=>props.onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>←</button>
+            <h2 style={{fontSize:'18px',flex:1}}>均衡器</h2>
+            {isCustom && (
+              <button onClick={()=>onShowSaveModal(false)}
+                style={{background:'var(--accent)',border:'1px solid var(--accent)',color:'#000',borderRadius:'var(--radius-md)',padding:'6px 14px',fontSize:'12px',cursor:'pointer',fontWeight:'600'}}>
+                保存
+              </button>
+            )}
+            {isSavedPreset && (
+              <button onClick={()=>onShowSaveModal(true)}
+                style={{background:'transparent',border:'1px solid var(--accent)',color:'var(--accent)',borderRadius:'var(--radius-md)',padding:'6px 14px',fontSize:'12px',cursor:'pointer',fontWeight:'600'}}>
+                更新
+              </button>
+            )}
+          </div>
+          <div className="eq-presets">
+            {Object.entries(EQ_PRESETS).map(([name, presetValues]) => (
+              <button key={name} className={`eq-preset-btn ${eqPreset===name?'active':''}`}
+                onClick={()=>onSetPreset(name)}>
+                {name}
+              </button>
+            ))}
+            {(savedPresets||[]).map((sp,i) => (
+              <button key={'sp'+i} className={`eq-preset-btn ${eqPreset===('custom_'+i)?'active':''}`}
+                onClick={()=>onLoadSavedPreset(i)}>
+                {sp.name}
+              </button>
+            ))}
+          </div>
+          <EqCurve values={eqValues} onChange={handleCurveChange} />
+          <div style={{display:'flex',justifyContent:'space-between',padding:'0 4px'}}>
+            {EQ_LABELS.map((label,i)=>(
+              <span key={i} style={{fontSize:'11px',color:'var(--text-secondary)',textAlign:'center',flex:1}}>
+                {label}<br/><span style={{fontSize:'10px',opacity:0.5,color:eqValues[i]>0?'var(--accent)':eqValues[i]<0?'#ff6b6b':'var(--text-secondary)'}}>{eqValues[i]>0?'+':''}{eqValues[i].toFixed(0)}dB</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  },
+  scan: (props) => <ScanPage songs={props.songs} onNavigate={props.onNavigate} />,
+  hidden: (props) => {
+    const hiddenSongs = SONGS.filter(s=>props.hiddenIds.has(s.id));
+    return (
+      <div className="page active">
+        <div className="page-content">
+          <div style={{padding:'8px 0 16px'}}>
+            <h2 style={{fontSize:'20px'}}>已隐藏的歌曲</h2>
+            <p className="text-sm" style={{marginTop:'4px'}}>隐藏的歌曲不会出现在列表中，可以随时恢复</p>
+          </div>
+          {hiddenSongs.length === 0 && <p className="text-sm" style={{textAlign:'center',marginTop:'32px',color:'var(--text-secondary)'}}>暂无隐藏歌曲</p>}
+          {hiddenSongs.length > 0 && (
+            <>
               <table className="song-table">
+                <thead><tr><th></th><th>歌名</th><th>歌手</th><th className="col-duration">时长</th><th className="col-actions"></th></tr></thead>
                 <tbody>
-                  {songs.map(s => (
-                    <tr key={s.id} data-song-id={s.id} className={currentSong && s.id===currentSong.id?'song-playing':''}
-                      onContextMenu={(e)=>{e.preventDefault();onContextMenu(s.id);}} onClick={()=>onPlaySong(s.id)}>
+                  {hiddenSongs.map(s=>(
+                    <tr key={s.id}>
                       <td className="col-cover"><div className="cover-thumb"></div></td>
-                      <td className="col-song">{s.title}<span className={`quality-badge quality-${s.quality}`}>{s.quality}</span></td>
+                      <td className="col-song">{s.title}</td>
                       <td className="col-artist">{s.artist}</td>
                       <td className="col-duration">{s.duration}</td>
+                      <td className="col-actions"><button className="btn" style={{padding:'4px 8px',fontSize:'12px'}} onClick={()=>props.onRestoreSong(s.id)}>恢复</button></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
-        );
-      },
-        player: (props) => {
-          const { currentSong, isPlaying, onTogglePlay, onNext, onPrev, openQuality, openShare, openSleep, onHideSong, onDeleteSong, onLyrics, progress, onSeek } = props;
-          if (!currentSong) return <div className="page active player-page"><div className="player-header"><button className="player-header-btn" onClick={()=>props.onNavigate('home')}>�?/button><div className="player-header-title">无歌�?/div></div></div>;
-          const prog = progress || 0;
-          const parseDur = (d)=>{ if(!d) return 0; const p=d.split(':'); return parseInt(p[0])*60+parseInt(p[1]); };
-          const totalSec = parseDur(currentSong?.duration);
-         const curSec = Math.floor(totalSec * prog / 100);
-         const fmt = (s)=> Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
-         return (
-           <div className="page active player-page">
-             <div className="player-header">
-               <button className="player-header-btn" onClick={()=>props.onNavigate('home')}>�?/button>
-               <div className="player-header-title">{currentSong.title}</div>
-               <button className="player-header-btn" onClick={onLyrics}>�?/button>
-             </div>
-             <div className="player-artist-row">
-               <span className="player-artist-name">{currentSong.artist}</span>
-             </div>
-             <div className="player-cover-area" onClick={onLyrics} style={{cursor:'pointer'}}>
-               <div className="player-cover-wrapper">
-                 <div className={`player-cover-outer ${isPlaying?'playing':''}`}>
-                   <div className="player-cover">
-                     <div className="player-cover-art">
-                       <span className="player-cover-art-icon">�?/span>
-                     </div>
-                     <div className="player-cover-grooves"></div>
-                     <div className="player-cover-label"><div className="player-cover-label-dot"></div></div>
-                     <div className="player-cover-shine"></div>
-                   </div>
-                 </div>
-               </div>
-             </div>
-             <div className="player-lyrics-dots">
-               <div className="player-lyrics-dot"></div>
-               <div className="player-lyrics-dot active"></div>
-             </div>
-             <div className="player-actions">
-               <button className="player-action-btn" onClick={openQuality} title="音质">🎛</button>
-               <button className="player-action-btn" onClick={openShare} title="分享">�?/button>
-               <button className="player-action-btn" onClick={openSleep} title="睡眠">�?/button>
-               <button className="player-action-btn" onClick={()=>onHideSong(currentSong.id)} title="隐藏">👁</button>
-               <button className="player-action-btn danger-btn" onClick={()=>onDeleteSong(currentSong.id)} title="删除">�?/button>
-             </div>
-             <div className="player-progress">
-               <div className="player-progress-bar" onClick={(e)=>{const r=e.currentTarget.getBoundingClientRect();onSeek && onSeek(Math.round((e.clientX-r.left)/r.width*100));}}>
-                 <div className="player-progress-fill" style={{width:prog+'%'}}>
-                   <div className="player-progress-thumb"></div>
-                 </div>
-               </div>
-               <div className="player-progress-time">
-                 <span>{fmt(curSec)}</span>
-                  <span>{currentSong?.duration || '0:00'}</span>
-               </div>
-             </div>
-             <div className="player-controls">
-               <button className="player-ctrl-btn">�?/button>
-               <button className="player-ctrl-btn" onClick={onPrev}>�?/button>
-               <button className="player-btn-play player-ctrl-btn" onClick={onTogglePlay}>{isPlaying?'�?:'�?}</button>
-               <button className="player-ctrl-btn" onClick={onNext}>�?/button>
-               <button className="player-ctrl-btn">�?/button>
-             </div>
-           </div>
-         );
-       },
-      lyrics: (props) => {
-        const { currentSong, onBack } = props;
-        return (
-          <div className="page active">
-            <div className="page-content" style={{padding:0,display:'flex',flexDirection:'column'}}>
-              <div style={{padding:'16px',display:'flex',alignItems:'center',gap:'12px',borderBottom:'1px solid var(--divider)'}}>
-                <button onClick={onBack} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
-                <div>
-                  <div style={{fontWeight:'700',fontSize:'14px'}}>{currentSong.title}</div>
-                  <div style={{fontSize:'12px',color:'var(--text-secondary)'}}>{currentSong.artist}</div>
-                </div>
+              <div className="hidden-actions" style={{display:'flex'}}>
+                <button className="btn" onClick={props.onRestoreAll}>恢复全部</button>
+                <button className="btn danger" onClick={props.onClearAll}>清空列表</button>
               </div>
-              <div className="lyrics-container">
-                {LYRICS_LINES.map((line, li) => (
-                  <div key={li} className={`lyrics-line ${li===0?'active':''}`}>{line.split('').map((c,ci)=><span key={ci} className="word">{c}</span>)}</div>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      },
-       equalizer: (props) => {
-         const { eqPreset, eqValues, onSetPreset, onSetEqValue, customName, savedPresets, onSavePreset, showSaveModal, onShowSaveModal, onLoadSavedPreset } = props;
-         const handleCurveChange = (v) => { onSetEqValue(-1, v); };
-         const isCustom = eqPreset === '自定义;
-         const isSavedPreset = eqPreset.startsWith('custom_');
-         return (
-           <div className="page active">
-             <div className="page-content">
-               <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 12px'}}>
-                 <button onClick={()=>props.onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
-                 <h2 style={{fontSize:'18px',flex:1}}>均衡器/h2>
-                 {isCustom && (
-                   <button onClick={()=>onShowSaveModal(false)}
-                     style={{background:'var(--accent)',border:'1px solid var(--accent)',color:'#000',borderRadius:'var(--radius-md)',padding:'6px 14px',fontSize:'12px',cursor:'pointer',fontWeight:'600'}}>
-                     保存
-                   </button>
-                 )}
-                 {isSavedPreset && (
-                   <button onClick={()=>onShowSaveModal(true)}
-                     style={{background:'transparent',border:'1px solid var(--accent)',color:'var(--accent)',borderRadius:'var(--radius-md)',padding:'6px 14px',fontSize:'12px',cursor:'pointer',fontWeight:'600'}}>
-                     更新
-                   </button>
-                 )}
-               </div>
-               <div className="eq-presets">
-                 {Object.entries(EQ_PRESETS).map(([name, presetValues]) => (
-                   <button key={name} className={`eq-preset-btn ${eqPreset===name?'active':''}`}
-                     onClick={()=>onSetPreset(name)}>
-                     {name}
-                   </button>
-                 ))}
-                 {(savedPresets||[]).map((sp,i) => (
-                   <button key={'sp'+i} className={`eq-preset-btn ${eqPreset===('custom_'+i)?'active':''}`}
-                     onClick={()=>onLoadSavedPreset(i)}>
-                     {sp.name}
-                   </button>
-                 ))}
-               </div>
-               <EqCurve values={eqValues} onChange={handleCurveChange} />
-               <div style={{display:'flex',justifyContent:'space-between',padding:'0 4px'}}>
-                 {EQ_LABELS.map((label,i)=>(
-                   <span key={i} style={{fontSize:'11px',color:'var(--text-secondary)',textAlign:'center',flex:1}}>
-                     {label}<br/><span style={{fontSize:'10px',opacity:0.5,color:eqValues[i]>0?'var(--accent)':eqValues[i]<0?'#ff6b6b':'var(--text-secondary)'}}>{eqValues[i]>0?'+':''}{eqValues[i].toFixed(0)}dB</span>
-                   </span>
-                 ))}
-               </div>
-             </div>
-           </div>
-         );
-       },
-      scan: (props) => <ScanPage songs={props.songs} onNavigate={props.onNavigate} />,
-       hidden: (props) => {
-         const hiddenSongs = SONGS.filter(s=>props.hiddenIds.has(s.id));
-         return (
-           <div className="page active">
-             <div className="page-content">
-               <div style={{padding:'8px 0 16px'}}>
-                 <h2 style={{fontSize:'20px'}}>已隐藏藏的歌曲</h2>
-                 <p className="text-sm" style={{marginTop:'4px'}}>隐藏的歌曲不会出现在列表中，可以随时恢复</p>
-               </div>
-               {hiddenSongs.length === 0 && <p className="text-sm" style={{textAlign:'center',marginTop:'32px',color:'var(--text-secondary)'}}>暂无隐藏歌曲</p>}
-               {hiddenSongs.length > 0 && (
-                 <>
-                   <table className="song-table">
-                     <thead><tr><th></th><th>歌名</th><th>歌手</th><th className="col-duration">时长</th><th className="col-actions"></th></tr></thead>
-                     <tbody>
-                       {hiddenSongs.map(s=>(
-                         <tr key={s.id}>
-                           <td className="col-cover"><div className="cover-thumb"></div></td>
-                           <td className="col-song">{s.title}</td>
-                           <td className="col-artist">{s.artist}</td>
-                           <td className="col-duration">{s.duration}</td>
-                           <td className="col-actions"><button className="btn" style={{padding:'4px 8px',fontSize:'12px'}} onClick={()=>props.onRestoreSong(s.id)}>恢复</button></td>
-                         </tr>
-                       ))}
-                     </tbody>
-                   </table>
-                   <div className="hidden-actions" style={{display:'flex'}}>
-                     <button className="btn" onClick={props.onRestoreAll}>恢复全部</button>
-                     <button className="btn danger" onClick={props.onClearAll}>清空列表</button>
-                   </div>
-                 </>
-               )}
-             </div>
-           </div>
-         );
-       },
+            </>
+          )}
+        </div>
+      </div>
+    );
+  },
   search: (props) => <SearchPage {...props} />,
-
   artists: (props) => {
-  const groups = Object.entries(props.songs.reduce((acc,s)=>{ (acc[s.artist]=(acc[s.artist]||[])).push(s); return acc; },{}))
-  .map(([k,v])=>({name:k,count:v.length}))
-  .sort((a,b)=>b.count-a.count);
-        return (
-          <div className="page active">
-            <div className="page-content">
-              <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
-                <button onClick={()=>props.onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
-                <h2 style={{fontSize:'18px'}}>歌手</h2>
-              </div>
-              {groups.map(g => (
-                <div key={g.name} className="group-header" onClick={()=>props.onSelectArtist && props.onSelectArtist(g.name)}>
-                  <div className="group-cover">🎤</div>
-                  <div className="group-info"><div className="group-name">{g.name}</div><div className="group-count">{g.count} 首歌曲/div></div>
-                  <div className="group-arrow">�?/div>
-                </div>
+    const groups = Object.entries(props.songs.reduce((acc,s)=>{ (acc[s.artist]=(acc[s.artist]||[])).push(s); return acc; },{}))
+    .map(([k,v])=>({name:k,count:v.length}))
+    .sort((a,b)=>b.count-a.count);
+    return (
+      <div className="page active">
+        <div className="page-content">
+          <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
+            <button onClick={()=>props.onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>←</button>
+            <h2 style={{fontSize:'18px'}}>歌手</h2>
+          </div>
+          {groups.map(g => (
+            <div key={g.name} className="group-header" onClick={()=>props.onSelectArtist && props.onSelectArtist(g.name)}>
+              <div className="group-cover">🎤</div>
+              <div className="group-info"><div className="group-name">{g.name}</div><div className="group-count">{g.count} 首歌曲</div></div>
+              <div className="group-arrow">›</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  },
+  albums: (props) => {
+    const groups = Object.entries(props.songs.reduce((acc,s)=>{ (acc[s.album]=(acc[s.album]||[])).push(s); return acc; },{}))
+    .map(([k,v])=>({name:k,count:v.length}))
+    .sort((a,b)=>b.count-a.count);
+    return (
+      <div className="page active">
+        <div className="page-content">
+          <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
+            <button onClick={()=>props.onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>←</button>
+            <h2 style={{fontSize:'18px'}}>专辑</h2>
+          </div>
+          {groups.map(g => (
+            <div key={g.name} className="group-header" onClick={()=>props.onSelectAlbum && props.onSelectAlbum(g.name)}>
+              <div className="group-cover">💿</div>
+              <div className="group-info"><div className="group-name">{g.name}</div><div className="group-count">{g.count} 首歌曲</div></div>
+              <div className="group-arrow">›</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  },
+  'artist-detail': (props) => {
+    const artist = props.selectedArtist || (props.currentSong ? props.currentSong.artist : '');
+    const filtered = props.songs.filter(s=>s.artist===artist);
+    return (
+      <div className="page active">
+        <div className="page-content">
+          <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
+            <button onClick={()=>props.onNavigate('artists')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>←</button>
+            <h2 style={{fontSize:'18px'}}>{artist}</h2>
+          </div>
+          <table className="song-table">
+            <thead><tr><th></th><th>歌名</th><th>专辑</th><th className="col-duration">时长</th></tr></thead>
+            <tbody>
+              {filtered.map(s=>(
+                <tr key={s.id} data-song-id={s.id} onContextMenu={(e)=>{e.preventDefault();props.onContextMenu(s.id);}} onClick={()=>props.onPlaySong(s.id)}>
+                  <td className="col-cover"><div className="cover-thumb"></div></td>
+                  <td className="col-song">{s.title}</td><td className="col-artist">{s.album}</td><td className="col-duration">{s.duration}</td>
+                </tr>
               ))}
-            </div>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  },
+  'album-detail': (props) => {
+    const album = props.selectedAlbum || (props.currentSong ? props.currentSong.album : '');
+    const filtered = props.songs.filter(s=>s.album===album);
+    return (
+      <div className="page active">
+        <div className="page-content">
+          <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
+            <button onClick={()=>props.onNavigate('albums')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>←</button>
+            <h2 style={{fontSize:'18px'}}>{album}</h2>
           </div>
-        );
-      },
-       albums: (props) => {
-         const groups = Object.entries(props.songs.reduce((acc,s)=>{ (acc[s.album]=(acc[s.album]||[])).push(s); return acc; },{}))
-         .map(([k,v])=>({name:k,count:v.length}))
-         .sort((a,b)=>b.count-a.count);
-        return (
-          <div className="page active">
-            <div className="page-content">
-              <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
-                <button onClick={()=>props.onNavigate('home')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
-                <h2 style={{fontSize:'18px'}}>专辑</h2>
-              </div>
-              {groups.map(g => (
-                <div key={g.name} className="group-header" onClick={()=>props.onSelectAlbum && props.onSelectAlbum(g.name)}>
-                  <div className="group-cover">💿</div>
-                  <div className="group-info"><div className="group-name">{g.name}</div><div className="group-count">{g.count} 首歌曲/div></div>
-                  <div className="group-arrow">�?/div>
-                </div>
+          <table className="song-table">
+            <thead><tr><th></th><th>歌名</th><th>歌手</th><th className="col-duration">时长</th></tr></thead>
+            <tbody>
+              {filtered.map(s=>(
+                <tr key={s.id} data-song-id={s.id} onContextMenu={(e)=>{e.preventDefault();props.onContextMenu(s.id);}} onClick={()=>props.onPlaySong(s.id)}>
+                  <td className="col-cover"><div className="cover-thumb"></div></td><td className="col-song">{s.title}</td><td className="col-artist">{s.artist}</td><td className="col-duration">{s.duration}</td>
+                </tr>
               ))}
-            </div>
-          </div>
-        );
-      },
-       'artist-detail': (props) => {
-         const artist = props.selectedArtist || (props.currentSong ? props.currentSong.artist : '');
-         const filtered = props.songs.filter(s=>s.artist===artist);
-        return (
-          <div className="page active">
-            <div className="page-content">
-              <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
-                <button onClick={()=>props.onNavigate('artists')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
-                <h2 style={{fontSize:'18px'}}>{artist}</h2>
-              </div>
-              <table className="song-table">
-                <thead><tr><th></th><th>歌名</th><th>专辑</th><th className="col-duration">时长</th></tr></thead>
-                <tbody>
-                  {filtered.map(s=>(
-                    <tr key={s.id} data-song-id={s.id} onContextMenu={(e)=>{e.preventDefault();props.onContextMenu(s.id);}} onClick={()=>props.onPlaySong(s.id)}>
-                      <td className="col-cover"><div className="cover-thumb"></div></td>
-                      <td className="col-song">{s.title}</td><td className="col-artist">{s.album}</td><td className="col-duration">{s.duration}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-      },
-       'album-detail': (props) => {
-         const album = props.selectedAlbum || (props.currentSong ? props.currentSong.album : '');
-         const filtered = props.songs.filter(s=>s.album===album);
-        return (
-          <div className="page active">
-            <div className="page-content">
-              <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'8px 0 16px'}}>
-                <button onClick={()=>props.onNavigate('albums')} style={{background:'none',border:'none',color:'var(--text)',fontSize:'20px',cursor:'pointer'}}>�?/button>
-                <h2 style={{fontSize:'18px'}}>{album}</h2>
-              </div>
-              <table className="song-table">
-                <thead><tr><th></th><th>歌名</th><th>歌手</th><th className="col-duration">时长</th></tr></thead>
-                <tbody>
-                  {filtered.map(s=>(
-                    <tr key={s.id} data-song-id={s.id} onContextMenu={(e)=>{e.preventDefault();props.onContextMenu(s.id);}} onClick={()=>props.onPlaySong(s.id)}>
-                      <td className="col-cover"><div className="cover-thumb"></div></td><td className="col-song">{s.title}</td><td className="col-artist">{s.artist}</td><td className="col-duration">{s.duration}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-      },
-    };
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  },
+};
 
     // Main App (Left)
      function MainApp({ sharedState }) {
@@ -1022,8 +1021,8 @@ const pageRenderers = {
         const selectAlbum=(name)=>{ setSelectedAlbum(name); setPage('album-detail'); };
         const selectFolder=(name)=>{ setSelectedFolder(name); navigateTo('home'); };
         const setPreset=(name)=>{ 
-          if(name==='自定义) { 
-            setEqPreset('自定义); 
+          if(name==='自定义') { 
+            setEqPreset('自定义'); 
             setEqValues([0,0,0,0,0]);
             setCustomName('');
           } else if(EQ_PRESETS[name]) { 
@@ -1159,8 +1158,8 @@ const pageRenderers = {
     const selectAlbum=(name)=>{ setSelectedAlbum(name); setPage('album-detail'); };
     const selectFolder=(name)=>{ setSelectedFolder(name); setPage('home'); };
     const setPreset=(name)=>{ 
-      if(name==='自定义) { 
-        setEqPreset('自定义); 
+      if(name==='自定义') { 
+        setEqPreset('自定义'); 
         setEqValues([0,0,0,0,0]);
         setCustomName('');
       } else if(EQ_PRESETS[name]) { 
