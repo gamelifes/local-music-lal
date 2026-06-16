@@ -711,9 +711,13 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
 }
 
     function PlayerPage(props) {
-      const { currentSong, isPlaying, onTogglePlay, onNext, onPrev, openQuality, openShare, openSleep, onHideSong, onLyrics, progress, onSeek } = props;
+      const { currentSong, isPlaying, onTogglePlay, onNext, onPrev, openQuality, openShare, openSleep, onHideSong, progress, onSeek } = props;
       const [menuOpen, setMenuOpen] = React.useState(false);
       const [showFileInfo, setShowFileInfo] = React.useState(false);
+      const [viewMode, setViewMode] = React.useState('vinyl');
+      const touchStart = React.useRef({ x: 0, y: 0 });
+      const [dragOffset, setDragOffset] = React.useRef ? React.useState(0) : [0, () => {}];
+      const dragOffsetRef = React.useRef(0);
       if (!currentSong) return <div className="page active player-page"><div className="player-header"><button className="player-header-btn" onClick={()=>props.onNavigate('home')}>←</button><div className="player-header-title">无歌曲</div></div></div>;
       const prog = progress || 0;
       const parseDur = (d)=>{ if(!d) return 0; const p=d.split(':'); return parseInt(p[0])*60+parseInt(p[1]); };
@@ -722,8 +726,17 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
       const fmt = (s)=> Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
       const fileSize = (currentSong.id * 3.2 + 5).toFixed(1);
       const filePath = `/storage/emulated/0/Music/${currentSong.artist}/${currentSong.title}.flac`;
+      const handleTouchStart = (e) => { touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
+      const handleTouchEnd = (e) => {
+        const dx = e.changedTouches[0].clientX - touchStart.current.x;
+        const dy = e.changedTouches[0].clientY - touchStart.current.y;
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+          if (dx < 0 && viewMode === 'vinyl') setViewMode('lyrics');
+          else if (dx > 0 && viewMode === 'lyrics') setViewMode('vinyl');
+        }
+      };
       return (
-          <div className="page active player-page" style={{background:'#8A8580'}}>
+        <div className="page active player-page" style={{background:'#8A8580'}}>
           <div className="player-header" style={{position:'relative'}}>
             <button className="player-header-btn" onClick={()=>props.onNavigate('home')}>←</button>
             <div className="player-header-title">{currentSong.title}</div>
@@ -737,23 +750,31 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
           <div className="player-artist-row">
             <span className="player-artist-name">{currentSong.artist}</span>
           </div>
-          <div className="player-cover-area" onClick={onLyrics} style={{cursor:'pointer'}}>
-            <div className="player-cover-wrapper">
-              <div className={`player-cover-outer ${isPlaying?'playing':''}`}>
-                <div className="player-cover">
-                  <div className="player-cover-art">
-                    <span className="player-cover-art-icon">♫</span>
+          <div className="player-cover-area" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{cursor:'pointer',position:'relative',overflow:'hidden'}}>
+            {viewMode === 'vinyl' ? (
+              <div className="player-cover-wrapper">
+                <div className={`player-cover-outer ${isPlaying?'playing':''}`}>
+                  <div className="player-cover">
+                    <div className="player-cover-art">
+                      <span className="player-cover-art-icon">♫</span>
+                    </div>
+                    <div className="player-cover-grooves"></div>
+                    <div className="player-cover-label"><div className="player-cover-label-dot"></div></div>
+                    <div className="player-cover-shine"></div>
                   </div>
-                  <div className="player-cover-grooves"></div>
-                  <div className="player-cover-label"><div className="player-cover-label-dot"></div></div>
-                  <div className="player-cover-shine"></div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="lyrics-container" style={{width:'100%',height:'100%',padding:'8px 16px'}}>
+                {LYRICS_LINES.map((line, li) => (
+                  <div key={li} className={`lyrics-line ${li===0?'active':''}`}>{line.split('').map((c,ci)=><span key={ci} className="word">{c}</span>)}</div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="player-lyrics-dots">
-            <div className="player-lyrics-dot"></div>
-            <div className="player-lyrics-dot active"></div>
+            <div className={`player-lyrics-dot ${viewMode==='vinyl'?'active':''}`}></div>
+            <div className={`player-lyrics-dot ${viewMode==='lyrics'?'active':''}`}></div>
           </div>
           <div className="player-actions">
             <button className="player-action-btn" onClick={openQuality} title="音质">🎛️</button>
