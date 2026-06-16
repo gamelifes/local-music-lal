@@ -715,9 +715,7 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
       const [menuOpen, setMenuOpen] = React.useState(false);
       const [showFileInfo, setShowFileInfo] = React.useState(false);
       const [viewMode, setViewMode] = React.useState('vinyl');
-      const touchStart = React.useRef({ x: 0, y: 0 });
-      const [dragOffset, setDragOffset] = React.useRef ? React.useState(0) : [0, () => {}];
-      const dragOffsetRef = React.useRef(0);
+      const swipeStart = React.useRef({ x: 0, y: 0 });
       if (!currentSong) return <div className="page active player-page"><div className="player-header"><button className="player-header-btn" onClick={()=>props.onNavigate('home')}>←</button><div className="player-header-title">无歌曲</div></div></div>;
       const prog = progress || 0;
       const parseDur = (d)=>{ if(!d) return 0; const p=d.split(':'); return parseInt(p[0])*60+parseInt(p[1]); };
@@ -726,15 +724,19 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
       const fmt = (s)=> Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
       const fileSize = (currentSong.id * 3.2 + 5).toFixed(1);
       const filePath = `/storage/emulated/0/Music/${currentSong.artist}/${currentSong.title}.flac`;
-      const handleTouchStart = (e) => { touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
-      const handleTouchEnd = (e) => {
-        const dx = e.changedTouches[0].clientX - touchStart.current.x;
-        const dy = e.changedTouches[0].clientY - touchStart.current.y;
+      const onStart = (x, y) => { swipeStart.current = { x, y }; };
+      const onEnd = (x, y) => {
+        const dx = x - swipeStart.current.x;
+        const dy = y - swipeStart.current.y;
         if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
           if (dx < 0 && viewMode === 'vinyl') setViewMode('lyrics');
           else if (dx > 0 && viewMode === 'lyrics') setViewMode('vinyl');
         }
       };
+      const handleTouchStart = (e) => onStart(e.touches[0].clientX, e.touches[0].clientY);
+      const handleTouchEnd = (e) => onEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      const handleMouseDown = (e) => onStart(e.clientX, e.clientY);
+      const handleMouseUp = (e) => onEnd(e.clientX, e.clientY);
       return (
         <div className="page active player-page" style={{background:'#8A8580'}}>
           <div className="player-header" style={{position:'relative'}}>
@@ -750,7 +752,7 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
           <div className="player-artist-row">
             <span className="player-artist-name">{currentSong.artist}</span>
           </div>
-          <div className="player-cover-area" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{cursor:'pointer',position:'relative',overflow:'hidden'}}>
+          <div className="player-cover-area" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} style={{cursor:'pointer',position:'relative',overflow:'hidden'}}>
             {viewMode === 'vinyl' ? (
               <div className="player-cover-wrapper">
                 <div className={`player-cover-outer ${isPlaying?'playing':''}`}>
