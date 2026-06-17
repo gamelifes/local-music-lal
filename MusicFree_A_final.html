@@ -121,6 +121,7 @@
     .lyrics-line.active{opacity:1;transform:scale(1.05);font-weight:700;}
     .word{display:inline-block;transition:color 0.3s;}
     .word.active{color:var(--text);text-shadow:0 0 12px var(--accent);}
+    .word.sung{color:var(--accent) !important;}
     .lyrics-line.sung .word{color:var(--accent);}
     .eq-presets{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 12px;}
     .eq-preset-btn{flex:0 0 auto;padding:8px 16px;border-radius:var(--radius-md);background:var(--bg-card);border:1px solid var(--glass-border);color:var(--text-secondary);font-size:13px;cursor:pointer;transition:all 0.2s;}
@@ -890,7 +891,7 @@ const pageRenderers = {
                 <tr key={s.id} data-song-id={s.id} className={currentSong && s.id===currentSong.id?'song-playing':''}
                   onContextMenu={(e)=>{e.preventDefault();onContextMenu(s.id);}} onClick={()=>onPlaySong(s.id)}>
                   <td className="col-cover"><div className="cover-thumb"></div></td>
-                  <td className="col-song">{s.title}<span className={`quality-badge quality-${s.quality}`}>{s.quality}</span></td>
+                  <td className="col-song">{s.title}</td>
                   <td className="col-artist">{s.artist}</td>
                   <td className="col-duration">{s.duration}</td>
                 </tr>
