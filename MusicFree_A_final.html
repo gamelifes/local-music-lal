@@ -881,19 +881,19 @@ const pageRenderers = {
               <button onClick={()=>props.onToggleDrawer && props.onToggleDrawer()} style={{background:'none',border:'none',color:'var(--text)',fontSize:'24px',cursor:'pointer'}}>☰</button>
             </div>
             <h2 style={{fontSize:'24px',margin:'0 0 8px'}}>全部歌曲</h2>
-            <table className="song-table" style={{margin:'0 -16px'}}>
-              <thead><tr><th></th><th>歌名</th><th>歌手</th><th className="col-duration">时长</th></tr></thead>
+            <table className="song-table" style={{width:'100%'}}>
+              <thead><tr><th style={{width:64}}></th><th>歌名</th><th>歌手</th><th style={{width:60,textAlign:'right'}}>时长</th></tr></thead>
             </table>
           </div>
-          <table className="song-table">
+          <table className="song-table" style={{width:'100%'}}>
             <tbody>
               {songs.map(s => (
                 <tr key={s.id} data-song-id={s.id} className={currentSong && s.id===currentSong.id?'song-playing':''}
                   onContextMenu={(e)=>{e.preventDefault();onContextMenu(s.id);}} onClick={()=>onPlaySong(s.id)}>
-                  <td className="col-cover"><div className="cover-thumb"></div></td>
+                  <td style={{width:64,padding:'8px',textAlign:'center'}}><div className="cover-thumb"></div></td>
                   <td className="col-song">{s.title}</td>
                   <td className="col-artist">{s.artist}</td>
-                  <td className="col-duration">{s.duration}</td>
+                  <td style={{width:60,textAlign:'right'}}>{s.duration}</td>
                 </tr>
               ))}
             </tbody>
