@@ -716,7 +716,30 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
       const [menuOpen, setMenuOpen] = React.useState(false);
       const [showFileInfo, setShowFileInfo] = React.useState(false);
       const [viewMode, setViewMode] = React.useState('vinyl');
+      const [activeLine, setActiveLine] = React.useState(0);
+      const [activeWord, setActiveWord] = React.useState(-1);
       const swipeStart = React.useRef({ x: 0, y: 0 });
+      const karaokeRef = React.useRef(null);
+      React.useEffect(() => {
+        if (viewMode !== 'lyrics' || !isPlaying) { if(karaokeRef.current) { clearInterval(karaokeRef.current); karaokeRef.current = null; } return; }
+        const lineWords = LYRICS_LINES.map(l => l.split(''));
+        let lineIdx = 0, wordIdx = -1;
+        const wordInterval = 200;
+        karaokeRef.current = setInterval(() => {
+          wordIdx++;
+          if (wordIdx >= lineWords[lineIdx].length) {
+            lineIdx++;
+            wordIdx = -1;
+            if (lineIdx >= lineWords.length) { lineIdx = 0; wordIdx = -1; setActiveLine(0); setActiveWord(-1); return; }
+            setActiveLine(lineIdx);
+            setActiveWord(-1);
+          } else {
+            setActiveWord(wordIdx);
+          }
+        }, wordInterval);
+        return () => { if(karaokeRef.current) clearInterval(karaokeRef.current); };
+      }, [viewMode, isPlaying]);
+      React.useEffect(() => { setActiveLine(0); setActiveWord(-1); }, [currentSong]);
       if (!currentSong) return <div className="page active player-page"><div className="player-header"><button className="player-header-btn" onClick={()=>props.onNavigate('home')}>←</button><div className="player-header-title">无歌曲</div></div></div>;
       const prog = progress || 0;
       const parseDur = (d)=>{ if(!d) return 0; const p=d.split(':'); return parseInt(p[0])*60+parseInt(p[1]); };
@@ -770,9 +793,20 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
             </div>
             <div style={{position:'absolute',inset:0,transition:'opacity 0.35s ease,transform 0.35s ease',opacity:viewMode==='lyrics'?1:0,transform:viewMode==='lyrics'?'translateX(0) scale(1)':'translateX(30px) scale(0.95)',pointerEvents:viewMode==='lyrics'?'auto':'none',overflow:'auto'}}>
               <div className="lyrics-container" style={{width:'100%',height:'100%',padding:'8px 16px'}}>
-                {LYRICS_LINES.map((line, li) => (
-                  <div key={li} className={`lyrics-line ${li===0?'active':''}`}>{line.split('').map((c,ci)=><span key={ci} className="word">{c}</span>)}</div>
-                ))}
+                {LYRICS_LINES.map((line, li) => {
+                  const words = line.split('');
+                  const isLineActive = li === activeLine;
+                  const isLineSung = li < activeLine;
+                  return (
+                    <div key={li} className={`lyrics-line ${isLineActive?'active':''} ${isLineSung?'sung':''}`}>
+                      {words.map((c, ci) => {
+                        const isWordActive = isLineActive && ci === activeWord;
+                        const isWordSung = isLineActive && ci < activeWord;
+                        return <span key={ci} className={`word ${isWordActive?'active':''} ${isWordSung?'sung':''}`}>{c}</span>;
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
