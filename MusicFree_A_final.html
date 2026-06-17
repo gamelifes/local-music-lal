@@ -7,6 +7,7 @@
 <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script>Babel.registerPreset('env', Babel.availablePresets['env']); Babel.registerPreset('react', [Babel.availablePresets['react'], {runtime:'classic'}]);</script>
 <style>
     :root{
       --accent: oklch(0.72 0.16 82); --accent-glow: oklch(0.72 0.16 82 / 0.4);
@@ -753,7 +754,7 @@ function SavePresetModal({ visible, onClose, onSave, initialName }) {
             <span className="player-artist-name">{currentSong.artist}</span>
           </div>
           <div className="player-cover-area" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} style={{cursor:'pointer',position:'relative',overflow:'hidden'}}>
-            <div style={{position:'absolute',inset:0,transition:'opacity 0.35s ease,transform 0.35s ease',opacity:viewMode==='vinyl'?1:0,transform:viewMode==='vinyl'?'translateX(0) scale(1)':'translateX(-30px) scale(0.95)',pointerEvents:viewMode==='vinyl'?'auto':'none'}}>
+            <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',transition:'opacity 0.35s ease,transform 0.35s ease',opacity:viewMode==='vinyl'?1:0,transform:viewMode==='vinyl'?'translateX(0) scale(1)':'translateX(-30px) scale(0.95)',pointerEvents:viewMode==='vinyl'?'auto':'none'}}>
               <div className="player-cover-wrapper">
                 <div className={`player-cover-outer ${isPlaying?'playing':''}`}>
                   <div className="player-cover">
