@@ -17,16 +17,31 @@ export function Home() {
   const resume = usePlayerStore((s) => s.resume)
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchHistory, setSearchHistory] = useState<string[]>(() => {
+    const saved = localStorage.getItem('searchHistory')
+    return saved ? JSON.parse(saved) : []
+  })
+  const [showHistory, setShowHistory] = useState(false)
 
   useEffect(() => {
     loadSongs()
   }, [loadSongs])
 
+  // Save search history
+  const saveSearchHistory = (query: string) => {
+    if (!query.trim()) return
+    const newHistory = [query, ...searchHistory.filter(h => h !== query)].slice(0, 10)
+    setSearchHistory(newHistory)
+    localStorage.setItem('searchHistory', JSON.stringify(newHistory))
+  }
+
+  // Real-time filtering with album search
   const visibleSongs = songs.filter(
     (s) =>
       !hiddenIds.has(s.filePath) &&
       (s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.artist.toLowerCase().includes(searchQuery.toLowerCase()))
+        s.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (s.album && s.album.toLowerCase().includes(searchQuery.toLowerCase())))
   )
 
   const formatDuration = (seconds: number) => {
@@ -71,11 +86,42 @@ export function Home() {
           </svg>
           <input
             type="text"
-            placeholder="搜索歌曲、歌手..."
+            placeholder="搜索歌曲、歌手、专辑..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setShowHistory(e.target.value.length === 0)
+            }}
+            onFocus={() => setShowHistory(searchQuery.length === 0)}
+            onBlur={() => setTimeout(() => setShowHistory(false), 200)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                saveSearchHistory(searchQuery)
+                setShowHistory(false)
+              }
+            }}
             className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-text placeholder:text-text-secondary outline-none focus:border-accent/50 transition-colors"
           />
+          
+          {/* Search History Dropdown */}
+          {showHistory && searchHistory.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-bg-card border border-white/10 rounded-xl py-2 z-10">
+              <div className="px-4 py-2 text-xs text-text-secondary">搜索历史</div>
+              {searchHistory.map((query, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setSearchQuery(query)
+                    setShowHistory(false)
+                    saveSearchHistory(query)
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-text hover:bg-white/5"
+                >
+                  {query}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {visibleSongs.length === 0 ? (
@@ -125,7 +171,7 @@ export function Home() {
                       {song.title}
                     </p>
                     <p className="text-xs text-text-secondary truncate">
-                      {song.artist} · {song.format.toUpperCase()}
+                      {song.artist} · {song.album || '未知专辑'} · {song.format.toUpperCase()}
                     </p>
                   </div>
                   <span className="text-xs text-text-secondary shrink-0">

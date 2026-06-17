@@ -1,6 +1,7 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { usePlayerStore } from '../store/player'
 import { useLibraryStore } from '../store/library'
+import { useSleepStore } from '../store/sleep'
 import { Layout } from '../components/Layout'
 import * as audio from '../lib/audio'
 
@@ -15,7 +16,9 @@ export function Player() {
   const seek = usePlayerStore((s) => s.seek)
   const setVolume = usePlayerStore((s) => s.setVolume)
   const songs = useLibraryStore((s) => s.songs)
+  const { enabled: sleepEnabled, startTimer: startSleepTimer } = useSleepStore()
 
+  const [showSleepModal, setShowSleepModal] = useState(false)
   const progressRef = useRef<HTMLDivElement>(null)
 
   const currentIndex = songs.findIndex((s) => s.id === currentSong?.id)
@@ -157,6 +160,14 @@ export function Player() {
               <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" strokeWidth="2" />
             </svg>
           </button>
+          <button 
+            onClick={() => setShowSleepModal(true)}
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${
+              sleepEnabled ? 'bg-accent/20 text-accent' : 'bg-white/10 text-text-secondary hover:bg-white/20'
+            }`}
+          >
+            🌙
+          </button>
         </div>
 
         {/* Volume */}
@@ -179,6 +190,32 @@ export function Player() {
           </svg>
         </div>
       </div>
+
+      {/* Sleep Timer Modal */}
+      {showSleepModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-bg-card rounded-2xl p-6 w-80 border border-white/10">
+            <h3 className="text-lg font-semibold mb-4">睡眠模式</h3>
+            <div className="space-y-2">
+              {[15, 30, 60].map(minutes => (
+                <button
+                  key={minutes}
+                  onClick={() => { startSleepTimer(minutes); setShowSleepModal(false) }}
+                  className="w-full py-3 bg-white/5 rounded-xl text-left px-4 hover:bg-white/10"
+                >
+                  {minutes} 分钟后
+                </button>
+              ))}
+            </div>
+            <button 
+              onClick={() => setShowSleepModal(false)}
+              className="w-full mt-4 py-2 text-text-secondary hover:text-text"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }

@@ -7,6 +7,7 @@ declare global {
 }
 
 function detectQuality(format: string, bitrate: number): Song['quality'] {
+  // In production, use music-metadata library to parse actual bitrate
   const losslessFormats = ['flac', 'wav', 'ape', 'alac', 'ogg']
   if (losslessFormats.includes(format.toLowerCase())) return 'lossless'
   if (bitrate >= 800) return 'lossless'

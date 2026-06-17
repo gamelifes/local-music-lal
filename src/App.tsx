@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useLibraryStore } from './store/library'
 import { useEqStore } from './store/eq'
 import { NavBar } from './components/NavBar'
+import { SleepTimer } from './components/SleepTimer'
+import { DesktopLyrics } from './components/DesktopLyrics'
 import { Home } from './pages/Home'
 import { Player } from './pages/Player'
 import { Scan } from './pages/Scan'
@@ -29,6 +31,8 @@ function App() {
           <Route path="/lyrics" element={<Lyrics />} />
         </Routes>
         <NavBar />
+        <SleepTimer />
+        <DesktopLyrics />
       </div>
     </BrowserRouter>
   )
