@@ -2,17 +2,30 @@ import { useState, useEffect, useRef } from 'react'
 import { usePlayerStore } from '../store/player'
 import { useAppStore } from '../store/appStore'
 import { LYRICS_LINES } from '../data/songs'
+import { QueueModal } from '../components/QueueModal'
 
 interface PlayerProps {
   onNavigate: (page: string) => void
 }
 
 export function Player({ onNavigate }: PlayerProps) {
-  const { currentSong, isPlaying, togglePlay, nextSong, prevSong, progress, setProgress, viewMode, setViewMode, activeLine, activeWord, setActiveLine, setActiveWord } = usePlayerStore()
+  const { currentSong, isPlaying, togglePlay, nextSong, prevSong, progress, updateProgress, viewMode, setViewMode, activeLine, activeWord, setActiveLine, setActiveWord, currentTime, duration } = usePlayerStore()
   const { openModal } = useAppStore()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [queueOpen, setQueueOpen] = useState(false)
   const [swipeStart, setSwipeStart] = useState({ x: 0, y: 0 })
   const karaokeRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Progress update
+  useEffect(() => {
+    if (isPlaying) {
+      progressRef.current = setInterval(updateProgress, 250)
+    } else {
+      if (progressRef.current) { clearInterval(progressRef.current); progressRef.current = null }
+    }
+    return () => { if (progressRef.current) clearInterval(progressRef.current) }
+  }, [isPlaying, updateProgress])
 
   // Karaoke animation
   useEffect(() => {
@@ -53,9 +66,7 @@ export function Player({ onNavigate }: PlayerProps) {
   }
 
   const prog = progress
-  const totalSec = currentSong.duration
-  const curSec = Math.floor(totalSec * prog / 100)
-  const fmt = (s: number) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')
+  const fmt = (s: number) => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0')
 
   // Swipe handling
   const onStart = (x: number, y: number) => { setSwipeStart({ x, y }) }
@@ -163,14 +174,14 @@ export function Player({ onNavigate }: PlayerProps) {
 
       {/* Progress Bar */}
       <div className="player-progress">
-        <div className="player-progress-bar" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setProgress(Math.round((e.clientX - r.left) / r.width * 100)) }}>
+        <div className="player-progress-bar" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); usePlayerStore.getState().seek(Math.round((e.clientX - r.left) / r.width * 100)) }}>
           <div className="player-progress-fill" style={{ width: `${prog}%` }}>
             <div className="player-progress-thumb"></div>
           </div>
         </div>
         <div className="player-progress-time">
-          <span>{fmt(curSec)}</span>
-          <span>{currentSong?.duration || '0:00'}</span>
+          <span>{fmt(currentTime)}</span>
+          <span>{fmt(duration)}</span>
         </div>
       </div>
 
@@ -180,8 +191,9 @@ export function Player({ onNavigate }: PlayerProps) {
         <button className="player-ctrl-btn" onClick={prevSong}>⏮</button>
         <button className="player-btn-play player-ctrl-btn" onClick={togglePlay}>{isPlaying ? '⏸' : '▶'}</button>
         <button className="player-ctrl-btn" onClick={nextSong}>⏭</button>
-        <button className="player-ctrl-btn">☰</button>
+        <button className="player-ctrl-btn" onClick={() => setQueueOpen(true)}>☰</button>
       </div>
+      <QueueModal visible={queueOpen} onClose={() => setQueueOpen(false)} />
     </div>
   )
 }

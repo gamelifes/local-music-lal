@@ -14,4 +14,5 @@ export const DEFAULT_PRESETS: EqPreset[] = [
   { name: '爵士', values: [3, 1, 2, 4, 2], isCustom: false },
   { name: '古典', values: [4, 3, 0, 2, 4], isCustom: false },
   { name: '人声', values: [-1, 2, 5, 4, 1], isCustom: false },
+  { name: '自定义', values: [0, 0, 0, 0, 0], isCustom: true },
 ]

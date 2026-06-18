@@ -21,17 +21,19 @@ export function Search({ onNavigate }: SearchProps) {
 
   return (
     <div className="page active">
-      <div className="page-content" style={{ paddingTop: '8px' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0 16px' }}>
-          <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '20px', cursor: 'pointer' }}>←</button>
-          <input
-            type="text"
-            placeholder="搜索歌曲、歌手、专辑..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'var(--bg-card)', color: 'var(--text)', fontSize: '16px', outline: 'none' }}
-          />
+      <div className="page-content" style={{ paddingTop: 0 }}>
+        {/* Sticky Header */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', padding: '8px 0 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0 16px' }}>
+            <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '20px', cursor: 'pointer' }}>←</button>
+            <input
+              type="text"
+              placeholder="搜索歌曲、歌手、专辑..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'var(--bg-card)', color: 'var(--text)', fontSize: '16px', outline: 'none' }}
+            />
+          </div>
         </div>
 
         {/* Results */}
@@ -47,7 +49,7 @@ export function Search({ onNavigate }: SearchProps) {
               {results.map(s => (
                 <tr
                   key={s.id}
-                  onClick={() => { play(s); onNavigate('player') }}
+                  onClick={() => { play(s, results); onNavigate('player') }}
                   style={{ cursor: 'pointer' }}
                 >
                   <td style={{ width: 64, padding: '8px', textAlign: 'center' }}>

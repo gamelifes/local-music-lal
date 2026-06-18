@@ -14,10 +14,16 @@ import { Equalizer } from './pages/Equalizer'
 import { Lyrics } from './pages/Lyrics'
 import { Hidden } from './pages/Hidden'
 import { Search } from './pages/Search'
+import { Artists } from './pages/Artists'
+import { ArtistDetail } from './pages/ArtistDetail'
+import { Albums } from './pages/Albums'
+import { AlbumDetail } from './pages/AlbumDetail'
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home')
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [selectedArtist, setSelectedArtist] = useState('')
+  const [selectedAlbum, setSelectedAlbum] = useState('')
   const loadSongs = useLibraryStore((s) => s.loadSongs)
   const loadPresets = useEqStore((s) => s.loadPresets)
 
@@ -47,6 +53,14 @@ function App() {
         return <Hidden onNavigate={navigateTo} />
       case 'search':
         return <Search onNavigate={navigateTo} />
+      case 'artists':
+        return <Artists onNavigate={navigateTo} onSelectArtist={(name) => { setSelectedArtist(name); setCurrentPage('artist-detail') }} />
+      case 'artist-detail':
+        return <ArtistDetail artist={selectedArtist} onNavigate={navigateTo} />
+      case 'albums':
+        return <Albums onNavigate={navigateTo} onSelectAlbum={(name) => { setSelectedAlbum(name); setCurrentPage('album-detail') }} />
+      case 'album-detail':
+        return <AlbumDetail album={selectedAlbum} onNavigate={navigateTo} />
       default:
         return <Home onNavigate={navigateTo} onToggleDrawer={() => setDrawerOpen(o => !o)} />
     }

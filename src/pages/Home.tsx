@@ -45,13 +45,13 @@ export function Home({ onToggleDrawer }: HomeProps) {
               <tr
                 key={s.id}
                 className={currentSong?.id === s.id ? 'song-playing' : ''}
-                onClick={() => play(s)}
+                onClick={() => play(s, visibleSongs)}
                 style={{ cursor: 'pointer' }}
               >
                 <td className="col-cover">
                   <div className="cover-thumb"></div>
                 </td>
-                <td className="col-song">{s.title}</td>
+                <td className="col-song">{s.title}<span className={`quality-badge quality-${s.quality}`}>{s.quality}</span></td>
                 <td className="col-artist">{s.artist}</td>
                 <td className="col-duration">{s.duration}</td>
               </tr>

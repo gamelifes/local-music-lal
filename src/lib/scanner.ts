@@ -16,8 +16,14 @@ function detectQuality(format: string, bitrate: number): Song['quality'] {
   return 'low'
 }
 
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2)
+function generateId(filePath: string): string {
+  let hash = 0
+  for (let i = 0; i < filePath.length; i++) {
+    const char = filePath.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  return Math.abs(hash).toString(36)
 }
 
 export async function scanFolder(
@@ -38,7 +44,7 @@ export async function scanFolder(
             const format = ext.substring(1)
 
             const song: Song = {
-              id: generateId(),
+              id: generateId(path + '/' + entry.name),
               title: entry.name.replace(ext, ''),
               artist: 'Unknown Artist',
               album: 'Unknown Album',
