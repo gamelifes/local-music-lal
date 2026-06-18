@@ -1,201 +1,109 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { useLibraryStore } from '../store/library'
 import { usePlayerStore } from '../store/player'
-import { Layout } from '../components/Layout'
+import { scanFolder } from '../lib/scanner'
+import { Badge } from '../components/ui/Badge'
 
-export function Home() {
-  const navigate = useNavigate()
-  const songs = useLibraryStore((s) => s.songs)
-  const hiddenIds = useLibraryStore((s) => s.hiddenIds)
-  const loadSongs = useLibraryStore((s) => s.loadSongs)
-  const hideSong = useLibraryStore((s) => s.hideSong)
-  const currentSong = usePlayerStore((s) => s.currentSong)
-  const isPlaying = usePlayerStore((s) => s.isPlaying)
-  const play = usePlayerStore((s) => s.play)
-  const pause = usePlayerStore((s) => s.pause)
-  const resume = usePlayerStore((s) => s.resume)
+interface HomeProps {
+  onNavigate: (page: string) => void
+  onToggleDrawer: () => void
+}
 
+export function Home({ onToggleDrawer }: HomeProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchHistory, setSearchHistory] = useState<string[]>(() => {
-    const saved = localStorage.getItem('searchHistory')
-    return saved ? JSON.parse(saved) : []
-  })
-  const [showHistory, setShowHistory] = useState(false)
+  const { songs, addSongs } = useLibraryStore()
+  const { play, currentSong } = usePlayerStore()
 
-  useEffect(() => {
-    loadSongs()
-  }, [loadSongs])
-
-  // Save search history
-  const saveSearchHistory = (query: string) => {
-    if (!query.trim()) return
-    const newHistory = [query, ...searchHistory.filter(h => h !== query)].slice(0, 10)
-    setSearchHistory(newHistory)
-    localStorage.setItem('searchHistory', JSON.stringify(newHistory))
-  }
-
-  // Real-time filtering with album search
-  const visibleSongs = songs.filter(
-    (s) =>
-      !hiddenIds.has(s.filePath) &&
-      (s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (s.album && s.album.toLowerCase().includes(searchQuery.toLowerCase())))
+  const filteredSongs = songs.filter(s =>
+    !s.hidden && (
+      s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.artist.toLowerCase().includes(searchQuery.toLowerCase())
+    )
   )
 
-  const formatDuration = (seconds: number) => {
-    const m = Math.floor(seconds / 60)
-    const s = Math.floor(seconds % 60)
-    return `${m}:${s.toString().padStart(2, '0')}`
-  }
-
-  const handlePlaySong = (song: typeof visibleSongs[0]) => {
-    if (currentSong?.id === song.id) {
-      isPlaying ? pause() : resume()
-    } else {
-      play(song)
+  const handleScan = async () => {
+    const scannedSongs = await scanFolder()
+    if (scannedSongs.length > 0) {
+      await addSongs(scannedSongs)
     }
   }
 
   return (
-    <Layout
-      title="音乐库"
-      rightAction={
-        <button
-          onClick={() => navigate('/scan')}
-          className="bg-accent text-black px-3 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity"
-        >
-          扫描
-        </button>
-      }
-    >
-      <div className="p-4">
-        <div className="relative mb-4">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+    <div className="page active">
+      <div className="page-content" style={{ paddingTop: 0 }}>
+        {/* Sticky Header */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#0F0F0A', padding: '8px 0 0' }}>
+          <div style={{ padding: '8px 0' }}>
+            <button onClick={onToggleDrawer} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '24px', cursor: 'pointer' }}>☰</button>
+          </div>
+          <h2 style={{ fontSize: '24px', margin: '0 0 8px' }}>全部歌曲</h2>
+
+          {/* Search */}
+          <div style={{ marginBottom: '12px' }}>
+            <input
+              type="text"
+              placeholder="搜索歌曲、歌手..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:border-amber-500 focus:outline-none"
+            />
+          </div>
+
+          {/* Scan Button */}
+          <button
+            onClick={handleScan}
+            className="w-full py-3 bg-amber-500 text-black rounded-xl font-semibold hover:bg-amber-400 transition-colors mb-4"
           >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="text"
-            placeholder="搜索歌曲、歌手、专辑..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value)
-              setShowHistory(e.target.value.length === 0)
-            }}
-            onFocus={() => setShowHistory(searchQuery.length === 0)}
-            onBlur={() => setTimeout(() => setShowHistory(false), 200)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                saveSearchHistory(searchQuery)
-                setShowHistory(false)
-              }
-            }}
-            className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-text placeholder:text-text-secondary outline-none focus:border-accent/50 transition-colors"
-          />
-          
-          {/* Search History Dropdown */}
-          {showHistory && searchHistory.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-bg-card border border-white/10 rounded-xl py-2 z-10">
-              <div className="px-4 py-2 text-xs text-text-secondary">搜索历史</div>
-              {searchHistory.map((query, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    setSearchQuery(query)
-                    setShowHistory(false)
-                    saveSearchHistory(query)
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-text hover:bg-white/5"
-                >
-                  {query}
-                </button>
-              ))}
-            </div>
-          )}
+            📁 扫描音乐文件夹
+          </button>
+
+          {/* Table Header */}
+          <table className="song-table" style={{ width: '100%' }}>
+            <thead>
+              <tr>
+                <th style={{ width: 64 }}></th>
+                <th>歌名</th>
+                <th>歌手</th>
+                <th style={{ width: 60, textAlign: 'right' }}>时长</th>
+              </tr>
+            </thead>
+          </table>
         </div>
 
-        {visibleSongs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-text-secondary">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-4 opacity-40">
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
-            <p className="text-sm mb-2">暂无歌曲</p>
-            <p className="text-xs opacity-60">点击右上角"扫描"导入音乐</p>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            {visibleSongs.map((song) => {
-              const isActive = currentSong?.id === song.id
-              return (
-                <div
-                  key={song.id}
-                  className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
-                    isActive
-                      ? 'bg-accent/10 border border-accent/20'
-                      : 'hover:bg-white/5'
-                  }`}
-                  onClick={() => handlePlaySong(song)}
+        {/* Song List */}
+        <table className="song-table" style={{ width: '100%' }}>
+          <tbody>
+            {filteredSongs.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ textAlign: 'center', padding: '48px 16px', color: 'var(--text-secondary)' }}>
+                  <div style={{ fontSize: '48px', marginBottom: '8px' }}>🎵</div>
+                  <div>暂无歌曲</div>
+                  <div style={{ fontSize: '13px', marginTop: '8px' }}>点击上方按钮扫描音乐文件夹</div>
+                </td>
+              </tr>
+            ) : (
+              filteredSongs.map(s => (
+                <tr
+                  key={s.id}
+                  className={currentSong?.id === s.id ? 'song-playing' : ''}
+                  onClick={() => play(s)}
+                  style={{ cursor: 'pointer' }}
                 >
-                  <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                      isActive ? 'bg-accent' : 'bg-white/5'
-                    }`}
-                  >
-                    {isActive && isPlaying ? (
-                      <div className="flex gap-0.5 items-end h-4">
-                        <div className="w-0.5 bg-black animate-pulse" style={{ height: '60%', animationDelay: '0ms' }} />
-                        <div className="w-0.5 bg-black animate-pulse" style={{ height: '100%', animationDelay: '150ms' }} />
-                        <div className="w-0.5 bg-black animate-pulse" style={{ height: '40%', animationDelay: '300ms' }} />
-                        <div className="w-0.5 bg-black animate-pulse" style={{ height: '80%', animationDelay: '450ms' }} />
-                      </div>
-                    ) : (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill={isActive ? '#000' : 'currentColor'} className={isActive ? '' : 'text-text-secondary'}>
-                        <polygon points="5 3 19 12 5 21 5 3" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${isActive ? 'text-accent' : 'text-text'}`}>
-                      {song.title}
-                    </p>
-                    <p className="text-xs text-text-secondary truncate">
-                      {song.artist} · {song.album || '未知专辑'} · {song.format.toUpperCase()}
-                    </p>
-                  </div>
-                  <span className="text-xs text-text-secondary shrink-0">
-                    {formatDuration(song.duration)}
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      hideSong(song.filePath)
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-white/10 text-text-secondary transition-colors shrink-0"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        )}
+                  <td style={{ width: 64, padding: '8px', textAlign: 'center' }}>
+                    <div className="cover-thumb"></div>
+                  </td>
+                  <td className="col-song">
+                    {s.title}
+                    <Badge variant={s.quality}>{s.quality}</Badge>
+                  </td>
+                  <td className="col-artist">{s.artist}</td>
+                  <td style={{ width: 60, textAlign: 'right' }}>{s.duration}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-    </Layout>
+    </div>
   )
 }
