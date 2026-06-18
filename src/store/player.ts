@@ -13,12 +13,15 @@ interface PlayerState {
   pause: () => void
   resume: () => void
   stop: () => void
+  togglePlay: () => void
+  nextSong: () => void
+  prevSong: () => void
   seek: (position: number) => void
   setProgress: (progress: number) => void
   setVolume: (volume: number) => void
 }
 
-export const usePlayerStore = create<PlayerState>((set) => ({
+export const usePlayerStore = create<PlayerState>((set, get) => ({
   currentSong: null,
   isPlaying: false,
   progress: 0,
@@ -27,7 +30,6 @@ export const usePlayerStore = create<PlayerState>((set) => ({
 
   play: (song) => {
     audio.playSong(song, () => {
-      // Auto-play next song
       set({ isPlaying: false })
     })
     set({ currentSong: song, isPlaying: true, progress: 0 })
@@ -35,6 +37,22 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   pause: () => { audio.pause(); set({ isPlaying: false }) },
   resume: () => { audio.resume(); set({ isPlaying: true }) },
   stop: () => { audio.stop(); set({ isPlaying: false, progress: 0 }) },
+  togglePlay: () => {
+    const { isPlaying } = get()
+    if (isPlaying) {
+      audio.pause()
+      set({ isPlaying: false })
+    } else {
+      audio.resume()
+      set({ isPlaying: true })
+    }
+  },
+  nextSong: () => {
+    // TODO: Implement next song logic
+  },
+  prevSong: () => {
+    // TODO: Implement previous song logic
+  },
   seek: (position) => { audio.seek(position); set({ progress: position }) },
   setProgress: (progress) => set({ progress }),
   setVolume: (volume) => { audio.setVolume(volume); set({ volume }) },
