@@ -48,12 +48,12 @@ export function Home({ onToggleDrawer }: HomeProps) {
                 onClick={() => play(s)}
                 style={{ cursor: 'pointer' }}
               >
-                <td style={{ width: 64, padding: '8px', textAlign: 'center' }}>
+                <td className="col-cover">
                   <div className="cover-thumb"></div>
                 </td>
                 <td className="col-song">{s.title}</td>
                 <td className="col-artist">{s.artist}</td>
-                <td style={{ width: 60, textAlign: 'right' }}>{s.duration}</td>
+                <td className="col-duration">{s.duration}</td>
               </tr>
             ))}
           </tbody>
