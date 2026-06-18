@@ -335,12 +335,31 @@ body {
   background: var(--bg-card-hover);
 }
 
-/* Player Page */
+/* Player Page - Full-screen immersive frosted glass */
 .player-page {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg);
+  background: linear-gradient(135deg, rgba(232,180,60,0.15) 0%, rgba(15,15,10,0.9) 50%, rgba(15,15,10,0.95) 100%);
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Semi-transparent overlay for depth */
+.player-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.player-page > * {
+  position: relative;
+  z-index: 1;
 }
 
 .player-header {
