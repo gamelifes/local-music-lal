@@ -341,8 +341,6 @@ body {
   flex-direction: column;
   height: 100%;
   background: linear-gradient(135deg, rgba(232,180,60,0.15) 0%, rgba(15,15,10,0.9) 50%, rgba(15,15,10,0.95) 100%);
-  backdrop-filter: blur(40px) saturate(1.8);
-  -webkit-backdrop-filter: blur(40px) saturate(1.8);
   position: relative;
   overflow: hidden;
 }
@@ -409,8 +407,8 @@ body {
   align-items: center;
   justify-content: center;
   padding: 16px 16px 20px;
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 1 0;
+  min-height: 280px;
 }
 
 .player-cover-wrapper {
