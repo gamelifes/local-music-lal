@@ -408,7 +408,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px 12px;
+  padding: 16px 16px 20px;
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -521,7 +521,7 @@ body {
   display: flex;
   justify-content: center;
   gap: 6px;
-  padding: 12px 0 8px;
+  padding: 16px 0 12px;
   flex: 0 0 auto;
 }
 
@@ -542,7 +542,7 @@ body {
   display: flex;
   justify-content: center;
   gap: 20px;
-  padding: 8px 16px 12px;
+  padding: 12px 16px 16px;
   flex: 0 0 auto;
 }
 
@@ -565,7 +565,7 @@ body {
 }
 
 .player-progress {
-  padding: 4px 28px 0;
+  padding: 8px 28px 0;
   flex: 0 0 auto;
 }
 
@@ -612,7 +612,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 20px;
-  padding: 16px 28px 32px;
+  padding: 20px 28px 40px;
   flex: 0 0 auto;
 }
 
