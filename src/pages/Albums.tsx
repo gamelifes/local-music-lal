@@ -25,7 +25,7 @@ export function Albums({ onNavigate, onSelectAlbum }: AlbumsProps) {
         <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', padding: '8px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0 16px' }}>
             <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
-              <span style={{ fontSize: '24px', lineHeight: 1 }}>&lt;</span>
+              <img src="/icons/back.svg" alt="back" width="24" height="24" />
             </button>
             <h2 style={{ fontSize: '18px' }}>专辑</h2>
           </div>

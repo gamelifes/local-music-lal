@@ -37,7 +37,7 @@ export function Equalizer({ onNavigate }: EqualizerProps) {
         <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', padding: '8px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0 12px' }}>
             <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
-              <span style={{ fontSize: '24px', lineHeight: 1 }}>&lt;</span>
+              <img src="/icons/back.svg" alt="back" width="24" height="24" />
             </button>
             <h2 style={{ fontSize: '18px', flex: 1 }}>均衡器</h2>
             {isCustom && (

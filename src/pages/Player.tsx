@@ -32,7 +32,6 @@ export function Player({ onNavigate }: PlayerProps) {
   useEffect(() => {
     if (viewMode === 'lyrics' && lyricsContainerRef.current && lyrics.length > 0) {
       const container = lyricsContainerRef.current
-      // Find the active line element
       const lineElements = container.querySelectorAll('.lyrics-line')
       if (lineElements[activeLine]) {
         const lineElement = lineElements[activeLine] as HTMLElement
@@ -57,7 +56,7 @@ export function Player({ onNavigate }: PlayerProps) {
       <div className="page active player-page">
         <div className="player-header">
           <button className="player-header-btn" onClick={() => onNavigate('home')}>
-            <span style={{ fontSize: '24px', lineHeight: 1 }}>&lt;</span>
+            <img src="/icons/back.svg" alt="back" width="24" height="24" />
           </button>
           <div className="player-header-title">无歌曲</div>
         </div>
@@ -87,7 +86,7 @@ export function Player({ onNavigate }: PlayerProps) {
     <div className="page active player-page">
       <div className="player-header" style={{ position: 'relative' }}>
         <button className="player-header-btn" onClick={() => onNavigate('home')}>
-          <span style={{ fontSize: '24px', lineHeight: 1 }}>&lt;</span>
+          <img src="/icons/back.svg" alt="back" width="24" height="24" />
         </button>
         <div className="player-header-title">{currentSong.title}</div>
         <button className="player-header-btn" onClick={() => setMenuOpen(o => !o)}>⋮</button>
@@ -176,10 +175,10 @@ export function Player({ onNavigate }: PlayerProps) {
       {/* Action Buttons */}
       <div className="player-actions">
         <button className="player-action-btn" onClick={() => openModal('quality')} title="音质">
-          <span style={{ fontSize: '20px', lineHeight: 1 }}>♫</span>
+          <img src="/icons/quality.svg" alt="quality" width="20" height="20" />
         </button>
         <button className="player-action-btn" onClick={() => openModal('share')} title="分享">
-          <span style={{ fontSize: '20px', lineHeight: 1 }}>⤴</span>
+          <img src="/icons/share.svg" alt="share" width="20" height="20" />
         </button>
         <button className="player-action-btn" onClick={() => openModal('sleep')} title="睡眠">☽</button>
         <button className="player-action-btn" onClick={() => { if (currentSong) { hideSong(currentSong.filePath); nextSong(); onNavigate('home') } }} title="隐藏">👁</button>
@@ -205,21 +204,24 @@ export function Player({ onNavigate }: PlayerProps) {
           onClick={toggleRepeatMode}
           title={repeatMode === 'all' ? '列表循环' : repeatMode === 'shuffle' ? '随机播放' : '单曲循环'}
         >
-          <span style={{ fontSize: '18px', lineHeight: 1 }}>
-            {repeatMode === 'one' ? '↻₁' : repeatMode === 'shuffle' ? '⇄' : '↻'}
-          </span>
+          <img
+            src={repeatMode === 'one' ? '/icons/repeat-one.svg' : repeatMode === 'shuffle' ? '/icons/shuffle.svg' : '/icons/repeat-all.svg'}
+            alt={repeatMode}
+            width="18"
+            height="18"
+          />
         </button>
         <button className="player-ctrl-btn" onClick={prevSong}>
-          <span style={{ fontSize: '20px', lineHeight: 1 }}>⏮</span>
+          <img src="/icons/prev.svg" alt="previous" width="20" height="20" />
         </button>
         <button className="player-btn-play player-ctrl-btn" onClick={togglePlay}>
-          <span style={{ fontSize: '24px', lineHeight: 1 }}>{isPlaying ? '⏸' : '▶'}</span>
+          <img src={isPlaying ? '/icons/pause.svg' : '/icons/play.svg'} alt={isPlaying ? 'pause' : 'play'} width="24" height="24" />
         </button>
         <button className="player-ctrl-btn" onClick={nextSong}>
-          <span style={{ fontSize: '20px', lineHeight: 1 }}>⏭</span>
+          <img src="/icons/next.svg" alt="next" width="20" height="20" />
         </button>
         <button className="player-ctrl-btn" onClick={() => setQueueOpen(true)}>
-          <span style={{ fontSize: '20px', lineHeight: 1 }}>☰</span>
+          <img src="/icons/queue.svg" alt="queue" width="18" height="18" />
         </button>
       </div>
       <QueueModal visible={queueOpen} onClose={() => setQueueOpen(false)} />

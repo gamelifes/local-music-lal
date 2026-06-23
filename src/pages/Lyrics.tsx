@@ -14,7 +14,7 @@ export function Lyrics({ onNavigate }: LyricsProps) {
         {/* Header */}
         <div style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--divider)' }}>
           <button onClick={() => onNavigate('player')} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
-            <span style={{ fontSize: '24px', lineHeight: 1 }}>&lt;</span>
+            <img src="/icons/back.svg" alt="back" width="24" height="24" />
           </button>
           <div>
             <div style={{ fontWeight: 700, fontSize: '14px' }}>{currentSong?.title || '未选择歌曲'}</div>

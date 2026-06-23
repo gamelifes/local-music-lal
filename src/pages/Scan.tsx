@@ -135,7 +135,7 @@ export function Scan({ onNavigate }: ScanProps) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
-                <span style={{ fontSize: '24px', lineHeight: 1 }}>&lt;</span>
+                <img src="/icons/back.svg" alt="back" width="24" height="24" />
               </button>
               <h2 style={{ fontSize: '18px', margin: 0 }}>{scanning ? '正在扫描' : '扫描音乐'}</h2>
             </div>
