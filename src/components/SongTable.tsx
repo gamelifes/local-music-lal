@@ -14,6 +14,13 @@ interface SongTableProps {
   renderSong?: (song: Song, index: number) => ReactNode
 }
 
+function formatDuration(seconds: number): string {
+  if (!seconds || seconds === 0) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${String(secs).padStart(2, '0')}`
+}
+
 export function SongTable({ title, onBack, backIcon = '←', rightAction, songs, columns, onPlaySong, extraColumns, renderSong }: SongTableProps) {
   const { currentSong } = usePlayerStore()
 
@@ -57,7 +64,7 @@ export function SongTable({ title, onBack, backIcon = '←', rightAction, songs,
                   </td>
                   <td className="col-song">{song.title}</td>
                   <td className="col-artist">{song.artist}</td>
-                  <td className="col-duration">{song.duration}</td>
+                  <td className="col-duration">{formatDuration(song.duration)}</td>
                   {extraColumns && <td>{extraColumns(song)}</td>}
                 </tr>
               )

@@ -37,12 +37,15 @@ export function Scan({ onNavigate }: ScanProps) {
 
   const addFolder = async () => {
     try {
-      const newSongs = await scanFolder((count) => {
+      const result = await scanFolder((count) => {
         setScannedCount(count)
       })
-      if (newSongs.length > 0) {
-        await addSongs(newSongs)
-        const newFolders = [...new Set(newSongs.map(s => s.folder))]
+      console.log('Scan result:', result)
+      console.log('Songs:', result.songs.length)
+      console.log('Lyrics:', result.lyrics.size)
+      if (result.songs.length > 0) {
+        await addSongs(result.songs, result.lyrics)
+        const newFolders = [...new Set(result.songs.map(s => s.folder))]
         setFolderList(prev => [...new Set([...prev, ...newFolders])])
       }
     } catch (err) {
@@ -131,7 +134,9 @@ export function Scan({ onNavigate }: ScanProps) {
         <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', padding: '8px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '20px', cursor: 'pointer' }}>←</button>
+              <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
+                <span style={{ fontSize: '24px', lineHeight: 1 }}>&lt;</span>
+              </button>
               <h2 style={{ fontSize: '18px', margin: 0 }}>{scanning ? '正在扫描' : '扫描音乐'}</h2>
             </div>
             {!scanning && !completed && (

@@ -8,10 +8,10 @@ interface ArtistDetailProps {
 }
 
 export function ArtistDetail({ artist, onNavigate }: ArtistDetailProps) {
-  const { songs } = useLibraryStore()
+  const { songs, hiddenIds } = useLibraryStore()
   const { play } = usePlayerStore()
 
-  const filtered = songs.filter(s => s.artist === artist)
+  const filtered = songs.filter(s => s.artist === artist && !hiddenIds.has(s.filePath))
 
   return (
     <SongTable

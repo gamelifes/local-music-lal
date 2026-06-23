@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { usePlayerStore } from '../store/player'
 import { useAppStore } from '../store/appStore'
-import { LYRICS_LINES } from '../data/songs'
+import { useLibraryStore } from '../store/library'
 import { QueueModal } from '../components/QueueModal'
 
 interface PlayerProps {
@@ -9,13 +9,14 @@ interface PlayerProps {
 }
 
 export function Player({ onNavigate }: PlayerProps) {
-  const { currentSong, isPlaying, togglePlay, nextSong, prevSong, progress, updateProgress, viewMode, setViewMode, activeLine, activeWord, setActiveLine, setActiveWord, currentTime, duration } = usePlayerStore()
+  const { currentSong, isPlaying, togglePlay, nextSong, prevSong, progress, updateProgress, viewMode, setViewMode, activeLine, activeWord, setActiveLine, setActiveWord, currentTime, duration, lyrics, repeatMode, toggleRepeatMode } = usePlayerStore()
   const { openModal } = useAppStore()
+  const { hideSong } = useLibraryStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [queueOpen, setQueueOpen] = useState(false)
   const [swipeStart, setSwipeStart] = useState({ x: 0, y: 0 })
-  const karaokeRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lyricsContainerRef = useRef<HTMLDivElement>(null)
 
   // Progress update
   useEffect(() => {
@@ -27,29 +28,26 @@ export function Player({ onNavigate }: PlayerProps) {
     return () => { if (progressRef.current) clearInterval(progressRef.current) }
   }, [isPlaying, updateProgress])
 
-  // Karaoke animation
+  // Auto-scroll lyrics when active line changes
   useEffect(() => {
-    if (viewMode !== 'lyrics' || !isPlaying) {
-      if (karaokeRef.current) { clearInterval(karaokeRef.current); karaokeRef.current = null }
-      return
-    }
-    const lineWords = LYRICS_LINES.map(l => l.split(''))
-    let lineIdx = 0, wordIdx = -1
-    const wordInterval = 200
-    karaokeRef.current = setInterval(() => {
-      wordIdx++
-      if (wordIdx >= lineWords[lineIdx].length) {
-        lineIdx++
-        wordIdx = -1
-        if (lineIdx >= lineWords.length) { lineIdx = 0; wordIdx = -1; setActiveLine(0); setActiveWord(-1); return }
-        setActiveLine(lineIdx)
-        setActiveWord(-1)
-      } else {
-        setActiveWord(wordIdx)
+    if (viewMode === 'lyrics' && lyricsContainerRef.current && lyrics.length > 0) {
+      const container = lyricsContainerRef.current
+      // Find the active line element
+      const lineElements = container.querySelectorAll('.lyrics-line')
+      if (lineElements[activeLine]) {
+        const lineElement = lineElements[activeLine] as HTMLElement
+        const lineTop = lineElement.offsetTop
+        const lineHeight = lineElement.clientHeight
+        const containerHeight = container.clientHeight
+        const targetScroll = lineTop - containerHeight / 2 + lineHeight / 2
+
+        container.scrollTo({
+          top: Math.max(0, targetScroll),
+          behavior: 'smooth'
+        })
       }
-    }, wordInterval)
-    return () => { if (karaokeRef.current) clearInterval(karaokeRef.current) }
-  }, [viewMode, isPlaying])
+    }
+  }, [activeLine, viewMode, lyrics.length])
 
   // Reset karaoke when song changes
   useEffect(() => { setActiveLine(0); setActiveWord(-1) }, [currentSong])
@@ -58,7 +56,9 @@ export function Player({ onNavigate }: PlayerProps) {
     return (
       <div className="page active player-page">
         <div className="player-header">
-          <button className="player-header-btn" onClick={() => onNavigate('home')}>←</button>
+          <button className="player-header-btn" onClick={() => onNavigate('home')}>
+            <span style={{ fontSize: '24px', lineHeight: 1 }}>&lt;</span>
+          </button>
           <div className="player-header-title">无歌曲</div>
         </div>
       </div>
@@ -86,7 +86,9 @@ export function Player({ onNavigate }: PlayerProps) {
   return (
     <div className="page active player-page">
       <div className="player-header" style={{ position: 'relative' }}>
-        <button className="player-header-btn" onClick={() => onNavigate('home')}>←</button>
+        <button className="player-header-btn" onClick={() => onNavigate('home')}>
+          <span style={{ fontSize: '24px', lineHeight: 1 }}>&lt;</span>
+        </button>
         <div className="player-header-title">{currentSong.title}</div>
         <button className="player-header-btn" onClick={() => setMenuOpen(o => !o)}>⋮</button>
         {menuOpen && (
@@ -137,23 +139,30 @@ export function Player({ onNavigate }: PlayerProps) {
           opacity: viewMode === 'lyrics' ? 1 : 0,
           transform: viewMode === 'lyrics' ? 'translateX(0) scale(1)' : 'translateX(30px) scale(0.95)',
           pointerEvents: viewMode === 'lyrics' ? 'auto' : 'none',
-          overflow: 'auto'
+          overflow: 'hidden'
         }}>
-          <div className="lyrics-container" style={{ width: '100%', height: '100%', padding: '8px 16px' }}>
-            {LYRICS_LINES.map((line, li) => {
-              const words = line.split('')
-              const isLineActive = li === activeLine
-              const isLineSung = li < activeLine
-              return (
-                <div key={li} className={`lyrics-line ${isLineActive ? 'active' : ''} ${isLineSung ? 'sung' : ''}`}>
-                  {words.map((c, ci) => {
-                    const isWordActive = isLineActive && ci === activeWord
-                    const isWordSung = isLineActive && ci < activeWord
-                    return <span key={ci} className={`word ${isWordActive ? 'active' : ''} ${isWordSung ? 'sung' : ''}`}>{c}</span>
-                  })}
-                </div>
-              )
-            })}
+          <div ref={lyricsContainerRef} className="lyrics-container" style={{ width: '100%', height: '100%', padding: '8px 16px', overflowY: 'auto' }}>
+            {lyrics.length > 0 ? (
+              lyrics.map((line, li) => {
+                const words = line.text.split('')
+                const isLineActive = li === activeLine
+                const isLineSung = li < activeLine
+                return (
+                  <div key={li} className={`lyrics-line ${isLineActive ? 'active' : ''} ${isLineSung ? 'sung' : ''}`}>
+                    {words.map((c, ci) => {
+                      const isWordActive = isLineActive && ci === activeWord
+                      const isWordSung = isLineActive && ci < activeWord
+                      return <span key={ci} className={`word ${isWordActive ? 'active' : ''} ${isWordSung ? 'sung' : ''}`}>{c}</span>
+                    })}
+                  </div>
+                )
+              })
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)' }}>
+                <p>暂无歌词</p>
+                <p style={{ fontSize: '12px', marginTop: '8px' }}>请将 .lrc 文件放在音频文件同目录下</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -166,10 +175,14 @@ export function Player({ onNavigate }: PlayerProps) {
 
       {/* Action Buttons */}
       <div className="player-actions">
-        <button className="player-action-btn" onClick={() => openModal('quality')} title="音质">🎛️</button>
-        <button className="player-action-btn" onClick={() => openModal('share')} title="分享">↗</button>
-        <button className="player-action-btn" title="睡眠">☽</button>
-        <button className="player-action-btn" title="隐藏">👁</button>
+        <button className="player-action-btn" onClick={() => openModal('quality')} title="音质">
+          <span style={{ fontSize: '20px', lineHeight: 1 }}>♫</span>
+        </button>
+        <button className="player-action-btn" onClick={() => openModal('share')} title="分享">
+          <span style={{ fontSize: '20px', lineHeight: 1 }}>⤴</span>
+        </button>
+        <button className="player-action-btn" onClick={() => openModal('sleep')} title="睡眠">☽</button>
+        <button className="player-action-btn" onClick={() => { if (currentSong) { hideSong(currentSong.filePath); nextSong(); onNavigate('home') } }} title="隐藏">👁</button>
       </div>
 
       {/* Progress Bar */}
@@ -187,11 +200,27 @@ export function Player({ onNavigate }: PlayerProps) {
 
       {/* Playback Controls */}
       <div className="player-controls">
-        <button className="player-ctrl-btn">↻</button>
-        <button className="player-ctrl-btn" onClick={prevSong}>⏮</button>
-        <button className="player-btn-play player-ctrl-btn" onClick={togglePlay}>{isPlaying ? '⏸' : '▶'}</button>
-        <button className="player-ctrl-btn" onClick={nextSong}>⏭</button>
-        <button className="player-ctrl-btn" onClick={() => setQueueOpen(true)}>☰</button>
+        <button
+          className={`player-ctrl-btn active`}
+          onClick={toggleRepeatMode}
+          title={repeatMode === 'all' ? '列表循环' : repeatMode === 'shuffle' ? '随机播放' : '单曲循环'}
+        >
+          <span style={{ fontSize: '18px', lineHeight: 1 }}>
+            {repeatMode === 'one' ? '↻₁' : repeatMode === 'shuffle' ? '⇄' : '↻'}
+          </span>
+        </button>
+        <button className="player-ctrl-btn" onClick={prevSong}>
+          <span style={{ fontSize: '20px', lineHeight: 1 }}>⏮</span>
+        </button>
+        <button className="player-btn-play player-ctrl-btn" onClick={togglePlay}>
+          <span style={{ fontSize: '24px', lineHeight: 1 }}>{isPlaying ? '⏸' : '▶'}</span>
+        </button>
+        <button className="player-ctrl-btn" onClick={nextSong}>
+          <span style={{ fontSize: '20px', lineHeight: 1 }}>⏭</span>
+        </button>
+        <button className="player-ctrl-btn" onClick={() => setQueueOpen(true)}>
+          <span style={{ fontSize: '20px', lineHeight: 1 }}>☰</span>
+        </button>
       </div>
       <QueueModal visible={queueOpen} onClose={() => setQueueOpen(false)} />
     </div>

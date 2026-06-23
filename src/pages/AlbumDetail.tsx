@@ -8,10 +8,10 @@ interface AlbumDetailProps {
 }
 
 export function AlbumDetail({ album, onNavigate }: AlbumDetailProps) {
-  const { songs } = useLibraryStore()
+  const { songs, hiddenIds } = useLibraryStore()
   const { play } = usePlayerStore()
 
-  const filtered = songs.filter(s => s.album === album)
+  const filtered = songs.filter(s => s.album === album && !hiddenIds.has(s.filePath))
 
   return (
     <SongTable

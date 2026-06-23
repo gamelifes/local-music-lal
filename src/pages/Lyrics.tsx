@@ -13,7 +13,9 @@ export function Lyrics({ onNavigate }: LyricsProps) {
       <div className="page-content" style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <div style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--divider)' }}>
-          <button onClick={() => onNavigate('player')} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '20px', cursor: 'pointer' }}>←</button>
+          <button onClick={() => onNavigate('player')} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
+            <span style={{ fontSize: '24px', lineHeight: 1 }}>&lt;</span>
+          </button>
           <div>
             <div style={{ fontWeight: 700, fontSize: '14px' }}>{currentSong?.title || '未选择歌曲'}</div>
             <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{currentSong?.artist}</div>

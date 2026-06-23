@@ -4,19 +4,23 @@ import * as db from '../lib/db'
 
 interface LibraryState {
   songs: Song[]
+  lyrics: Map<string, string>
   hiddenIds: Set<string>
   isLoading: boolean
 
   loadSongs: () => Promise<void>
-  addSongs: (songs: Song[]) => Promise<void>
+  addSongs: (songs: Song[], lyrics?: Map<string, string>) => Promise<void>
+  updateSongDuration: (songId: string, duration: number) => Promise<void>
   removeSongsByFolder: (folder: string) => Promise<void>
   hideSong: (filePath: string) => Promise<void>
   unhideSong: (filePath: string) => Promise<void>
   getVisibleSongs: () => Song[]
+  getLyrics: (filePath: string) => string | undefined
 }
 
 export const useLibraryStore = create<LibraryState>((set, get) => ({
   songs: [],
+  lyrics: new Map(),
   hiddenIds: new Set(),
   isLoading: false,
 
@@ -24,17 +28,42 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     set({ isLoading: true })
     const songs = await db.getAllSongs()
     const hiddenIds = await db.getHiddenSongs()
-    set({ songs, hiddenIds, isLoading: false })
+    const lyrics = await db.getAllLyrics()
+    set({ songs, hiddenIds, lyrics, isLoading: false })
   },
 
-  addSongs: async (songs) => {
+  addSongs: async (songs, lyrics) => {
     const existingSongs = get().songs
     const existingIds = new Set(existingSongs.map(s => s.id))
     const newSongs = songs.filter(s => !existingIds.has(s.id))
+
     if (newSongs.length > 0) {
       await db.addSongs(newSongs)
-      set(state => ({ songs: [...state.songs, ...newSongs] }))
     }
+
+    if (lyrics && lyrics.size > 0) {
+      await db.saveLyrics(lyrics)
+    }
+
+    set(state => ({
+      songs: newSongs.length > 0 ? [...state.songs, ...newSongs] : state.songs,
+      lyrics: lyrics ? new Map([...state.lyrics, ...lyrics]) : state.lyrics
+    }))
+  },
+
+  updateSongDuration: async (songId, duration) => {
+    // Get the song before update
+    const song = get().songs.find(s => s.id === songId)
+    if (!song) return
+
+    // Update in store
+    set(state => ({
+      songs: state.songs.map(s => s.id === songId ? { ...s, duration } : s)
+    }))
+
+    // Update in IndexedDB with the new duration
+    const updatedSong = { ...song, duration }
+    await db.updateSong(updatedSong)
   },
 
   removeSongsByFolder: async (folder) => {
@@ -65,5 +94,14 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   getVisibleSongs: () => {
     const { songs, hiddenIds } = get()
     return songs.filter(s => !hiddenIds.has(s.filePath))
+  },
+
+  getLyrics: (filePath) => {
+    const { lyrics } = get()
+    // Try exact path first
+    if (lyrics.has(filePath)) return lyrics.get(filePath)
+    // Try .lrc extension
+    const lrcPath = filePath.replace(/\.[^.]+$/, '.lrc')
+    return lyrics.get(lrcPath)
   },
 }))

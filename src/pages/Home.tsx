@@ -6,11 +6,18 @@ interface HomeProps {
   onToggleDrawer: () => void
 }
 
+function formatDuration(seconds: number): string {
+  if (!seconds || seconds === 0) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${String(secs).padStart(2, '0')}`
+}
+
 export function Home({ onToggleDrawer }: HomeProps) {
-  const { songs } = useLibraryStore()
+  const { songs, hiddenIds } = useLibraryStore()
   const { play, currentSong } = usePlayerStore()
 
-  const visibleSongs = songs.filter(s => !s.hidden)
+  const visibleSongs = songs.filter(s => !hiddenIds.has(s.filePath))
 
   return (
     <div className="page active">
@@ -51,9 +58,9 @@ export function Home({ onToggleDrawer }: HomeProps) {
                 <td className="col-cover">
                   <div className="cover-thumb"></div>
                 </td>
-                <td className="col-song">{s.title}<span className={`quality-badge quality-${s.quality}`}>{s.quality}</span></td>
+                <td className="col-song">{s.title}</td>
                 <td className="col-artist">{s.artist}</td>
-                <td className="col-duration">{s.duration}</td>
+                <td className="col-duration">{formatDuration(s.duration)}</td>
               </tr>
             ))}
           </tbody>

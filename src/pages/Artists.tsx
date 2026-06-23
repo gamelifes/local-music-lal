@@ -23,7 +23,9 @@ export function Artists({ onNavigate, onSelectArtist }: ArtistsProps) {
       <div className="page-content" style={{ paddingTop: 0 }}>
         <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', padding: '8px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0 16px' }}>
-            <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '20px', cursor: 'pointer' }}>←</button>
+            <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
+              <span style={{ fontSize: '24px', lineHeight: 1 }}>&lt;</span>
+            </button>
             <h2 style={{ fontSize: '18px' }}>歌手</h2>
           </div>
         </div>

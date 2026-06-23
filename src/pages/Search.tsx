@@ -8,14 +8,15 @@ interface SearchProps {
 
 export function Search({ onNavigate }: SearchProps) {
   const [query, setQuery] = useState('')
-  const { songs } = useLibraryStore()
+  const { songs, hiddenIds } = useLibraryStore()
   const { play } = usePlayerStore()
 
   const results = query
     ? songs.filter(s =>
-        s.title.toLowerCase().includes(query.toLowerCase()) ||
-        s.artist.toLowerCase().includes(query.toLowerCase()) ||
-        s.album.toLowerCase().includes(query.toLowerCase())
+        !hiddenIds.has(s.filePath) &&
+        (s.title.toLowerCase().includes(query.toLowerCase()) ||
+         s.artist.toLowerCase().includes(query.toLowerCase()) ||
+         s.album.toLowerCase().includes(query.toLowerCase()))
       )
     : []
 
@@ -25,7 +26,9 @@ export function Search({ onNavigate }: SearchProps) {
         {/* Sticky Header */}
         <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', padding: '8px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0 16px' }}>
-            <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '20px', cursor: 'pointer' }}>←</button>
+            <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
+              <span style={{ fontSize: '24px', lineHeight: 1 }}>&lt;</span>
+            </button>
             <input
               type="text"
               placeholder="搜索歌曲、歌手、专辑..."

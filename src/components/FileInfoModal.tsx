@@ -16,16 +16,16 @@ export function FileInfoModal() {
         <button className="modal-close" onClick={() => closeModal('fileInfo')}>✕</button>
         <div className="modal-title" style={{ marginBottom: '16px', fontSize: '16px' }}>文件信息</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--glass-border)' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>歌名</span>
-            <span style={{ fontSize: '13px', color: 'var(--text)', fontWeight: 600 }}>{currentSong?.title}</span>
+          <div style={{ padding: '8px 0', borderBottom: '1px solid var(--glass-border)' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>歌名</span>
+            <span style={{ fontSize: '13px', color: 'var(--text)', fontWeight: 600, wordBreak: 'break-all', lineHeight: '1.5' }}>{currentSong?.title}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--glass-border)' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>歌手</span>
+          <div style={{ padding: '8px 0', borderBottom: '1px solid var(--glass-border)' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>歌手</span>
             <span style={{ fontSize: '13px', color: 'var(--text)', fontWeight: 600 }}>{currentSong?.artist}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--glass-border)' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>文件大小</span>
+          <div style={{ padding: '8px 0', borderBottom: '1px solid var(--glass-border)' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>文件大小</span>
             <span style={{ fontSize: '13px', color: 'var(--text)', fontWeight: 600 }}>{fileSize} MB</span>
           </div>
           <div style={{ padding: '8px 0' }}>

@@ -1,85 +1,129 @@
-import type { LyricLine, LyricWord } from '../types/lyrics'
-
-// Parse milliseconds from LRC format (e.g., "34" -> 340ms, "340" -> 340ms)
-function parseMs(msStr: string): number {
-  if (!msStr) return 0
-  const ms = parseInt(msStr)
-  // LRC format: 2 digits = *10, 3 digits = direct
-  if (msStr.length === 2) return ms * 10
-  return ms
+export interface LyricLine {
+  text: string
+  time: number // in seconds
+  startMs: number // in milliseconds
+  words: LyricWord[]
 }
 
-export function parseLRC(raw: string, _durationMs: number): LyricLine[] {
+export interface LyricWord {
+  text: string
+  time: number // in seconds
+  startMs: number // in milliseconds
+}
+
+export function parseLRC(lrcText: string, _durationMs?: number): LyricLine[] {
+  // Check if it's Enhanced LRC (has word-level timing like <mm:ss.xx>)
+  const isEnhanced = /\[\d{2}:\d{2}\.\d{2,3}\]<\d{2}:\d{2}\.\d{2,3}>/.test(lrcText)
+
+  if (isEnhanced) {
+    console.log('Detected Enhanced LRC format')
+    return parseEnhancedLRC(lrcText)
+  }
+
+  // Standard LRC parsing
   const lines: LyricLine[] = []
-  const regex = /\[(\d{2}):(\d{2})\.?(\d{0,3})\](.*)/
+  const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g
 
-  for (const line of raw.split('\n')) {
-    const match = line.match(regex)
-    if (match) {
-      const [, min, sec, ms, text] = match
-      const startMs = parseInt(min) * 60000 + parseInt(sec) * 1000 + parseMs(ms)
+  for (const line of lrcText.split('\n')) {
+    const times: number[] = []
+    let match
 
-      const words: LyricWord[] = text.split('').map((char, i) => ({
+    while ((match = timeRegex.exec(line)) !== null) {
+      const minutes = parseInt(match[1])
+      const seconds = parseInt(match[2])
+      const ms = parseInt(match[3].padEnd(3, '0'))
+      times.push(minutes * 60 + seconds + ms / 1000)
+    }
+
+    const text = line.replace(/\[\d{2}:\d{2}\.\d{2,3}\]/g, '').trim()
+    if (text && times.length > 0) {
+      for (const time of times) {
+        lines.push({ text, time, startMs: Math.round(time * 1000), words: [] })
+      }
+    }
+  }
+
+  // Sort by time first
+  lines.sort((a, b) => a.time - b.time)
+
+  // Distribute word timing within each line
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const nextTime = i < lines.length - 1 ? lines[i + 1].time : line.time + 3
+    const lineDuration = nextTime - line.time
+    const chars = line.text.split('')
+    const charDuration = lineDuration / Math.max(chars.length, 1)
+
+    line.words = chars.map((char, idx) => ({
+      text: char,
+      time: line.time + (idx * charDuration),
+      startMs: Math.round((line.time + (idx * charDuration)) * 1000)
+    }))
+  }
+
+  return lines
+}
+
+export function parseEnhancedLRC(lrcText: string): LyricLine[] {
+  const lines: LyricLine[] = []
+  const lineRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\](.*?)(?=\[\d{2}:\d{2}|$)/g
+  const wordRegex = /<(\d{2}):(\d{2})\.(\d{2,3})>([^<]*)/g
+
+  let lineMatch
+  while ((lineMatch = lineRegex.exec(lrcText)) !== null) {
+    const lineMinutes = parseInt(lineMatch[1])
+    const lineSeconds = parseInt(lineMatch[2])
+    const lineMs = parseInt(lineMatch[3].padEnd(3, '0'))
+    const lineTime = lineMinutes * 60 + lineSeconds + lineMs / 1000
+    const lineStartMs = Math.round(lineTime * 1000)
+
+    const content = lineMatch[4]
+    const words: LyricWord[] = []
+    let wordMatch
+    let lastWordEnd = 0
+
+    while ((wordMatch = wordRegex.exec(content)) !== null) {
+      const wordMinutes = parseInt(wordMatch[1])
+      const wordSeconds = parseInt(wordMatch[2])
+      const wordMs = parseInt(wordMatch[3].padEnd(3, '0'))
+      const wordTime = wordMinutes * 60 + wordSeconds + wordMs / 1000
+      const wordStartMs = Math.round(wordTime * 1000)
+
+      // Add any text before this word marker
+      const beforeText = content.substring(lastWordEnd, wordMatch.index)
+      if (beforeText) {
+        words.push({ text: beforeText, time: wordTime, startMs: wordStartMs })
+      }
+
+      // Add the word after the marker
+      const wordText = wordMatch[4]
+      if (wordText) {
+        words.push({ text: wordText, time: wordTime, startMs: wordStartMs })
+      }
+
+      lastWordEnd = wordMatch.index + wordMatch[0].length
+    }
+
+    // Add any remaining text
+    if (lastWordEnd < content.length) {
+      const remainingText = content.substring(lastWordEnd)
+      if (remainingText) {
+        words.push({ text: remainingText, time: lineTime, startMs: lineStartMs })
+      }
+    }
+
+    // If no word markers found, create words from the entire line
+    if (words.length === 0 && content.trim()) {
+      const chars = content.split('').map(char => ({
         text: char,
-        startMs: startMs + (i * 200),
-        durationMs: 200,
+        time: lineTime,
+        startMs: lineStartMs
       }))
-
-      lines.push({ text, startMs, words })
+      words.push(...chars)
     }
+
+    lines.push({ text: content, time: lineTime, startMs: lineStartMs, words })
   }
 
-  return lines.sort((a, b) => a.startMs - b.startMs)
-}
-
-export function parseEnhancedLRC(raw: string): LyricLine[] {
-  const lines: LyricLine[] = []
-  const lineRegex = /\[(\d{2}):(\d{2})\.?(\d{0,3})\](.*)/
-  const wordRegex = /<(\d{2}):(\d{2})\.?(\d{0,3})>/
-
-  for (const line of raw.split('\n')) {
-    const lineMatch = line.match(lineRegex)
-    if (lineMatch) {
-      const [, min, sec, ms, content] = lineMatch
-      const lineStartMs = parseInt(min) * 60000 + parseInt(sec) * 1000 + parseMs(ms)
-
-      const words: LyricWord[] = []
-      let lastTime = lineStartMs
-
-      // Get text before first timestamp (if any)
-      const firstTimestampMatch = content.match(wordRegex)
-      const textBeforeFirst = firstTimestampMatch ? content.substring(0, content.indexOf(firstTimestampMatch[0])) : content
-      
-      if (textBeforeFirst) {
-        for (const char of textBeforeFirst) {
-          words.push({
-            text: char,
-            startMs: lastTime,
-            durationMs: 200,
-          })
-          lastTime += 200
-        }
-      }
-
-      // Parse remaining content with timestamps
-      const parts = content.split(wordRegex)
-      for (let i = 1; i < parts.length; i += 4) {
-        if (parts[i] && parts[i+1] && parts[i+2]) {
-          const wordTime = parseInt(parts[i]) * 60000 + parseInt(parts[i+1]) * 1000 + parseMs(parts[i+2])
-          if (parts[i+3]) {
-            words.push({
-              text: parts[i+3],
-              startMs: wordTime,
-              durationMs: wordTime - lastTime,
-            })
-            lastTime = wordTime
-          }
-        }
-      }
-
-      lines.push({ text: content.replace(/<[^>]+>/g, ''), startMs: lineStartMs, words })
-    }
-  }
-
-  return lines.sort((a, b) => a.startMs - b.startMs)
+  return lines.sort((a, b) => a.time - b.time)
 }

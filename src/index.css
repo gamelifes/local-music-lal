@@ -771,10 +771,17 @@ body {
   align-items: center;
   justify-content: center;
   transition: all 0.18s;
+  opacity: 0.6;
 }
 
 .player-ctrl-btn:hover {
   color: var(--text);
+  opacity: 1;
+}
+
+.player-ctrl-btn.active {
+  color: var(--accent);
+  opacity: 1;
 }
 
 .player-btn-play {

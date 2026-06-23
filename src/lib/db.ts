@@ -21,22 +21,31 @@ interface MusicDB extends DBSchema {
     key: string
     value: { folder: string; scannedAt: number; songCount: number }
   }
+  lyrics: {
+    key: string
+    value: { filePath: string; content: string }
+  }
 }
 
 let dbPromise: Promise<IDBPDatabase<MusicDB>> | null = null
 
 export function getDB() {
   if (!dbPromise) {
-    dbPromise = openDB<MusicDB>('musicplayer', 1, {
-      upgrade(db) {
-        const songStore = db.createObjectStore('songs', { keyPath: 'id' })
-        songStore.createIndex('by-artist', 'artist')
-        songStore.createIndex('by-album', 'album')
-        songStore.createIndex('by-folder', 'folder')
+    dbPromise = openDB<MusicDB>('musicplayer', 2, {
+      upgrade(db, oldVersion) {
+        if (oldVersion < 1) {
+          const songStore = db.createObjectStore('songs', { keyPath: 'id' })
+          songStore.createIndex('by-artist', 'artist')
+          songStore.createIndex('by-album', 'album')
+          songStore.createIndex('by-folder', 'folder')
 
-        db.createObjectStore('hiddenSongs', { keyPath: 'filePath' })
-        db.createObjectStore('eqPresets', { keyPath: 'name' })
-        db.createObjectStore('scanHistory', { keyPath: 'folder' })
+          db.createObjectStore('hiddenSongs', { keyPath: 'filePath' })
+          db.createObjectStore('eqPresets', { keyPath: 'name' })
+          db.createObjectStore('scanHistory', { keyPath: 'folder' })
+        }
+        if (oldVersion < 2) {
+          db.createObjectStore('lyrics', { keyPath: 'filePath' })
+        }
       },
     })
   }
@@ -58,6 +67,11 @@ export async function addSongs(songs: Song[]): Promise<void> {
   const tx = db.transaction('songs', 'readwrite')
   await Promise.all(songs.map(s => tx.store.put(s)))
   await tx.done
+}
+
+export async function updateSong(song: Song): Promise<void> {
+  const db = await getDB()
+  await db.put('songs', song)
 }
 
 export async function hideSong(filePath: string): Promise<void> {
@@ -89,4 +103,30 @@ export async function getEqPresets(): Promise<EqPreset[]> {
 export async function deleteEqPreset(name: string): Promise<void> {
   const db = await getDB()
   await db.delete('eqPresets', name)
+}
+
+// Lyrics functions
+export async function saveLyrics(lyrics: Map<string, string>): Promise<void> {
+  const db = await getDB()
+  const tx = db.transaction('lyrics', 'readwrite')
+  for (const [filePath, content] of lyrics) {
+    await tx.store.put({ filePath, content })
+  }
+  await tx.done
+}
+
+export async function getLyrics(filePath: string): Promise<string | undefined> {
+  const db = await getDB()
+  const record = await db.get('lyrics', filePath)
+  return record?.content
+}
+
+export async function getAllLyrics(): Promise<Map<string, string>> {
+  const db = await getDB()
+  const all = await db.getAll('lyrics')
+  const map = new Map<string, string>()
+  for (const record of all) {
+    map.set(record.filePath, record.content)
+  }
+  return map
 }
