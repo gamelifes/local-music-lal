@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --color-accent: oklch(0.72 0.16 82);
-  --color-accent-glow: oklch(0.72 0.16 82 / 0.4);
+  --color-accent: #e8b43c;
+  --color-accent-glow: rgba(232, 180, 60, 0.4);
   --color-bg: #0F0F0A;
   --color-bg-card: rgba(255, 255, 255, 0.03);
   --color-bg-card-hover: rgba(255, 255, 255, 0.06);
@@ -11,8 +11,8 @@
 }
 
 :root {
-  --accent: oklch(0.72 0.16 82);
-  --accent-glow: oklch(0.72 0.16 82 / 0.4);
+  --accent: #e8b43c;
+  --accent-glow: rgba(232, 180, 60, 0.4);
   --bg: #0F0F0A;
   --bg-card: rgba(255, 255, 255, 0.03);
   --bg-card-hover: rgba(255, 255, 255, 0.06);
@@ -310,21 +310,21 @@ body {
 }
 
 .quality-lossless {
-  background: oklch(0.72 0.14 85 / 0.15);
+  background: rgba(232, 180, 60, 0.15);
   color: var(--accent);
-  border: 1px solid oklch(0.72 0.14 85 / 0.2);
+  border: 1px solid rgba(232, 180, 60, 0.2);
 }
 
 .quality-high {
-  background: oklch(0.68 0.16 55 / 0.15);
-  color: var(--accent);
-  border: 1px solid oklch(0.68 0.16 55 / 0.2);
+  background: rgba(220, 160, 60, 0.15);
+  color: #dca03c;
+  border: 1px solid rgba(220, 160, 60, 0.2);
 }
 
 .quality-standard {
-  background: oklch(0.62 0.15 250 / 0.15);
-  color: var(--accent);
-  border: 1px solid oklch(0.62 0.15 250 / 0.2);
+  background: rgba(100, 140, 200, 0.15);
+  color: #648cc8;
+  border: 1px solid rgba(100, 140, 200, 0.2);
 }
 
 .quality-low {

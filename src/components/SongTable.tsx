@@ -5,7 +5,6 @@ import type { Song } from '../types/song'
 interface SongTableProps {
   title: string
   onBack?: () => void
-  backIcon?: string
   rightAction?: ReactNode
   songs: Song[]
   columns: { label: string; width?: number | string; textAlign?: 'left' | 'right' | 'center' }[]
@@ -21,7 +20,7 @@ function formatDuration(seconds: number): string {
   return `${mins}:${String(secs).padStart(2, '0')}`
 }
 
-export function SongTable({ title, onBack, backIcon = '←', rightAction, songs, columns, onPlaySong, extraColumns, renderSong }: SongTableProps) {
+export function SongTable({ title, onBack, rightAction, songs, columns, onPlaySong, extraColumns, renderSong }: SongTableProps) {
   const { currentSong } = usePlayerStore()
 
   return (
@@ -31,7 +30,9 @@ export function SongTable({ title, onBack, backIcon = '←', rightAction, songs,
         <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', padding: '8px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0 8px' }}>
             {onBack && (
-              <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '20px', cursor: 'pointer' }}>{backIcon}</button>
+              <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
+                <img src="/icons/back.svg" alt="back" width="24" height="24" />
+              </button>
             )}
             <h2 style={{ fontSize: '18px', flex: 1 }}>{title}</h2>
             {rightAction}
