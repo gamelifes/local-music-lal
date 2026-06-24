@@ -40,13 +40,43 @@ function isLyricsFile(filename: string): boolean {
   return filename.toLowerCase().endsWith('.lrc')
 }
 
+// Parse content URI to get the actual folder path
+function parseContentUri(uri: string): { path: string; folderName: string } {
+  // Content URI format: content://com.android.externalstorage.documents/tree/primary%3AMusic
+  // We need to extract "Music" from this
+
+  if (uri.includes('%3A')) {
+    // Extract folder name after the colon
+    const parts = uri.split('%3A')
+    if (parts.length > 1) {
+      let folderPart = parts[parts.length - 1]
+      // Remove any trailing path components
+      folderPart = folderPart.split('/')[0]
+      // Decode URL encoding
+      try {
+        folderPart = decodeURIComponent(folderPart)
+      } catch (e) {
+        // Ignore decode errors
+      }
+      return { path: folderPart, folderName: folderPart }
+    }
+  }
+
+  // If it's already a regular path, extract folder name
+  const folderName = uri.split('/').pop() || 'Music'
+  return { path: uri, folderName }
+}
+
 // Pick a directory using @capgo/capacitor-file-picker
-async function pickDirectory(): Promise<string | null> {
+async function pickDirectory(): Promise<{ path: string; folderName: string } | null> {
   try {
     const { CapgoFilePicker } = await import('@capgo/capacitor-file-picker')
     const result = await CapgoFilePicker.pickDirectory()
     if (result && result.path) {
-      return result.path
+      console.log('Raw picked path:', result.path)
+      const parsed = parseContentUri(result.path)
+      console.log('Parsed path:', parsed)
+      return parsed
     }
     return null
   } catch (e) {
@@ -56,7 +86,7 @@ async function pickDirectory(): Promise<string | null> {
 }
 
 // Scan a directory using Capacitor Filesystem
-async function scanDirectory(dirPath: string): Promise<ScanResult> {
+async function scanDirectory(dirPath: string, _folderName: string): Promise<ScanResult> {
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
 
@@ -184,9 +214,9 @@ async function scanWithFilePicker(): Promise<ScanResult> {
 
 export async function scanFolder(): Promise<ScanResult> {
   if (window.Capacitor) {
-    const dirPath = await pickDirectory()
-    if (dirPath) {
-      return scanDirectory(dirPath)
+    const picked = await pickDirectory()
+    if (picked) {
+      return scanDirectory(picked.path, picked.folderName)
     }
     return { songs: [], lyrics: new Map() }
   }
