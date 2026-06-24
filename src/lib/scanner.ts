@@ -68,7 +68,7 @@ function parseContentUri(uri: string): { path: string; folderName: string } {
 }
 
 // Pick a directory using @capgo/capacitor-file-picker
-async function pickDirectory(): Promise<{ path: string; folderName: string } | null> {
+export async function pickDirectory(): Promise<{ path: string; folderName: string } | null> {
   try {
     const { CapgoFilePicker } = await import('@capgo/capacitor-file-picker')
     const result = await CapgoFilePicker.pickDirectory()

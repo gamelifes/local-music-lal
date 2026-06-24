@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLibraryStore } from '../store/library'
-import { scanFolder } from '../lib/scanner'
+import { scanFolder, pickDirectory } from '../lib/scanner'
 
 interface ScanProps {
   onNavigate: (page: string) => void
@@ -23,9 +23,15 @@ export function Scan({ onNavigate }: ScanProps) {
   }
 
   const handleAddFolder = async () => {
-    const result = await scanFolder()
-    if (result.songs.length > 0) {
-      await addSongs(result.songs, result.lyrics)
+    // Pick a folder and show its name
+    const picked = await pickDirectory()
+    if (picked) {
+      setSelectedFolder(picked.folderName)
+      // Add to folder list if not exists
+      if (!folders.includes(picked.folderName)) {
+        const { addFolder } = useLibraryStore.getState()
+        await addFolder(picked.folderName)
+      }
     }
   }
 
@@ -95,14 +101,14 @@ export function Scan({ onNavigate }: ScanProps) {
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
           <div style={{ fontSize: '64px', marginBottom: '16px' }}>{completed ? '✅' : scanning ? '📡' : '📁'}</div>
           <h2 style={{ fontSize: '22px', marginBottom: '8px' }}>
-            {completed ? '扫描完成' : scanning ? '正在扫描...' : '选择扫描文件夹'}
+            {completed ? '扫描完成' : scanning ? '正在扫描...' : selectedFolder || '选择扫描文件夹'}
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
             {completed
               ? `共发现 ${completedCount} 首歌曲`
               : scanning
                 ? `已发现 ${scannedCount} 首歌曲`
-                : '点击右上角 + 扫描音乐文件夹'
+                : '点击右上角 + 选择文件夹，然后点击开始扫描'
             }
           </p>
         </div>
@@ -129,9 +135,9 @@ export function Scan({ onNavigate }: ScanProps) {
         {/* Folder List */}
         {!scanning && !completed && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-            {folders.length === 0 && (
+            {folders.length === 0 && !selectedFolder && (
               <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px', padding: '16px 0' }}>
-                暂无文件夹，点击右上角 + 扫描
+                暂无文件夹，点击右上角 + 添加
               </p>
             )}
             {folders.map(f => {
