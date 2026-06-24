@@ -431,6 +431,7 @@ body {
   border-color: var(--accent);
   box-shadow: 0 0 18px var(--accent-glow);
   opacity: 1 !important;
+  transition: none !important;
 }
 
 /* Drawer */
