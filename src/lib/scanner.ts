@@ -44,14 +44,36 @@ export async function pickDirectory(): Promise<string | null> {
   }
 }
 
+// Convert absolute path to relative path for Capacitor Filesystem
+function toRelativePath(absolutePath: string): string {
+  // Remove common prefixes
+  let path = absolutePath
+  if (path.startsWith('file://')) {
+    path = path.substring(7)
+  }
+  // Remove /storage/emulated/0/ prefix if present
+  if (path.startsWith('/storage/emulated/0/')) {
+    path = path.substring(20)
+  }
+  // Remove leading slash
+  if (path.startsWith('/')) {
+    path = path.substring(1)
+  }
+  return path
+}
+
 // Scan a specific directory path (Android)
 export async function scanDirectoryByPath(dirPath: string): Promise<ScanResult> {
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
   const audioExtensions = ['.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.ape']
+  const folderName = dirPath.split('/').pop() || 'Music'
 
   try {
     const { Filesystem, Directory } = await import('@capacitor/filesystem')
+    const relativePath = toRelativePath(dirPath)
+
+    console.log('Scanning folder:', folderName, 'relativePath:', relativePath)
 
     async function scanDir(path: string) {
       try {
@@ -60,6 +82,8 @@ export async function scanDirectoryByPath(dirPath: string): Promise<ScanResult> 
           directory: Directory.ExternalStorage
         })
 
+        console.log('Directory contents:', dirResult.files?.length, 'items')
+
         const files = dirResult.files || []
         for (const file of files) {
           const name = file.name.toLowerCase()
@@ -67,6 +91,7 @@ export async function scanDirectoryByPath(dirPath: string): Promise<ScanResult> 
           const filePath = path ? `${path}/${file.name}` : file.name
 
           if (file.type === 'directory') {
+            // Recursively scan subdirectories
             await scanDir(filePath)
           } else if (audioExtensions.includes(ext)) {
             const format = ext.substring(1)
@@ -83,11 +108,12 @@ export async function scanDirectoryByPath(dirPath: string): Promise<ScanResult> 
               sampleRate: 44100,
               channels: 2,
               quality: detectQuality(format, 320),
-              folder: dirPath.split('/').pop() || 'Music',
+              folder: folderName,
               hidden: false,
               addedAt: Date.now(),
             }
             songs.push(song)
+            console.log('Found audio:', file.name)
           } else if (ext === '.lrc') {
             try {
               const content = await Filesystem.readFile({
@@ -101,11 +127,12 @@ export async function scanDirectoryByPath(dirPath: string): Promise<ScanResult> 
           }
         }
       } catch (e) {
-        console.error('Error scanning:', path, e)
+        console.error('Error scanning directory:', path, e)
       }
     }
 
-    await scanDir(dirPath)
+    await scanDir(relativePath)
+    console.log('Scan complete. Found', songs.length, 'songs')
   } catch (e) {
     console.error('scanDirectoryByPath failed:', e)
   }
