@@ -29,21 +29,6 @@ export interface ScanResult {
   lyrics: Map<string, string>
 }
 
-// Pick a directory using system file picker (Android)
-export async function pickDirectory(): Promise<string | null> {
-  try {
-    const { FilePicker } = await import('@capawesome/capacitor-file-picker')
-    const result = await FilePicker.pickDirectory()
-    if (result && result.path) {
-      return result.path
-    }
-    return null
-  } catch (e) {
-    console.error('pickDirectory failed:', e)
-    return null
-  }
-}
-
 function isAudioFile(filename: string): boolean {
   const audioExtensions = ['.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.ape']
   const name = filename.toLowerCase()
@@ -54,84 +39,68 @@ function isLyricsFile(filename: string): boolean {
   return filename.toLowerCase().endsWith('.lrc')
 }
 
-// Scan a specific directory path (Android)
-export async function scanDirectoryByPath(dirPath: string): Promise<ScanResult> {
+// Scan known directories on Android
+async function scanKnownDirectories(): Promise<ScanResult> {
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
-  const folderName = dirPath.split('/').pop() || 'Music'
 
   try {
     const { Filesystem, Directory } = await import('@capacitor/filesystem')
 
-    // Try multiple path formats
-    const possiblePaths = [
-      dirPath,                                           // Original path
-      dirPath.replace(/^\/storage\/emulated\/0\//, ''), // Relative path
-      dirPath.replace(/^\/storage\/emulated\/0\//, '').replace(/^\//, ''), // No leading slash
-    ]
+    // Common music directories on Android
+    const dirs = ['Music', 'Download', 'Download/Music', 'DCIM', 'Documents']
 
-    let success = false
-    for (const testPath of possiblePaths) {
+    for (const dir of dirs) {
       try {
-        console.log('Trying path:', testPath)
-        const dirResult = await Filesystem.readdir({
-          path: testPath,
+        const result = await Filesystem.readdir({
+          path: dir,
           directory: Directory.ExternalStorage
         })
 
-        if (dirResult.files && dirResult.files.length > 0) {
-          success = true
-          console.log('Success! Found', dirResult.files.length, 'items')
+        const files = result.files || []
+        for (const file of files) {
+          const name = file.name
+          const filePath = `${dir}/${name}`
 
-          for (const file of dirResult.files) {
-            const name = file.name
-            const filePath = testPath ? `${testPath}/${name}` : name
-
-            if (isAudioFile(name)) {
-              const ext = name.substring(name.lastIndexOf('.')).toLowerCase()
-              const format = ext.substring(1)
-              const song: Song = {
-                id: generateId(filePath),
-                title: name.replace(ext, ''),
-                artist: 'Unknown Artist',
-                album: 'Unknown Album',
-                duration: 0,
-                filePath: filePath,
-                size: file.size || 0,
-                format,
-                bitrate: 320,
-                sampleRate: 44100,
-                channels: 2,
-                quality: detectQuality(format, 320),
-                folder: folderName,
-                hidden: false,
-                addedAt: Date.now(),
-              }
-              songs.push(song)
-            } else if (isLyricsFile(name)) {
-              try {
-                const content = await Filesystem.readFile({
-                  path: filePath,
-                  directory: Directory.ExternalStorage
-                })
-                lyrics.set(filePath, content.data as string)
-              } catch (e) {
-                // Ignore
-              }
+          if (isAudioFile(name)) {
+            const ext = name.substring(name.lastIndexOf('.')).toLowerCase()
+            const format = ext.substring(1)
+            const song: Song = {
+              id: generateId(filePath),
+              title: name.replace(ext, ''),
+              artist: 'Unknown Artist',
+              album: 'Unknown Album',
+              duration: 0,
+              filePath: filePath,
+              size: file.size || 0,
+              format,
+              bitrate: 320,
+              sampleRate: 44100,
+              channels: 2,
+              quality: detectQuality(format, 320),
+              folder: dir,
+              hidden: false,
+              addedAt: Date.now(),
+            }
+            songs.push(song)
+          } else if (isLyricsFile(name)) {
+            try {
+              const content = await Filesystem.readFile({
+                path: filePath,
+                directory: Directory.ExternalStorage
+              })
+              lyrics.set(filePath, content.data as string)
+            } catch (e) {
+              // Ignore
             }
           }
-          break
         }
       } catch (e) {
-        console.log('Path failed:', testPath, e)
+        // Directory doesn't exist, continue
       }
     }
-
-    if (!success) {
-      console.log('All path formats failed for:', dirPath)
-    }
   } catch (e) {
-    console.error('scanDirectoryByPath failed:', e)
+    console.error('scanKnownDirectories failed:', e)
   }
 
   return { songs, lyrics }
@@ -192,9 +161,7 @@ async function scanWithFilePicker(): Promise<ScanResult> {
 
 export async function scanFolder(): Promise<ScanResult> {
   if (window.Capacitor) {
-    const path = await pickDirectory()
-    if (!path) return { songs: [], lyrics: new Map() }
-    return scanDirectoryByPath(path)
+    return scanKnownDirectories()
   }
 
   if (typeof window.showDirectoryPicker === 'function') {
