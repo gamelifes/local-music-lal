@@ -33,13 +33,19 @@ async function getAudioUri(filePath: string): Promise<string | null> {
       path = path.substring(1)
     }
 
-    // Get the file URI using stat
+    // Try to get the file URI
     const stat = await Filesystem.stat({
       path: path,
       directory: Directory.ExternalStorage
     })
 
-    return stat.uri || null
+    // Try different URI formats
+    if (stat.uri) {
+      return stat.uri
+    }
+
+    // Fallback: construct file URI
+    return `file:///storage/emulated/0/${path}`
   } catch (e) {
     console.error('Failed to get audio URI:', filePath, e)
     return null
