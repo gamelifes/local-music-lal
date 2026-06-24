@@ -42,41 +42,28 @@ function isLyricsFile(filename: string): boolean {
 
 // Parse content URI to get the actual folder path
 function parseContentUri(uri: string): { path: string; folderName: string } {
-  // Content URI format: content://com.android.externalstorage.documents/tree/primary%3AMusic
-  // We need to extract "Music" from this
-
   if (uri.includes('%3A')) {
-    // Extract folder name after the colon
     const parts = uri.split('%3A')
     if (parts.length > 1) {
       let folderPart = parts[parts.length - 1]
-      // Remove any trailing path components
       folderPart = folderPart.split('/')[0]
-      // Decode URL encoding
       try {
         folderPart = decodeURIComponent(folderPart)
-      } catch (e) {
-        // Ignore decode errors
-      }
+      } catch (e) {}
       return { path: folderPart, folderName: folderPart }
     }
   }
-
-  // If it's already a regular path, extract folder name
   const folderName = uri.split('/').pop() || 'Music'
   return { path: uri, folderName }
 }
 
-// Pick a directory using @capgo/capacitor-file-picker
+// Pick a directory
 export async function pickDirectory(): Promise<{ path: string; folderName: string } | null> {
   try {
     const { CapgoFilePicker } = await import('@capgo/capacitor-file-picker')
     const result = await CapgoFilePicker.pickDirectory()
     if (result && result.path) {
-      console.log('Raw picked path:', result.path)
-      const parsed = parseContentUri(result.path)
-      console.log('Parsed path:', parsed)
-      return parsed
+      return parseContentUri(result.path)
     }
     return null
   } catch (e) {
@@ -86,22 +73,17 @@ export async function pickDirectory(): Promise<{ path: string; folderName: strin
 }
 
 // Scan a directory using Capacitor Filesystem
-async function scanDirectory(dirPath: string, _folderName: string): Promise<ScanResult> {
+async function scanDirectory(dirPath: string, folderName: string): Promise<ScanResult> {
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
 
   try {
     const { Filesystem, Directory } = await import('@capacitor/filesystem')
 
-    // The path from pickDirectory should be a regular path
     let pathToScan = dirPath
-
-    // Remove leading slash if present
     if (pathToScan.startsWith('/')) {
       pathToScan = pathToScan.substring(1)
     }
-
-    console.log('Scanning path:', pathToScan)
 
     const dirResult = await Filesystem.readdir({
       path: pathToScan,
@@ -109,18 +91,36 @@ async function scanDirectory(dirPath: string, _folderName: string): Promise<Scan
     })
 
     const files = dirResult.files || []
-    console.log('Found', files.length, 'items in', pathToScan)
 
+    // First pass: collect lyrics
     for (const file of files) {
       const name = file.name
-      const filePath = pathToScan ? `${pathToScan}/${name}` : name
+      if (isLyricsFile(name)) {
+        const filePath = `${pathToScan}/${name}`
+        try {
+          const content = await Filesystem.readFile({
+            path: filePath,
+            directory: Directory.ExternalStorage
+          })
+          const title = name.replace('.lrc', '')
+          lyrics.set(title, content.data as string)
+        } catch (e) {}
+      }
+    }
+
+    // Second pass: collect audio files
+    for (const file of files) {
+      const name = file.name
+      const filePath = `${pathToScan}/${name}`
 
       if (isAudioFile(name)) {
         const ext = name.substring(name.lastIndexOf('.')).toLowerCase()
         const format = ext.substring(1)
+        const title = name.replace(ext, '')
+
         const song: Song = {
           id: generateId(filePath),
-          title: name.replace(ext, ''),
+          title: title,
           artist: 'Unknown Artist',
           album: 'Unknown Album',
           duration: 0,
@@ -131,27 +131,13 @@ async function scanDirectory(dirPath: string, _folderName: string): Promise<Scan
           sampleRate: 44100,
           channels: 2,
           quality: detectQuality(format, 320),
-          folder: dirPath.split('/').pop() || 'Music',
+          folder: folderName,
           hidden: false,
           addedAt: Date.now(),
         }
         songs.push(song)
-        console.log('Found audio:', name)
-      } else if (isLyricsFile(name)) {
-        try {
-          const content = await Filesystem.readFile({
-            path: filePath,
-            directory: Directory.ExternalStorage
-          })
-          lyrics.set(filePath, content.data as string)
-          console.log('Found lyrics:', name)
-        } catch (e) {
-          console.warn('Failed to read lyrics:', name)
-        }
       }
     }
-
-    console.log('Scan complete:', songs.length, 'songs,', lyrics.size, 'lyrics')
   } catch (e) {
     console.error('scanDirectory failed:', e)
   }
@@ -199,8 +185,8 @@ async function scanWithFilePicker(): Promise<ScanResult> {
         } else if (isLyricsFile(name)) {
           const file = await entry.getFile()
           const text = await file.text()
-          const lrcPath = path + '/' + name
-          lyrics.set(lrcPath, text)
+          const title = name.replace('.lrc', '')
+          lyrics.set(title, text)
         }
       } else if (entry.kind === 'directory') {
         await scanDir(entry, path + '/' + entry.name)
@@ -225,6 +211,5 @@ export async function scanFolder(): Promise<ScanResult> {
     return scanWithFilePicker()
   }
 
-  console.warn('No file access API available')
   return { songs: [], lyrics: new Map() }
 }
