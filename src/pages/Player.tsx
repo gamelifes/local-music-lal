@@ -180,8 +180,12 @@ export function Player({ onNavigate }: PlayerProps) {
         <button className="player-action-btn" onClick={() => openModal('share')} title="分享">
           <img src="/icons/share.svg" alt="share" width="20" height="20" />
         </button>
-        <button className="player-action-btn" onClick={() => openModal('sleep')} title="睡眠">☽</button>
-        <button className="player-action-btn" onClick={() => { if (currentSong) { hideSong(currentSong.filePath); nextSong(); onNavigate('home') } }} title="隐藏">👁</button>
+        <button className="player-action-btn" onClick={() => openModal('sleep')} title="睡眠">
+          <img src="/icons/sleep.svg" alt="sleep" width="20" height="20" />
+        </button>
+        <button className="player-action-btn" onClick={() => { if (currentSong) { hideSong(currentSong.filePath); nextSong(); onNavigate('home') } }} title="隐藏">
+          <img src="/icons/hide.svg" alt="hide" width="20" height="20" />
+        </button>
       </div>
 
       {/* Progress Bar */}

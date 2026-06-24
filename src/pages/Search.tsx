@@ -63,7 +63,9 @@ export function Search({ onNavigate }: SearchProps) {
                   style={{ cursor: 'pointer' }}
                 >
                   <td style={{ width: 64, padding: '8px', textAlign: 'center' }}>
-                    <div className="cover-thumb"></div>
+                    <div className="cover-thumb">
+                      <img src="/icons/music-note.svg" alt="music" className="music-icon" />
+                    </div>
                   </td>
                   <td className="col-song">{s.title}</td>
                   <td className="col-artist">{s.artist}</td>

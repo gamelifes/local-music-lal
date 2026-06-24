@@ -61,7 +61,9 @@ export function SongTable({ title, onBack, rightAction, songs, columns, onPlaySo
                   style={{ cursor: onPlaySong ? 'pointer' : undefined }}
                 >
                   <td className="col-cover">
-                    <div className="cover-thumb"></div>
+                    <div className="cover-thumb">
+                      <img src="/icons/music-note.svg" alt="music" className="music-icon" />
+                    </div>
                   </td>
                   <td className="col-song">{song.title}</td>
                   <td className="col-artist">{song.artist}</td>

@@ -38,7 +38,6 @@ async function getAudioDuration(file: File): Promise<number> {
 
     audio.addEventListener('loadedmetadata', () => {
       const duration = audio.duration
-      console.log('Audio metadata loaded, duration:', duration)
       cleanup()
       resolve(duration || 0)
     })
@@ -46,14 +45,12 @@ async function getAudioDuration(file: File): Promise<number> {
     audio.addEventListener('canplay', () => {
       const duration = audio.duration
       if (duration > 0) {
-        console.log('Audio can play, duration:', duration)
         cleanup()
         resolve(duration)
       }
     })
 
-    audio.addEventListener('error', (e) => {
-      console.error('Audio error:', e)
+    audio.addEventListener('error', () => {
       cleanup()
       resolve(0)
     })
@@ -61,7 +58,6 @@ async function getAudioDuration(file: File): Promise<number> {
     audio.src = url
 
     setTimeout(() => {
-      console.log('Audio load timeout, trying duration:', audio.duration)
       const duration = audio.duration
       cleanup()
       resolve(duration || 0)
@@ -94,7 +90,6 @@ async function scanWithFilePicker(): Promise<ScanResult> {
           storeFileHandle(audioPath, entry)
 
           const duration = await getAudioDuration(file)
-          console.log('Scanned:', entry.name, 'Duration:', duration)
 
           const song: Song = {
             id: generateId(audioPath),
@@ -119,7 +114,6 @@ async function scanWithFilePicker(): Promise<ScanResult> {
           const text = await file.text()
           const lrcPath = path + '/' + entry.name
           lyrics.set(lrcPath, text)
-          console.log('Found lyrics:', lrcPath)
         }
       } else if (entry.kind === 'directory') {
         await scanDirectory(entry, path + '/' + entry.name)
@@ -128,88 +122,75 @@ async function scanWithFilePicker(): Promise<ScanResult> {
   }
 
   await scanDirectory(dirHandle, dirHandle.name)
-  console.log('Scan complete. Songs:', songs.length, 'Lyrics:', lyrics.size)
   return { songs, lyrics }
 }
 
 async function scanWithCapacitor(): Promise<ScanResult> {
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
-  const audioExtensions = ['.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.ape']
 
   try {
+    // Use Capacitor Filesystem to read music directory
     const { Filesystem, Directory } = await import('@capacitor/filesystem')
 
-    // Get user's music directory
-    const result = await Filesystem.readdir({
-      path: '',
-      directory: Directory.ExternalStorage
-    })
+    // Try to read from common music directories
+    const musicDirs = ['Music', 'Download', 'Download/Music', 'DCIM/Music']
 
-    const files = result.files || []
+    for (const dir of musicDirs) {
+      try {
+        const result = await Filesystem.readdir({
+          path: dir,
+          directory: Directory.ExternalStorage
+        })
 
-    for (const file of files) {
-      const name = file.name.toLowerCase()
-      const ext = name.substring(name.lastIndexOf('.'))
+        const files = result.files || []
+        for (const file of files) {
+          const name = file.name.toLowerCase()
+          const ext = name.substring(name.lastIndexOf('.'))
+          const audioExtensions = ['.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.ape']
 
-      if (audioExtensions.includes(ext)) {
-        const filePath = file.uri
-        const format = ext.substring(1)
+          if (audioExtensions.includes(ext)) {
+            const filePath = `${dir}/${file.name}`
+            const format = ext.substring(1)
 
-        const song: Song = {
-          id: generateId(filePath),
-          title: file.name.replace(ext, ''),
-          artist: 'Unknown Artist',
-          album: 'Unknown Album',
-          duration: 0,
-          filePath: filePath,
-          size: file.size || 0,
-          format,
-          bitrate: 320,
-          sampleRate: 44100,
-          channels: 2,
-          quality: detectQuality(format, 320),
-          folder: 'Music',
-          hidden: false,
-          addedAt: Date.now(),
+            const song: Song = {
+              id: generateId(filePath),
+              title: file.name.replace(ext, ''),
+              artist: 'Unknown Artist',
+              album: 'Unknown Album',
+              duration: 0,
+              filePath: filePath,
+              size: file.size || 0,
+              format,
+              bitrate: 320,
+              sampleRate: 44100,
+              channels: 2,
+              quality: detectQuality(format, 320),
+              folder: dir,
+              hidden: false,
+              addedAt: Date.now(),
+            }
+            songs.push(song)
+          } else if (ext === '.lrc') {
+            try {
+              const content = await Filesystem.readFile({
+                path: `${dir}/${file.name}`,
+                directory: Directory.ExternalStorage
+              })
+              lyrics.set(`${dir}/${file.name}`, content.data as string)
+            } catch (e) {
+              // Ignore read errors
+            }
+          }
         }
-        songs.push(song)
-      } else if (ext === '.lrc') {
-        try {
-          const content = await Filesystem.readFile({
-            path: file.uri,
-            directory: Directory.ExternalStorage
-          })
-          lyrics.set(file.uri, content.data as string)
-          console.log('Found lyrics:', file.uri)
-        } catch (e) {
-          console.error('Failed to read lyrics:', e)
-        }
+      } catch (e) {
+        // Directory doesn't exist, continue
       }
     }
   } catch (e) {
     console.error('Capacitor scan failed:', e)
-    // Fallback to mock data for demo
-    songs.push({
-      id: generateId('demo/song1.mp3'),
-      title: 'Demo Song',
-      artist: 'Demo Artist',
-      album: 'Demo Album',
-      duration: 180,
-      filePath: 'demo/song1.mp3',
-      size: 5000000,
-      format: 'mp3',
-      bitrate: 320,
-      sampleRate: 44100,
-      channels: 2,
-      quality: 'high',
-      folder: 'Music',
-      hidden: false,
-      addedAt: Date.now(),
-    })
   }
 
-  console.log('Capacitor scan complete. Songs:', songs.length, 'Lyrics:', lyrics.size)
   return { songs, lyrics }
 }
 
