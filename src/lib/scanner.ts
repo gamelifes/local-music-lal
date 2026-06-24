@@ -73,7 +73,7 @@ export async function pickDirectory(): Promise<{ path: string; folderName: strin
 }
 
 // Scan a directory using Capacitor Filesystem
-async function scanDirectory(dirPath: string, folderName: string): Promise<ScanResult> {
+export async function scanDirectoryByPath(dirPath: string, folderName: string): Promise<ScanResult> {
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
 
@@ -202,7 +202,7 @@ export async function scanFolder(): Promise<ScanResult> {
   if (window.Capacitor) {
     const picked = await pickDirectory()
     if (picked) {
-      return scanDirectory(picked.path, picked.folderName)
+      return scanDirectoryByPath(picked.path, picked.folderName)
     }
     return { songs: [], lyrics: new Map() }
   }

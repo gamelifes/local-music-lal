@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLibraryStore } from '../store/library'
-import { scanFolder, pickDirectory } from '../lib/scanner'
+import { pickDirectory, scanDirectoryByPath } from '../lib/scanner'
 
 interface ScanProps {
   onNavigate: (page: string) => void
@@ -9,6 +9,7 @@ interface ScanProps {
 export function Scan({ onNavigate }: ScanProps) {
   const { songs, addSongs, folders, removeFolder } = useLibraryStore()
   const [selectedFolder, setSelectedFolder] = useState('')
+  const [selectedPath, setSelectedPath] = useState('')
   const [scanning, setScanning] = useState(false)
   const [scannedCount, setScannedCount] = useState(0)
   const [completed, setCompleted] = useState(false)
@@ -18,16 +19,18 @@ export function Scan({ onNavigate }: ScanProps) {
 
   const handleRemoveFolder = async (f: string) => {
     await removeFolder(f)
-    if (selectedFolder === f) setSelectedFolder('')
+    if (selectedFolder === f) {
+      setSelectedFolder('')
+      setSelectedPath('')
+    }
     setSwipedFolder(null)
   }
 
   const handleAddFolder = async () => {
-    // Pick a folder and show its name
     const picked = await pickDirectory()
     if (picked) {
       setSelectedFolder(picked.folderName)
-      // Add to folder list if not exists
+      setSelectedPath(picked.path)
       if (!folders.includes(picked.folderName)) {
         const { addFolder } = useLibraryStore.getState()
         await addFolder(picked.folderName)
@@ -36,12 +39,14 @@ export function Scan({ onNavigate }: ScanProps) {
   }
 
   const startScan = async () => {
+    if (!selectedPath) return
+
     setScanning(true)
     setCompleted(false)
     setScannedCount(0)
     setCompletedCount(0)
 
-    const result = await scanFolder()
+    const result = await scanDirectoryByPath(selectedPath, selectedFolder)
 
     if (result.songs.length > 0) {
       await addSongs(result.songs, result.lyrics)
@@ -205,7 +210,7 @@ export function Scan({ onNavigate }: ScanProps) {
         {completed && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '16px' }}>
             <button className="btn primary" onClick={() => onNavigate('home')}>查看歌曲</button>
-            <button className="btn" onClick={() => { setCompleted(false); setSelectedFolder('') }}>重新扫描</button>
+            <button className="btn" onClick={() => { setCompleted(false); setSelectedFolder(''); setSelectedPath('') }}>重新扫描</button>
           </div>
         )}
 
@@ -215,17 +220,13 @@ export function Scan({ onNavigate }: ScanProps) {
             <button
               className="btn primary"
               onClick={startScan}
-              disabled={scanning}
+              disabled={!selectedPath || scanning}
             >
               {scanning ? '扫描中...' : '开始扫描'}
             </button>
-            <button
-              className="btn"
-              onClick={startScan}
-              disabled={scanning || folders.length === 0}
-            >
-              全部扫描
-            </button>
+            {scanning && (
+              <button className="btn" onClick={() => setScanning(false)}>停止</button>
+            )}
           </div>
         )}
       </div>
