@@ -23,6 +23,7 @@
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
     "@capawesome/capacitor-file-picker": "^8.0.3",
+    "@capgo/capacitor-file-picker": "^8.1.11",
     "howler": "^2.2.4",
     "idb": "^8.0.3",
     "react": "^19.2.6",

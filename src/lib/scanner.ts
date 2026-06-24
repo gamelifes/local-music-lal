@@ -40,41 +40,33 @@ function isLyricsFile(filename: string): boolean {
   return filename.toLowerCase().endsWith('.lrc')
 }
 
-// Pick a folder using custom Android plugin
-export async function pickFolder(): Promise<{ path: string; folderName: string } | null> {
+// Pick a directory using @capgo/capacitor-file-picker
+async function pickDirectory(): Promise<string | null> {
   try {
-    const { FolderPicker } = await import('../plugins/folder-picker')
-    const result = await FolderPicker.pickFolder()
-    if (result && result.folderName) {
-      return { path: result.path, folderName: result.folderName }
+    const { CapgoFilePicker } = await import('@capgo/capacitor-file-picker')
+    const result = await CapgoFilePicker.pickDirectory()
+    if (result && result.path) {
+      return result.path
     }
     return null
   } catch (e) {
-    console.error('pickFolder failed:', e)
+    console.error('pickDirectory failed:', e)
     return null
   }
 }
 
 // Scan a directory using Capacitor Filesystem
-async function scanDirectory(dirPath: string, folderName: string): Promise<ScanResult> {
+async function scanDirectory(dirPath: string): Promise<ScanResult> {
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
 
   try {
     const { Filesystem, Directory } = await import('@capacitor/filesystem')
 
-    // The path from picker might need to be converted
+    // The path from pickDirectory should be a regular path
     let pathToScan = dirPath
 
-    // If path starts with content://, we need to handle differently
-    if (pathToScan.startsWith('content://')) {
-      const match = pathToScan.match(/tree\/primary%3A(.+)/)
-      if (match) {
-        pathToScan = decodeURIComponent(match[1])
-      }
-    }
-
-    // Remove leading slash for ExternalStorage
+    // Remove leading slash if present
     if (pathToScan.startsWith('/')) {
       pathToScan = pathToScan.substring(1)
     }
@@ -109,7 +101,7 @@ async function scanDirectory(dirPath: string, folderName: string): Promise<ScanR
           sampleRate: 44100,
           channels: 2,
           quality: detectQuality(format, 320),
-          folder: folderName,
+          folder: dirPath.split('/').pop() || 'Music',
           hidden: false,
           addedAt: Date.now(),
         }
@@ -192,10 +184,9 @@ async function scanWithFilePicker(): Promise<ScanResult> {
 
 export async function scanFolder(): Promise<ScanResult> {
   if (window.Capacitor) {
-    // Try to pick folder using custom plugin
-    const picked = await pickFolder()
-    if (picked) {
-      return scanDirectory(picked.path, picked.folderName)
+    const dirPath = await pickDirectory()
+    if (dirPath) {
+      return scanDirectory(dirPath)
     }
     return { songs: [], lyrics: new Map() }
   }
