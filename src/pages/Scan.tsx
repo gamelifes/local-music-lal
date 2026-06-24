@@ -40,19 +40,12 @@ export function Scan({ onNavigate }: ScanProps) {
 
   const handleSelectFolder = async (f: string) => {
     setSelectedFolder(f)
-    // If we don't have the path, try to find it from existing songs
-    if (!selectedPath || selectedFolder !== f) {
+    // If we don't have a path for this folder, get it
+    if (selectedFolder !== f && !selectedPath) {
       const existingSong = songs.find(s => s.folder === f)
       if (existingSong) {
-        // Extract path from song filePath
         const path = existingSong.filePath.replace(/\/[^/]+$/, '')
         setSelectedPath(path)
-      } else {
-        // Need to pick directory to get the path
-        const picked = await pickDirectory()
-        if (picked) {
-          setSelectedPath(picked.path)
-        }
       }
     }
   }
@@ -65,9 +58,10 @@ export function Scan({ onNavigate }: ScanProps) {
     setScannedCount(0)
     setCompletedCount(0)
 
-    // If we don't have a path, try to find it
+    // Get the path
     let pathToScan = selectedPath
     if (!pathToScan) {
+      // Try to find from existing songs
       const existingSong = songs.find(s => s.folder === selectedFolder)
       if (existingSong) {
         pathToScan = existingSong.filePath.replace(/\/[^/]+$/, '')
@@ -75,10 +69,11 @@ export function Scan({ onNavigate }: ScanProps) {
     }
 
     if (!pathToScan) {
-      // Last resort: pick directory
+      // Need to pick directory
       const picked = await pickDirectory()
       if (picked) {
         pathToScan = picked.path
+        setSelectedPath(picked.path)
       } else {
         setScanning(false)
         return
