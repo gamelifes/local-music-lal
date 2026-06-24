@@ -128,29 +128,37 @@ async function scanWithFilePicker(): Promise<ScanResult> {
 async function scanWithCapacitor(): Promise<ScanResult> {
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
+  const audioExtensions = ['.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.ape']
 
   try {
-    // Use Capacitor Filesystem to read music directory
+    // Use Capacitor File Picker to let user select a directory
+    const { FilePicker } = await import('@capawesome/capacitor-file-picker')
+
+    // Pick a directory
+    const result = await FilePicker.pickDirectory()
+
+    if (!result || !result.path) {
+      console.log('No directory selected')
+      return { songs, lyrics }
+    }
+
+    // Read the directory contents
     const { Filesystem, Directory } = await import('@capacitor/filesystem')
 
-    // Try to read from common music directories
-    const musicDirs = ['Music', 'Download', 'Download/Music', 'DCIM/Music']
-
-    for (const dir of musicDirs) {
+    async function scanDir(path: string) {
       try {
-        const result = await Filesystem.readdir({
-          path: dir,
+        const dirResult = await Filesystem.readdir({
+          path: path,
           directory: Directory.ExternalStorage
         })
 
-        const files = result.files || []
+        const files = dirResult.files || []
         for (const file of files) {
           const name = file.name.toLowerCase()
           const ext = name.substring(name.lastIndexOf('.'))
-          const audioExtensions = ['.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.ape']
+          const filePath = path ? `${path}/${file.name}` : file.name
 
           if (audioExtensions.includes(ext)) {
-            const filePath = `${dir}/${file.name}`
             const format = ext.substring(1)
 
             const song: Song = {
@@ -166,7 +174,7 @@ async function scanWithCapacitor(): Promise<ScanResult> {
               sampleRate: 44100,
               channels: 2,
               quality: detectQuality(format, 320),
-              folder: dir,
+              folder: path || 'Music',
               hidden: false,
               addedAt: Date.now(),
             }
@@ -174,19 +182,26 @@ async function scanWithCapacitor(): Promise<ScanResult> {
           } else if (ext === '.lrc') {
             try {
               const content = await Filesystem.readFile({
-                path: `${dir}/${file.name}`,
+                path: filePath,
                 directory: Directory.ExternalStorage
               })
-              lyrics.set(`${dir}/${file.name}`, content.data as string)
+              lyrics.set(filePath, content.data as string)
             } catch (e) {
-              // Ignore read errors
+              // Ignore read errors for lyrics
             }
+          } else if (!ext || file.type === 'directory') {
+            // Recursively scan subdirectories
+            await scanDir(filePath)
           }
         }
       } catch (e) {
-        // Directory doesn't exist, continue
+        console.error('Error scanning directory:', path, e)
       }
     }
+
+    // Use the path from the result
+    await scanDir(result.path)
+
   } catch (e) {
     console.error('Capacitor scan failed:', e)
   }
