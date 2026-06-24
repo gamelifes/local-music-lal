@@ -72,7 +72,40 @@ export async function pickDirectory(): Promise<{ path: string; folderName: strin
   }
 }
 
-// Scan a directory using Capacitor Filesystem
+// Get audio duration using HTML5 Audio
+async function getAudioDuration(filePath: string): Promise<number> {
+  return new Promise(async (resolve) => {
+    try {
+      const { Filesystem, Directory } = await import('@capacitor/filesystem')
+
+      let path = filePath
+      if (path.startsWith('/')) {
+        path = path.substring(1)
+      }
+
+      const stat = await Filesystem.stat({
+        path: path,
+        directory: Directory.ExternalStorage
+      })
+
+      if (stat.uri) {
+        const audio = new Audio()
+        audio.src = stat.uri
+        audio.addEventListener('loadedmetadata', () => {
+          resolve(audio.duration || 0)
+        })
+        audio.addEventListener('error', () => {
+          resolve(0)
+        })
+        setTimeout(() => resolve(0), 3000)
+      } else {
+        resolve(0)
+      }
+    } catch (e) {
+      resolve(0)
+    }
+  })
+}
 export async function scanDirectoryByPath(dirPath: string, folderName: string): Promise<ScanResult> {
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
@@ -118,12 +151,15 @@ export async function scanDirectoryByPath(dirPath: string, folderName: string): 
         const format = ext.substring(1)
         const title = name.replace(ext, '')
 
+        // Get audio duration
+        const duration = await getAudioDuration(filePath)
+
         const song: Song = {
           id: generateId(filePath),
           title: title,
           artist: 'Unknown Artist',
           album: 'Unknown Album',
-          duration: 0,
+          duration: duration,
           filePath: filePath,
           size: file.size || 0,
           format,
