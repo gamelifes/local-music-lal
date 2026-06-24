@@ -8,13 +8,10 @@ declare global {
   }
 }
 
-function detectQuality(format: string, bitrate: number): Song['quality'] {
+function detectQuality(format: string, _bitrate: number): Song['quality'] {
   const losslessFormats = ['flac', 'wav', 'ape', 'alac', 'ogg']
   if (losslessFormats.includes(format.toLowerCase())) return 'lossless'
-  if (bitrate >= 800) return 'lossless'
-  if (bitrate >= 320) return 'high'
-  if (bitrate >= 128) return 'standard'
-  return 'low'
+  return 'standard'
 }
 
 function generateId(filePath: string): string {
@@ -27,56 +24,103 @@ function generateId(filePath: string): string {
   return Math.abs(hash).toString(36)
 }
 
-async function getAudioDuration(file: File): Promise<number> {
-  return new Promise((resolve) => {
-    const audio = new Audio()
-    const url = URL.createObjectURL(file)
-
-    const cleanup = () => {
-      URL.revokeObjectURL(url)
-    }
-
-    audio.addEventListener('loadedmetadata', () => {
-      const duration = audio.duration
-      cleanup()
-      resolve(duration || 0)
-    })
-
-    audio.addEventListener('canplay', () => {
-      const duration = audio.duration
-      if (duration > 0) {
-        cleanup()
-        resolve(duration)
-      }
-    })
-
-    audio.addEventListener('error', () => {
-      cleanup()
-      resolve(0)
-    })
-
-    audio.src = url
-
-    setTimeout(() => {
-      const duration = audio.duration
-      cleanup()
-      resolve(duration || 0)
-    }, 5000)
-  })
-}
-
 export interface ScanResult {
   songs: Song[]
   lyrics: Map<string, string>
 }
 
+// Pick a directory using system file picker (Android)
+export async function pickDirectory(): Promise<string | null> {
+  try {
+    const { FilePicker } = await import('@capawesome/capacitor-file-picker')
+    const result = await FilePicker.pickDirectory()
+    if (result && result.path) {
+      return result.path
+    }
+    return null
+  } catch (e) {
+    console.error('pickDirectory failed:', e)
+    return null
+  }
+}
+
+// Scan a specific directory path (Android)
+export async function scanDirectoryByPath(dirPath: string): Promise<ScanResult> {
+  const songs: Song[] = []
+  const lyrics = new Map<string, string>()
+  const audioExtensions = ['.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.ape']
+
+  try {
+    const { Filesystem, Directory } = await import('@capacitor/filesystem')
+
+    async function scanDir(path: string) {
+      try {
+        const dirResult = await Filesystem.readdir({
+          path: path,
+          directory: Directory.ExternalStorage
+        })
+
+        const files = dirResult.files || []
+        for (const file of files) {
+          const name = file.name.toLowerCase()
+          const ext = name.substring(name.lastIndexOf('.'))
+          const filePath = path ? `${path}/${file.name}` : file.name
+
+          if (file.type === 'directory') {
+            await scanDir(filePath)
+          } else if (audioExtensions.includes(ext)) {
+            const format = ext.substring(1)
+            const song: Song = {
+              id: generateId(filePath),
+              title: file.name.replace(ext, ''),
+              artist: 'Unknown Artist',
+              album: 'Unknown Album',
+              duration: 0,
+              filePath: filePath,
+              size: file.size || 0,
+              format,
+              bitrate: 320,
+              sampleRate: 44100,
+              channels: 2,
+              quality: detectQuality(format, 320),
+              folder: dirPath.split('/').pop() || 'Music',
+              hidden: false,
+              addedAt: Date.now(),
+            }
+            songs.push(song)
+          } else if (ext === '.lrc') {
+            try {
+              const content = await Filesystem.readFile({
+                path: filePath,
+                directory: Directory.ExternalStorage
+              })
+              lyrics.set(filePath, content.data as string)
+            } catch (e) {
+              // Ignore
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error scanning:', path, e)
+      }
+    }
+
+    await scanDir(dirPath)
+  } catch (e) {
+    console.error('scanDirectoryByPath failed:', e)
+  }
+
+  return { songs, lyrics }
+}
+
+// Scan using File System Access API (Web)
 async function scanWithFilePicker(): Promise<ScanResult> {
   const dirHandle = await window.showDirectoryPicker()
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
   const audioExtensions = ['.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.ape']
 
-  async function scanDirectory(handle: FileSystemDirectoryHandle, path: string) {
+  async function scanDir(handle: FileSystemDirectoryHandle, path: string) {
     for await (const entry of handle.values()) {
       if (entry.kind === 'file') {
         const name = entry.name.toLowerCase()
@@ -89,14 +133,12 @@ async function scanWithFilePicker(): Promise<ScanResult> {
 
           storeFileHandle(audioPath, entry)
 
-          const duration = await getAudioDuration(file)
-
           const song: Song = {
             id: generateId(audioPath),
             title: entry.name.replace(ext, ''),
             artist: 'Unknown Artist',
             album: 'Unknown Album',
-            duration: duration,
+            duration: 0,
             filePath: audioPath,
             size: file.size,
             format,
@@ -116,113 +158,26 @@ async function scanWithFilePicker(): Promise<ScanResult> {
           lyrics.set(lrcPath, text)
         }
       } else if (entry.kind === 'directory') {
-        await scanDirectory(entry, path + '/' + entry.name)
+        await scanDir(entry, path + '/' + entry.name)
       }
     }
   }
 
-  await scanDirectory(dirHandle, dirHandle.name)
+  await scanDir(dirHandle, dirHandle.name)
   return { songs, lyrics }
 }
 
-async function scanWithCapacitor(): Promise<ScanResult> {
-  const songs: Song[] = []
-  const lyrics = new Map<string, string>()
-  const audioExtensions = ['.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.ape']
-
-  try {
-    // Use Capacitor File Picker to let user select a directory
-    const { FilePicker } = await import('@capawesome/capacitor-file-picker')
-
-    // Pick a directory
-    const result = await FilePicker.pickDirectory()
-
-    if (!result || !result.path) {
-      console.log('No directory selected')
-      return { songs, lyrics }
-    }
-
-    // Read the directory contents
-    const { Filesystem, Directory } = await import('@capacitor/filesystem')
-
-    async function scanDir(path: string) {
-      try {
-        const dirResult = await Filesystem.readdir({
-          path: path,
-          directory: Directory.ExternalStorage
-        })
-
-        const files = dirResult.files || []
-        for (const file of files) {
-          const name = file.name.toLowerCase()
-          const ext = name.substring(name.lastIndexOf('.'))
-          const filePath = path ? `${path}/${file.name}` : file.name
-
-          if (audioExtensions.includes(ext)) {
-            const format = ext.substring(1)
-
-            const song: Song = {
-              id: generateId(filePath),
-              title: file.name.replace(ext, ''),
-              artist: 'Unknown Artist',
-              album: 'Unknown Album',
-              duration: 0,
-              filePath: filePath,
-              size: file.size || 0,
-              format,
-              bitrate: 320,
-              sampleRate: 44100,
-              channels: 2,
-              quality: detectQuality(format, 320),
-              folder: path || 'Music',
-              hidden: false,
-              addedAt: Date.now(),
-            }
-            songs.push(song)
-          } else if (ext === '.lrc') {
-            try {
-              const content = await Filesystem.readFile({
-                path: filePath,
-                directory: Directory.ExternalStorage
-              })
-              lyrics.set(filePath, content.data as string)
-            } catch (e) {
-              // Ignore read errors for lyrics
-            }
-          } else if (!ext || file.type === 'directory') {
-            // Recursively scan subdirectories
-            await scanDir(filePath)
-          }
-        }
-      } catch (e) {
-        console.error('Error scanning directory:', path, e)
-      }
-    }
-
-    // Use the path from the result
-    await scanDir(result.path)
-
-  } catch (e) {
-    console.error('Capacitor scan failed:', e)
-  }
-
-  return { songs, lyrics }
-}
-
-export async function scanFolder(
-  _onProgress?: (current: number, total: number) => void
-): Promise<ScanResult> {
-  // Check if running in Capacitor (Android)
+export async function scanFolder(): Promise<ScanResult> {
   if (window.Capacitor) {
-    return scanWithCapacitor()
+    const path = await pickDirectory()
+    if (!path) return { songs: [], lyrics: new Map() }
+    return scanDirectoryByPath(path)
   }
 
-  // Check if File System Access API is available (Web)
   if (typeof window.showDirectoryPicker === 'function') {
     return scanWithFilePicker()
   }
 
-  // Fallback for environments without file access
   console.warn('No file access API available')
   return { songs: [], lyrics: new Map() }
 }
