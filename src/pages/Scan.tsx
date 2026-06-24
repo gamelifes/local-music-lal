@@ -38,15 +38,54 @@ export function Scan({ onNavigate }: ScanProps) {
     }
   }
 
+  const handleSelectFolder = async (f: string) => {
+    setSelectedFolder(f)
+    // If we don't have the path, try to find it from existing songs
+    if (!selectedPath || selectedFolder !== f) {
+      const existingSong = songs.find(s => s.folder === f)
+      if (existingSong) {
+        // Extract path from song filePath
+        const path = existingSong.filePath.replace(/\/[^/]+$/, '')
+        setSelectedPath(path)
+      } else {
+        // Need to pick directory to get the path
+        const picked = await pickDirectory()
+        if (picked) {
+          setSelectedPath(picked.path)
+        }
+      }
+    }
+  }
+
   const startScan = async () => {
-    if (!selectedPath) return
+    if (!selectedFolder) return
 
     setScanning(true)
     setCompleted(false)
     setScannedCount(0)
     setCompletedCount(0)
 
-    const result = await scanDirectoryByPath(selectedPath, selectedFolder)
+    // If we don't have a path, try to find it
+    let pathToScan = selectedPath
+    if (!pathToScan) {
+      const existingSong = songs.find(s => s.folder === selectedFolder)
+      if (existingSong) {
+        pathToScan = existingSong.filePath.replace(/\/[^/]+$/, '')
+      }
+    }
+
+    if (!pathToScan) {
+      // Last resort: pick directory
+      const picked = await pickDirectory()
+      if (picked) {
+        pathToScan = picked.path
+      } else {
+        setScanning(false)
+        return
+      }
+    }
+
+    const result = await scanDirectoryByPath(pathToScan, selectedFolder)
 
     if (result.songs.length > 0) {
       await addSongs(result.songs, result.lyrics)
@@ -178,7 +217,7 @@ export function Scan({ onNavigate }: ScanProps) {
                   )}
                   <div
                     onClick={() => {
-                      if (!isSwiped) setSelectedFolder(f)
+                      if (!isSwiped) handleSelectFolder(f)
                     }}
                     className="group-header"
                     style={{
@@ -220,7 +259,7 @@ export function Scan({ onNavigate }: ScanProps) {
             <button
               className="btn primary"
               onClick={startScan}
-              disabled={!selectedPath || scanning}
+              disabled={!selectedFolder || scanning}
             >
               {scanning ? '扫描中...' : '开始扫描'}
             </button>
