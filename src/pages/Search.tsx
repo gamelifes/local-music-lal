@@ -6,6 +6,13 @@ interface SearchProps {
   onNavigate: (page: string) => void
 }
 
+function formatDuration(seconds: number): string {
+  if (!seconds || seconds === 0) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${String(secs).padStart(2, '0')}`
+}
+
 export function Search({ onNavigate }: SearchProps) {
   const [query, setQuery] = useState('')
   const { songs, hiddenIds } = useLibraryStore()
@@ -60,7 +67,7 @@ export function Search({ onNavigate }: SearchProps) {
                   </td>
                   <td className="col-song">{s.title}</td>
                   <td className="col-artist">{s.artist}</td>
-                  <td style={{ width: 60, textAlign: 'right' }}>{s.duration}</td>
+                  <td style={{ width: 60, textAlign: 'right' }}>{formatDuration(s.duration)}</td>
                 </tr>
               ))}
             </tbody>

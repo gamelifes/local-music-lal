@@ -90,7 +90,8 @@ export function EqCurve({ values, onChange }: EqCurveProps) {
       const alpha = 0.15 + ((v + 12) / 24) * 0.25
       ctx.fillStyle = `rgba(232,180,60,${alpha})`
       ctx.beginPath()
-      ctx.roundRect(x, barY, barW, barH, 2)
+      // Use regular rect instead of roundRect for better compatibility
+      ctx.rect(x, barY, barW, barH)
       ctx.fill()
     }
 
