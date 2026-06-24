@@ -124,10 +124,18 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     if (lyrics.has(lrcPath)) return lyrics.get(lrcPath)
     // Try matching by song title
     const song = songs.find(s => s.filePath === filePath)
-    if (song && lyrics.has(song.title)) return lyrics.get(song.title)
-    // Try matching by filename without extension
-    const filename = filePath.split('/').pop()?.replace(/\.[^.]+$/, '') || ''
-    if (lyrics.has(filename)) return lyrics.get(filename)
+    if (song) {
+      if (lyrics.has(song.title)) return lyrics.get(song.title)
+      // Try matching by filename without extension
+      const filename = filePath.split('/').pop()?.replace(/\.[^.]+$/, '') || ''
+      if (lyrics.has(filename)) return lyrics.get(filename)
+      // Try partial matching - check if any lyrics key contains the filename
+      for (const [key, value] of lyrics) {
+        if (filename.includes(key) || key.includes(filename)) {
+          return value
+        }
+      }
+    }
     return undefined
   },
 }))
