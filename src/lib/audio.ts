@@ -22,8 +22,8 @@ export function getFileHandle(filePath: string): FileSystemFileHandle | undefine
   return fileHandleStore.get(filePath)
 }
 
-// Get audio file as blob via Capacitor Filesystem (Android)
-async function getAudioBlobFromPath(filePath: string): Promise<Blob | null> {
+// Get audio file URI for Android playback
+async function getAudioUri(filePath: string): Promise<string | null> {
   try {
     const { Filesystem, Directory } = await import('@capacitor/filesystem')
 
@@ -33,41 +33,15 @@ async function getAudioBlobFromPath(filePath: string): Promise<Blob | null> {
       path = path.substring(1)
     }
 
-    const result = await Filesystem.readFile({
+    // Get the file URI using stat
+    const stat = await Filesystem.stat({
       path: path,
       directory: Directory.ExternalStorage
     })
 
-    // Determine MIME type
-    const ext = path.split('.').pop()?.toLowerCase() || 'mp3'
-    const mimeTypes: Record<string, string> = {
-      'mp3': 'audio/mpeg',
-      'flac': 'audio/flac',
-      'wav': 'audio/wav',
-      'ogg': 'audio/ogg',
-      'aac': 'audio/aac',
-      'm4a': 'audio/mp4',
-      'ape': 'audio/ape'
-    }
-    const mimeType = mimeTypes[ext] || 'audio/mpeg'
-
-    // Handle both string and Blob responses
-    const data = result.data
-    if (typeof data === 'string') {
-      // Base64 encoded string
-      const byteCharacters = atob(data)
-      const byteNumbers = new Array(byteCharacters.length)
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i)
-      }
-      const byteArray = new Uint8Array(byteNumbers)
-      return new Blob([byteArray], { type: mimeType })
-    } else {
-      // Already a Blob
-      return data as Blob
-    }
+    return stat.uri || null
   } catch (e) {
-    console.error('Failed to read audio file:', filePath, e)
+    console.error('Failed to get audio URI:', filePath, e)
     return null
   }
 }
@@ -91,12 +65,11 @@ export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duratio
     url = URL.createObjectURL(file)
     blobUrlStore.set(song.filePath, url)
   }
-  // On Android, read file via Capacitor Filesystem
+  // On Android, get file URI directly
   else if (window.Capacitor) {
-    const blob = await getAudioBlobFromPath(song.filePath)
-    if (blob) {
-      url = URL.createObjectURL(blob)
-      blobUrlStore.set(song.filePath, url)
+    const uri = await getAudioUri(song.filePath)
+    if (uri) {
+      url = uri
     }
   }
 
