@@ -28,6 +28,7 @@ const navGroups: NavGroup[] = [
       { id: 'search', icon: '🔍', label: '搜索' },
       { id: 'equalizer', icon: '🎛️', label: '均衡器' },
       { id: 'scan', icon: '📡', label: '扫描' },
+      { id: 'debug', icon: '🐛', label: '调试日志' },
     ]
   }
 ]

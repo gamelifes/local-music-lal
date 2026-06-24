@@ -35,7 +35,9 @@ export function Scan({ onNavigate }: ScanProps) {
       setSelectedFolder(folderName)
 
       // Immediately scan the folder to count files
+      console.log('Starting scan for folder:', folderName, 'path:', path)
       const result = await scanDirectoryByPath(path)
+      console.log('Scan result:', result.songs.length, 'songs,', result.lyrics.size, 'lyrics')
       if (result.songs.length > 0) {
         await addSongs(result.songs, result.lyrics)
       }

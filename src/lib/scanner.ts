@@ -34,7 +34,6 @@ export async function pickDirectory(): Promise<string | null> {
   try {
     const { FilePicker } = await import('@capawesome/capacitor-file-picker')
     const result = await FilePicker.pickDirectory()
-    console.log('pickDirectory result:', result)
     if (result && result.path) {
       return result.path
     }
@@ -45,34 +44,12 @@ export async function pickDirectory(): Promise<string | null> {
   }
 }
 
-// Get relative path for Capacitor Filesystem (Android)
-// The path from pickDirectory is like "/storage/emulated/0/Music"
-// Filesystem.readdir with ExternalStorage expects relative path like "Music"
-function getRelativePathForFilesystem(absolutePath: string): string {
-  let path = absolutePath
-  // Remove file:// prefix
-  if (path.startsWith('file://')) {
-    path = path.substring(7)
-  }
-  // Remove /storage/emulated/0/ prefix
-  if (path.startsWith('/storage/emulated/0/')) {
-    path = path.substring(20)
-  }
-  // Remove leading slash
-  if (path.startsWith('/')) {
-    path = path.substring(1)
-  }
-  return path
-}
-
-// Check if a file is an audio file
 function isAudioFile(filename: string): boolean {
   const audioExtensions = ['.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.ape']
   const name = filename.toLowerCase()
   return audioExtensions.some(ext => name.endsWith(ext))
 }
 
-// Check if a file is a lyrics file
 function isLyricsFile(filename: string): boolean {
   return filename.toLowerCase().endsWith('.lrc')
 }
@@ -85,74 +62,74 @@ export async function scanDirectoryByPath(dirPath: string): Promise<ScanResult> 
 
   try {
     const { Filesystem, Directory } = await import('@capacitor/filesystem')
-    const relativePath = getRelativePathForFilesystem(dirPath)
 
-    console.log('Scanning folder:', folderName, 'relativePath:', relativePath)
+    // Try multiple path formats
+    const possiblePaths = [
+      dirPath,                                           // Original path
+      dirPath.replace(/^\/storage\/emulated\/0\//, ''), // Relative path
+      dirPath.replace(/^\/storage\/emulated\/0\//, '').replace(/^\//, ''), // No leading slash
+    ]
 
-    async function scanDir(path: string) {
+    let success = false
+    for (const testPath of possiblePaths) {
       try {
+        console.log('Trying path:', testPath)
         const dirResult = await Filesystem.readdir({
-          path: path,
+          path: testPath,
           directory: Directory.ExternalStorage
         })
 
-        console.log('Directory contents:', dirResult.files?.length, 'items in', path)
+        if (dirResult.files && dirResult.files.length > 0) {
+          success = true
+          console.log('Success! Found', dirResult.files.length, 'items')
 
-        const files = dirResult.files || []
-        for (const file of files) {
-          const name = file.name
-          const filePath = path ? `${path}/${name}` : name
+          for (const file of dirResult.files) {
+            const name = file.name
+            const filePath = testPath ? `${testPath}/${name}` : name
 
-          // Check if it's a directory (no extension or type is directory)
-          const hasExtension = name.includes('.')
-          const isDir = file.type === 'directory' || !hasExtension
-
-          if (isDir && name !== '.' && name !== '..') {
-            // Recursively scan subdirectories
-            console.log('Scanning subdirectory:', filePath)
-            await scanDir(filePath)
-          } else if (isAudioFile(name)) {
-            const ext = name.substring(name.lastIndexOf('.')).toLowerCase()
-            const format = ext.substring(1)
-            const song: Song = {
-              id: generateId(filePath),
-              title: name.replace(ext, ''),
-              artist: 'Unknown Artist',
-              album: 'Unknown Album',
-              duration: 0,
-              filePath: filePath,
-              size: file.size || 0,
-              format,
-              bitrate: 320,
-              sampleRate: 44100,
-              channels: 2,
-              quality: detectQuality(format, 320),
-              folder: folderName,
-              hidden: false,
-              addedAt: Date.now(),
-            }
-            songs.push(song)
-            console.log('Found audio:', name)
-          } else if (isLyricsFile(name)) {
-            try {
-              const content = await Filesystem.readFile({
-                path: filePath,
-                directory: Directory.ExternalStorage
-              })
-              lyrics.set(filePath, content.data as string)
-              console.log('Found lyrics:', name)
-            } catch (e) {
-              console.warn('Failed to read lyrics:', name, e)
+            if (isAudioFile(name)) {
+              const ext = name.substring(name.lastIndexOf('.')).toLowerCase()
+              const format = ext.substring(1)
+              const song: Song = {
+                id: generateId(filePath),
+                title: name.replace(ext, ''),
+                artist: 'Unknown Artist',
+                album: 'Unknown Album',
+                duration: 0,
+                filePath: filePath,
+                size: file.size || 0,
+                format,
+                bitrate: 320,
+                sampleRate: 44100,
+                channels: 2,
+                quality: detectQuality(format, 320),
+                folder: folderName,
+                hidden: false,
+                addedAt: Date.now(),
+              }
+              songs.push(song)
+            } else if (isLyricsFile(name)) {
+              try {
+                const content = await Filesystem.readFile({
+                  path: filePath,
+                  directory: Directory.ExternalStorage
+                })
+                lyrics.set(filePath, content.data as string)
+              } catch (e) {
+                // Ignore
+              }
             }
           }
+          break
         }
       } catch (e) {
-        console.error('Error scanning directory:', path, e)
+        console.log('Path failed:', testPath, e)
       }
     }
 
-    await scanDir(relativePath)
-    console.log('Scan complete. Found', songs.length, 'songs and', lyrics.size, 'lyrics files')
+    if (!success) {
+      console.log('All path formats failed for:', dirPath)
+    }
   } catch (e) {
     console.error('scanDirectoryByPath failed:', e)
   }

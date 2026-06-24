@@ -18,6 +18,7 @@ import { Artists } from './pages/Artists'
 import { ArtistDetail } from './pages/ArtistDetail'
 import { Albums } from './pages/Albums'
 import { AlbumDetail } from './pages/AlbumDetail'
+import { Debug } from './pages/Debug'
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home')
@@ -61,6 +62,8 @@ function App() {
         return <Albums onNavigate={navigateTo} onSelectAlbum={(name) => { setSelectedAlbum(name); setCurrentPage('album-detail') }} />
       case 'album-detail':
         return <AlbumDetail album={selectedAlbum} onNavigate={navigateTo} />
+      case 'debug':
+        return <Debug onNavigate={navigateTo} />
       default:
         return <Home onNavigate={navigateTo} onToggleDrawer={() => setDrawerOpen(o => !o)} />
     }
