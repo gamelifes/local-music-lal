@@ -72,40 +72,7 @@ export async function pickDirectory(): Promise<{ path: string; folderName: strin
   }
 }
 
-// Get audio duration using HTML5 Audio
-async function getAudioDuration(filePath: string): Promise<number> {
-  return new Promise(async (resolve) => {
-    try {
-      const { Filesystem, Directory } = await import('@capacitor/filesystem')
-
-      let path = filePath
-      if (path.startsWith('/')) {
-        path = path.substring(1)
-      }
-
-      const stat = await Filesystem.stat({
-        path: path,
-        directory: Directory.ExternalStorage
-      })
-
-      if (stat.uri) {
-        const audio = new Audio()
-        audio.src = stat.uri
-        audio.addEventListener('loadedmetadata', () => {
-          resolve(audio.duration || 0)
-        })
-        audio.addEventListener('error', () => {
-          resolve(0)
-        })
-        setTimeout(() => resolve(0), 3000)
-      } else {
-        resolve(0)
-      }
-    } catch (e) {
-      resolve(0)
-    }
-  })
-}
+// Scan a directory using Capacitor Filesystem
 export async function scanDirectoryByPath(dirPath: string, folderName: string): Promise<ScanResult> {
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
@@ -141,7 +108,7 @@ export async function scanDirectoryByPath(dirPath: string, folderName: string): 
       }
     }
 
-    // Second pass: collect audio files
+    // Second pass: collect audio files (duration will be obtained during playback)
     for (const file of files) {
       const name = file.name
       const filePath = `${pathToScan}/${name}`
@@ -151,15 +118,12 @@ export async function scanDirectoryByPath(dirPath: string, folderName: string): 
         const format = ext.substring(1)
         const title = name.replace(ext, '')
 
-        // Get audio duration
-        const duration = await getAudioDuration(filePath)
-
         const song: Song = {
           id: generateId(filePath),
           title: title,
           artist: 'Unknown Artist',
           album: 'Unknown Album',
-          duration: duration,
+          duration: 0, // Duration will be obtained during playback
           filePath: filePath,
           size: file.size || 0,
           format,

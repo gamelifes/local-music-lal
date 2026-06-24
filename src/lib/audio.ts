@@ -93,10 +93,6 @@ export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duratio
         },
         onloaderror: (_id, err) => {
           console.error('Load error:', err)
-          // Try to get duration from file metadata
-          if (song.duration && song.duration > 0) {
-            onLoad?.(song.duration)
-          }
         },
         onplayerror: (_id, err) => console.error('Play error:', err),
       })
@@ -105,18 +101,19 @@ export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duratio
 
     currentHowl.play()
 
-    // Fallback: if duration is still 0 after a delay, try to get it
-    setTimeout(() => {
+    // Check duration periodically until it's available
+    const checkDuration = setInterval(() => {
       if (currentHowl && currentSongId === song.id) {
         const duration = currentHowl.duration()
         if (duration > 0) {
+          clearInterval(checkDuration)
           onLoad?.(duration)
-        } else if (song.duration && song.duration > 0) {
-          // Use song's stored duration as fallback
-          onLoad?.(song.duration)
         }
       }
-    }, 1000)
+    }, 500)
+
+    // Stop checking after 5 seconds
+    setTimeout(() => clearInterval(checkDuration), 5000)
   } catch (err) {
     console.error('Failed to play song:', err)
   }
