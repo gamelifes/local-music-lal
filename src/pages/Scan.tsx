@@ -23,8 +23,6 @@ export function Scan({ onNavigate }: ScanProps) {
   }
 
   const handleAddFolder = async () => {
-    // On Android, we scan known directories directly
-    // On Web, we use the file picker
     const result = await scanFolder()
     if (result.songs.length > 0) {
       await addSongs(result.songs, result.lyrics)
@@ -32,24 +30,6 @@ export function Scan({ onNavigate }: ScanProps) {
   }
 
   const startScan = async () => {
-    setScanning(true)
-    setCompleted(false)
-    setScannedCount(0)
-    setCompletedCount(0)
-
-    const result = await scanFolder()
-
-    if (result.songs.length > 0) {
-      await addSongs(result.songs, result.lyrics)
-    }
-
-    setScannedCount(result.songs.length)
-    setCompletedCount(result.songs.length)
-    setScanning(false)
-    setCompleted(true)
-  }
-
-  const startScanAll = async () => {
     setScanning(true)
     setCompleted(false)
     setScannedCount(0)
@@ -122,7 +102,7 @@ export function Scan({ onNavigate }: ScanProps) {
               ? `共发现 ${completedCount} 首歌曲`
               : scanning
                 ? `已发现 ${scannedCount} 首歌曲`
-                : '点击右上角 + 选择文件夹'
+                : '点击右上角 + 扫描音乐文件夹'
             }
           </p>
         </div>
@@ -151,7 +131,7 @@ export function Scan({ onNavigate }: ScanProps) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
             {folders.length === 0 && (
               <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px', padding: '16px 0' }}>
-                暂无文件夹，点击右上角 + 添加
+                暂无文件夹，点击右上角 + 扫描
               </p>
             )}
             {folders.map(f => {
@@ -229,13 +209,13 @@ export function Scan({ onNavigate }: ScanProps) {
             <button
               className="btn primary"
               onClick={startScan}
-              disabled={!selectedFolder || scanning}
+              disabled={scanning}
             >
               {scanning ? '扫描中...' : '开始扫描'}
             </button>
             <button
               className="btn"
-              onClick={startScanAll}
+              onClick={startScan}
               disabled={scanning || folders.length === 0}
             >
               全部扫描
