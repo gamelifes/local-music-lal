@@ -27,6 +27,8 @@ function generateId(filePath: string): string {
 export interface ScanResult {
   songs: Song[]
   lyrics: Map<string, string>
+  folderName?: string
+  folderPath?: string
 }
 
 function isAudioFile(filename: string): boolean {
@@ -39,68 +41,100 @@ function isLyricsFile(filename: string): boolean {
   return filename.toLowerCase().endsWith('.lrc')
 }
 
-// Scan known directories on Android
-async function scanKnownDirectories(): Promise<ScanResult> {
+// Pick a folder using custom Android plugin
+export async function pickFolder(): Promise<{ path: string; folderName: string } | null> {
+  try {
+    const { FolderPicker } = await import('../plugins/folder-picker')
+    const result = await FolderPicker.pickFolder()
+    if (result && result.folderName) {
+      return { path: result.path, folderName: result.folderName }
+    }
+    return null
+  } catch (e) {
+    console.error('pickFolder failed:', e)
+    return null
+  }
+}
+
+// Scan a directory using Capacitor Filesystem
+async function scanDirectory(dirPath: string, folderName: string): Promise<ScanResult> {
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
 
   try {
     const { Filesystem, Directory } = await import('@capacitor/filesystem')
 
-    // Common music directories on Android
-    const dirs = ['Music', 'Download', 'Download/Music', 'DCIM', 'Documents']
+    // The path from picker might need to be converted
+    // Try to read using the path directly
+    let pathToScan = dirPath
 
-    for (const dir of dirs) {
-      try {
-        const result = await Filesystem.readdir({
-          path: dir,
-          directory: Directory.ExternalStorage
-        })
-
-        const files = result.files || []
-        for (const file of files) {
-          const name = file.name
-          const filePath = `${dir}/${name}`
-
-          if (isAudioFile(name)) {
-            const ext = name.substring(name.lastIndexOf('.')).toLowerCase()
-            const format = ext.substring(1)
-            const song: Song = {
-              id: generateId(filePath),
-              title: name.replace(ext, ''),
-              artist: 'Unknown Artist',
-              album: 'Unknown Album',
-              duration: 0,
-              filePath: filePath,
-              size: file.size || 0,
-              format,
-              bitrate: 320,
-              sampleRate: 44100,
-              channels: 2,
-              quality: detectQuality(format, 320),
-              folder: dir,
-              hidden: false,
-              addedAt: Date.now(),
-            }
-            songs.push(song)
-          } else if (isLyricsFile(name)) {
-            try {
-              const content = await Filesystem.readFile({
-                path: filePath,
-                directory: Directory.ExternalStorage
-              })
-              lyrics.set(filePath, content.data as string)
-            } catch (e) {
-              // Ignore
-            }
-          }
-        }
-      } catch (e) {
-        // Directory doesn't exist, continue
+    // If path starts with content://, we need to handle differently
+    if (pathToScan.startsWith('content://')) {
+      // Extract the actual path from content URI
+      const match = pathToScan.match(/tree\/primary%3A(.+)/)
+      if (match) {
+        pathToScan = decodeURIComponent(match[1])
       }
     }
+
+    // Remove leading slash for ExternalStorage
+    if (pathToScan.startsWith('/')) {
+      pathToScan = pathToScan.substring(1)
+    }
+
+    console.log('Scanning path:', pathToScan)
+
+    const dirResult = await Filesystem.readdir({
+      path: pathToScan,
+      directory: Directory.ExternalStorage
+    })
+
+    const files = dirResult.files || []
+    console.log('Found', files.length, 'items in', pathToScan)
+
+    for (const file of files) {
+      const name = file.name
+      const filePath = pathToScan ? `${pathToScan}/${name}` : name
+
+      if (isAudioFile(name)) {
+        const ext = name.substring(name.lastIndexOf('.')).toLowerCase()
+        const format = ext.substring(1)
+        const song: Song = {
+          id: generateId(filePath),
+          title: name.replace(ext, ''),
+          artist: 'Unknown Artist',
+          album: 'Unknown Album',
+          duration: 0,
+          filePath: filePath,
+          size: file.size || 0,
+          format,
+          bitrate: 320,
+          sampleRate: 44100,
+          channels: 2,
+          quality: detectQuality(format, 320),
+          folder: folderName,
+          hidden: false,
+          addedAt: Date.now(),
+        }
+        songs.push(song)
+        console.log('Found audio:', name)
+      } else if (isLyricsFile(name)) {
+        try {
+          const content = await Filesystem.readFile({
+            path: filePath,
+            directory: Directory.ExternalStorage
+          })
+          lyrics.set(filePath, content.data as string)
+          console.log('Found lyrics:', name)
+        } catch (e) {
+          console.warn('Failed to read lyrics:', name)
+        }
+      }
+    }
+
+    console.log('Scan complete:', songs.length, 'songs,', lyrics.size, 'lyrics')
   } catch (e) {
-    console.error('scanKnownDirectories failed:', e)
+    console.error('scanDirectory failed:', e)
   }
 
   return { songs, lyrics }
@@ -156,12 +190,17 @@ async function scanWithFilePicker(): Promise<ScanResult> {
   }
 
   await scanDir(dirHandle, dirHandle.name)
-  return { songs, lyrics }
+  return { songs, lyrics, folderName: dirHandle.name }
 }
 
 export async function scanFolder(): Promise<ScanResult> {
   if (window.Capacitor) {
-    return scanKnownDirectories()
+    // Try to pick folder using custom plugin
+    const picked = await pickFolder()
+    if (picked) {
+      return scanDirectory(picked.path, picked.folderName)
+    }
+    return { songs: [], lyrics: new Map() }
   }
 
   if (typeof window.showDirectoryPicker === 'function') {
