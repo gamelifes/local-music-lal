@@ -1,23 +1,21 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLibraryStore } from '../store/library'
-import { pickDirectory } from '../lib/scanner'
+import { pickDirectory, scanDirectoryByPath } from '../lib/scanner'
 
 interface ScanProps {
   onNavigate: (page: string) => void
 }
 
 export function Scan({ onNavigate }: ScanProps) {
-  const { songs } = useLibraryStore()
-  const folders = [...new Set(songs.map(s => s.folder))]
-  const [folderList, setFolderList] = useState(folders)
+  const { songs, addSongs, folders, addFolder, removeFolder } = useLibraryStore()
   const [selectedFolder, setSelectedFolder] = useState('')
   const [scanning, setScanning] = useState(false)
   const [scannedCount, setScannedCount] = useState(0)
   const [completed, setCompleted] = useState(false)
+  const [completedCount, setCompletedCount] = useState(0)
   const [swipedFolder, setSwipedFolder] = useState<string | null>(null)
   const [swipeStart, setSwipeStart] = useState({ x: 0, y: 0 })
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const total = songs.filter(s => s.folder === selectedFolder).length
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -28,9 +26,8 @@ export function Scan({ onNavigate }: ScanProps) {
 
   useEffect(() => () => clearTimer(), [])
 
-  const removeFolder = async (f: string) => {
-    await useLibraryStore.getState().removeSongsByFolder(f)
-    setFolderList(prev => prev.filter(x => x !== f))
+  const handleRemoveFolder = async (f: string) => {
+    await removeFolder(f)
     if (selectedFolder === f) setSelectedFolder('')
     setSwipedFolder(null)
   }
@@ -39,8 +36,8 @@ export function Scan({ onNavigate }: ScanProps) {
     const path = await pickDirectory()
     if (path) {
       const folderName = path.split('/').pop() || path
-      if (!folderList.includes(folderName)) {
-        setFolderList(prev => [...prev, folderName])
+      if (!folders.includes(folderName)) {
+        await addFolder(folderName)
       }
       setSelectedFolder(folderName)
     }
@@ -51,40 +48,46 @@ export function Scan({ onNavigate }: ScanProps) {
     setScanning(true)
     setCompleted(false)
     setScannedCount(0)
+    setCompletedCount(0)
 
-    // Simulate scanning progress
-    let count = 0
-    const folderSongs = songs.filter(s => s.folder === selectedFolder)
-    const totalSongs = Math.max(folderSongs.length, 1)
+    // Find the full path for the selected folder
+    const existingSong = songs.find(s => s.folder === selectedFolder)
+    const folderPath = existingSong?.filePath?.replace(/\/[^/]+$/, '') || selectedFolder
 
-    timerRef.current = setInterval(() => {
-      count++
-      setScannedCount(count)
-      if (count >= totalSongs) {
-        clearTimer()
-        setScanning(false)
-        setCompleted(true)
-      }
-    }, 300)
+    // Actually scan the folder
+    const result = await scanDirectoryByPath(folderPath)
+
+    if (result.songs.length > 0) {
+      await addSongs(result.songs, result.lyrics)
+    }
+
+    setScannedCount(result.songs.length)
+    setCompletedCount(result.songs.length)
+    setScanning(false)
+    setCompleted(true)
   }
 
   const startScanAll = async () => {
     setScanning(true)
     setCompleted(false)
     setScannedCount(0)
+    setCompletedCount(0)
 
-    const totalSongs = Math.max(songs.length, 1)
-    let count = 0
-
-    timerRef.current = setInterval(() => {
-      count++
-      setScannedCount(count)
-      if (count >= totalSongs) {
-        clearTimer()
-        setScanning(false)
-        setCompleted(true)
+    let totalCount = 0
+    for (const folder of folders) {
+      const existingSong = songs.find(s => s.folder === folder)
+      const folderPath = existingSong?.filePath?.replace(/\/[^/]+$/, '') || folder
+      const result = await scanDirectoryByPath(folderPath)
+      if (result.songs.length > 0) {
+        await addSongs(result.songs, result.lyrics)
       }
-    }, 300)
+      totalCount += result.songs.length
+      setScannedCount(totalCount)
+    }
+
+    setCompletedCount(totalCount)
+    setScanning(false)
+    setCompleted(true)
   }
 
   const stopScan = () => {
@@ -144,7 +147,7 @@ export function Scan({ onNavigate }: ScanProps) {
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
             {completed
-              ? `共发现 ${selectedFolder ? total : songs.length} 首歌曲`
+              ? `共发现 ${completedCount} 首歌曲`
               : scanning
                 ? `已发现 ${scannedCount} 首歌曲`
                 : '点击右上角 + 选择文件夹，然后点击开始扫描'
@@ -165,7 +168,7 @@ export function Scan({ onNavigate }: ScanProps) {
             }}>
               <div style={{ position: 'absolute', inset: '8px', borderRadius: '50%', background: 'var(--bg)' }}></div>
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: 'var(--text-secondary)', zIndex: 1 }}>
-                {scannedCount} / {selectedFolder ? total : songs.length}
+                {scannedCount}
               </div>
             </div>
           </div>
@@ -174,12 +177,12 @@ export function Scan({ onNavigate }: ScanProps) {
         {/* Folder List */}
         {!scanning && !completed && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-            {folderList.length === 0 && (
+            {folders.length === 0 && (
               <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px', padding: '16px 0' }}>
                 暂无文件夹，点击右上角 + 添加
               </p>
             )}
-            {folderList.map(f => {
+            {folders.map(f => {
               const count = songs.filter(s => s.folder === f).length
               const isSwiped = swipedFolder === f
               return (
@@ -205,7 +208,7 @@ export function Scan({ onNavigate }: ScanProps) {
                         cursor: 'pointer',
                         zIndex: 1,
                       }}
-                      onClick={() => removeFolder(f)}
+                      onClick={() => handleRemoveFolder(f)}
                     >
                       删除
                     </div>
@@ -261,7 +264,7 @@ export function Scan({ onNavigate }: ScanProps) {
             <button
               className="btn"
               onClick={startScanAll}
-              disabled={scanning || songs.length === 0}
+              disabled={scanning || folders.length === 0}
             >
               全部扫描
             </button>

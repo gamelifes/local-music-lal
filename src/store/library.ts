@@ -6,6 +6,7 @@ interface LibraryState {
   songs: Song[]
   lyrics: Map<string, string>
   hiddenIds: Set<string>
+  folders: string[]
   isLoading: boolean
 
   loadSongs: () => Promise<void>
@@ -14,6 +15,8 @@ interface LibraryState {
   removeSongsByFolder: (folder: string) => Promise<void>
   hideSong: (filePath: string) => Promise<void>
   unhideSong: (filePath: string) => Promise<void>
+  addFolder: (folder: string) => Promise<void>
+  removeFolder: (folder: string) => Promise<void>
   getVisibleSongs: () => Song[]
   getLyrics: (filePath: string) => string | undefined
 }
@@ -22,6 +25,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   songs: [],
   lyrics: new Map(),
   hiddenIds: new Set(),
+  folders: [],
   isLoading: false,
 
   loadSongs: async () => {
@@ -29,7 +33,8 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const songs = await db.getAllSongs()
     const hiddenIds = await db.getHiddenSongs()
     const lyrics = await db.getAllLyrics()
-    set({ songs, hiddenIds, lyrics, isLoading: false })
+    const folders = await db.getScanHistory()
+    set({ songs, hiddenIds, lyrics, folders, isLoading: false })
   },
 
   addSongs: async (songs, lyrics) => {
@@ -73,6 +78,20 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     await Promise.all(songsToRemove.map(s => tx.store.delete(s.id)))
     await tx.done
     set(state => ({ songs: state.songs.filter(s => s.folder !== folder) }))
+  },
+
+  addFolder: async (folder) => {
+    await db.saveScanHistory(folder)
+    set(state => ({
+      folders: [...new Set([...state.folders, folder])]
+    }))
+  },
+
+  removeFolder: async (folder) => {
+    await db.deleteScanHistory(folder)
+    set(state => ({
+      folders: state.folders.filter(f => f !== folder)
+    }))
   },
 
   hideSong: async (filePath) => {

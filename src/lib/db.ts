@@ -105,6 +105,23 @@ export async function deleteEqPreset(name: string): Promise<void> {
   await db.delete('eqPresets', name)
 }
 
+// Scan History (folders) functions
+export async function saveScanHistory(folder: string): Promise<void> {
+  const db = await getDB()
+  await db.put('scanHistory', { folder, scannedAt: Date.now(), songCount: 0 })
+}
+
+export async function getScanHistory(): Promise<string[]> {
+  const db = await getDB()
+  const history = await db.getAll('scanHistory')
+  return history.map(h => h.folder)
+}
+
+export async function deleteScanHistory(folder: string): Promise<void> {
+  const db = await getDB()
+  await db.delete('scanHistory', folder)
+}
+
 // Lyrics functions
 export async function saveLyrics(lyrics: Map<string, string>): Promise<void> {
   const db = await getDB()
