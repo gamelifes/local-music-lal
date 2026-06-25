@@ -9,12 +9,14 @@ import {
   StatusBar,
 } from 'react-native';
 import { usePlayerStore } from '../store/playerStore';
+import { useLibraryStore } from '../store/libraryStore';
 import { scanFolder, AudioFile } from '../utils/fileSystem';
 import { setupPlayer } from '../utils/player';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen({ navigation }: any) {
   const { songList, setSongList, playSong, currentSong } = usePlayerStore();
+  const { songs } = useLibraryStore();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -24,8 +26,8 @@ export default function HomeScreen({ navigation }: any) {
   const handleScan = async () => {
     setLoading(true);
     try {
-      const songs = await scanFolder('/storage/emulated/0/Music');
-      setSongList(songs);
+      const scannedSongs = await scanFolder('/storage/emulated/0/Music');
+      setSongList(scannedSongs);
     } catch (error) {
       console.error('Scan failed:', error);
     }
@@ -70,11 +72,22 @@ export default function HomeScreen({ navigation }: any) {
       <StatusBar barStyle="light-content" backgroundColor="#0F0F0A" />
       <View style={styles.header}>
         <Text style={styles.title}>全部歌曲</Text>
-        <TouchableOpacity style={styles.scanButton} onPress={handleScan}>
-          <Text style={styles.scanButtonText}>
-            {loading ? '扫描中...' : '扫描音乐'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Search')}>
+            <Text style={styles.iconButtonText}>🔍</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Scan')}>
+            <Text style={styles.iconButtonText}>📡</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Equalizer')}>
+            <Text style={styles.iconButtonText}>🎛️</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.scanButton} onPress={handleScan}>
+            <Text style={styles.scanButtonText}>
+              {loading ? '扫描中...' : '扫描'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {loading ? (
@@ -106,16 +119,31 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     marginBottom: 12,
   },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconButtonText: {
+    fontSize: 18,
+  },
   scanButton: {
     backgroundColor: '#e8b43c',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 8,
-    alignItems: 'center',
   },
   scanButtonText: {
     color: '#000000',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   loading: {
@@ -138,7 +166,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'linear-gradient(135deg, #e8b43c, #d4a017)',
+    backgroundColor: '#e8b43c',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
