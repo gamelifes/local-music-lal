@@ -1,83 +1,82 @@
-import { Audio, AVPlaybackStatus } from 'expo-av';
-
-let soundObject: Audio.Sound | null = null;
+import TrackPlayer, {
+  Event,
+  RepeatMode,
+  Capability,
+  AppKilledPlaybackBehavior,
+  Track,
+} from 'react-native-track-player';
 
 export async function setupPlayer() {
-  await Audio.setAudioModeAsync({
-    allowsRecordingIOS: false,
-    staysActiveInBackground: true,
-    playsInSilentModeIOS: true,
-    shouldDuckAndroid: true,
-    playThroughEarpieceAndroid: false,
+  await TrackPlayer.setupPlayer({
+    autoHandleInterruptions: true,
+  });
+
+  await TrackPlayer.updateOptions({
+    android: {
+      appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback,
+    },
+    capabilities: [
+      Capability.Play,
+      Capability.Pause,
+      Capability.SkipToNext,
+      Capability.SkipToPrevious,
+      Capability.Stop,
+    ],
+    compactCapabilities: [
+      Capability.Play,
+      Capability.Pause,
+      Capability.SkipToNext,
+    ],
+    progressEventInterval: 1,
   });
 }
 
-export async function playSong(song: { filePath: string; title: string; artist: string }, onEnd?: () => void) {
-  if (soundObject) {
-    await soundObject.unloadAsync();
-  }
+export async function addTracks(tracks: Track[]) {
+  await TrackPlayer.reset();
+  await TrackPlayer.add(tracks);
+}
 
-  const { sound } = await Audio.Sound.createAsync(
-    { uri: `file://${song.filePath}` },
-    { shouldPlay: true },
-    (status: AVPlaybackStatus) => {
-      if (status.isLoaded && status.didJustFinish) {
-        onEnd?.();
-      }
-    }
-  );
-
-  soundObject = sound;
+export async function play(index: number = 0) {
+  await TrackPlayer.skip(index);
+  await TrackPlayer.play();
 }
 
 export async function pause() {
-  if (soundObject) {
-    await soundObject.pauseAsync();
-  }
+  await TrackPlayer.pause();
 }
 
 export async function resume() {
-  if (soundObject) {
-    await soundObject.playAsync();
-  }
+  await TrackPlayer.play();
 }
 
 export async function stop() {
-  if (soundObject) {
-    await soundObject.stopAsync();
-    await soundObject.unloadAsync();
-    soundObject = null;
-  }
+  await TrackPlayer.stop();
+}
+
+export async function skipToNext() {
+  await TrackPlayer.skipToNext();
+}
+
+export async function skipToPrevious() {
+  await TrackPlayer.skipToPrevious();
 }
 
 export async function seek(position: number) {
-  if (soundObject) {
-    await soundObject.setPositionAsync(position * 1000);
-  }
+  await TrackPlayer.seekTo(position);
 }
 
-export async function getDuration(): Promise<number> {
-  if (soundObject) {
-    const status = await soundObject.getStatusAsync();
-    if (status.isLoaded) {
-      return status.durationMillis / 1000;
-    }
-  }
-  return 0;
-}
-
-export async function getPosition(): Promise<number> {
-  if (soundObject) {
-    const status = await soundObject.getStatusAsync();
-    if (status.isLoaded) {
-      return status.positionMillis / 1000;
-    }
-  }
-  return 0;
+export async function setRepeatMode(mode: RepeatMode) {
+  await TrackPlayer.setRepeatMode(mode);
 }
 
 export async function setVolume(volume: number) {
-  if (soundObject) {
-    await soundObject.setVolumeAsync(volume);
-  }
+  await TrackPlayer.setVolume(volume);
+}
+
+export function getPlaybackState() {
+  return TrackPlayer.getState();
+}
+
+export function getProgress() {
+  return TrackPlayer.getProgress();
 }

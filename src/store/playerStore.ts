@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as player from '../utils/player';
+import TrackPlayer, { RepeatMode, Event } from 'react-native-track-player';
 import { AudioFile } from '../utils/fileSystem';
 
 interface PlayerState {
@@ -36,25 +36,37 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const songList = list || get().songList;
     const index = list ? list.findIndex(s => s.id === song.id) : 0;
 
-    await player.playSong(song, () => {
-      get().nextSong();
-    });
+    if (list && list.length > 0) {
+      await TrackPlayer.reset();
+      const tracks = list.map(s => ({
+        id: s.id,
+        url: `file://${s.filePath}`,
+        title: s.title,
+        artist: s.artist,
+        album: s.album,
+        duration: s.duration,
+      }));
+      await TrackPlayer.add(tracks);
+    }
 
-    const duration = await player.getDuration();
+    await TrackPlayer.skip(index);
+    await TrackPlayer.play();
+
+    const { duration } = await TrackPlayer.getProgress();
     set({
       currentSong: song,
       songList,
       isPlaying: true,
-      duration,
+      duration: duration || 0,
     });
   },
 
   togglePlay: async () => {
     const { isPlaying } = get();
     if (isPlaying) {
-      await player.pause();
+      await TrackPlayer.pause();
     } else {
-      await player.resume();
+      await TrackPlayer.play();
     }
     set({ isPlaying: !isPlaying });
   },
@@ -73,7 +85,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     const nextSong = songList[nextIndex];
     if (nextSong) {
-      await player.playSong(nextSong, () => get().nextSong());
+      await TrackPlayer.skip(nextIndex);
+      await TrackPlayer.play();
       set({ currentSong: nextSong, currentIndex: nextIndex, isPlaying: true });
     }
   },
@@ -88,16 +101,23 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     const prevSong = songList[prevIndex];
     if (prevSong) {
-      await player.playSong(prevSong, () => get().nextSong());
+      await TrackPlayer.skip(prevIndex);
+      await TrackPlayer.play();
       set({ currentSong: prevSong, currentIndex: prevIndex, isPlaying: true });
     }
   },
 
   seek: async (position) => {
-    await player.seek(position);
+    await TrackPlayer.seekTo(position);
   },
 
-  setRepeatMode: (mode) => {
+  setRepeatMode: async (mode) => {
+    const repeatModeMap: Record<string, RepeatMode> = {
+      'none': RepeatMode.Off,
+      'all': RepeatMode.Queue,
+      'one': RepeatMode.Track,
+    };
+    await TrackPlayer.setRepeatMode(repeatModeMap[mode]);
     set({ repeatMode: mode });
   },
 
@@ -105,13 +125,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const { isPlaying } = get();
     if (!isPlaying) return;
 
-    const position = await player.getPosition();
-    const duration = await player.getDuration();
+    const { position, duration } = await TrackPlayer.getProgress();
     const progress = duration > 0 ? (position / duration) * 100 : 0;
 
     set({
       progress,
-      duration,
+      duration: duration || 0,
       currentTime: position,
     });
   },
