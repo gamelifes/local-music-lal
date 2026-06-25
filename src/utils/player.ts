@@ -1,11 +1,9 @@
 import TrackPlayer, {
   Event,
   RepeatMode,
-  State,
   Capability,
   AppKilledPlaybackBehavior,
 } from 'react-native-track-player';
-import { AudioFile } from '../utils/fileSystem';
 
 export async function setupPlayer() {
   await TrackPlayer.setupPlayer({
@@ -32,10 +30,10 @@ export async function setupPlayer() {
   });
 }
 
-export async function addTracks(songs: AudioFile[]) {
+export async function addTracks(songs: { id: string; filePath: string; title: string; artist: string; album: string; duration: number }[]) {
   const tracks = songs.map(song => ({
     id: song.id,
-    url: song.filePath,
+    url: `file://${song.filePath}`,
     title: song.title,
     artist: song.artist,
     album: song.album,
