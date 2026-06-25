@@ -38,6 +38,9 @@ jobs:
         if: runner.os == 'macOS'
         run: sudo gem install cocoapods
 
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+
       - name: Build Android Debug APK
         run: |
           cd android
