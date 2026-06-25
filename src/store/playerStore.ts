@@ -1,23 +1,23 @@
 import { create } from 'zustand';
-import { Song, RepeatMode } from '../types';
-import * as player from '../utils/player';
+import TrackPlayer, { RepeatMode, Event } from 'react-native-track-player';
+import { AudioFile } from '../utils/fileSystem';
 
 interface PlayerState {
-  currentSong: Song | null;
-  songList: Song[];
+  currentSong: AudioFile | null;
+  songList: AudioFile[];
   isPlaying: boolean;
   progress: number;
   duration: number;
   currentTime: number;
-  repeatMode: RepeatMode;
+  repeatMode: 'none' | 'all' | 'one';
 
-  setSongList: (songs: Song[]) => void;
-  playSong: (song: Song, list?: Song[]) => void;
+  setSongList: (songs: AudioFile[]) => void;
+  playSong: (song: AudioFile, list?: AudioFile[]) => void;
   togglePlay: () => void;
   nextSong: () => void;
   prevSong: () => void;
   seek: (position: number) => void;
-  setRepeatMode: (mode: RepeatMode) => void;
+  setRepeatMode: (mode: 'none' | 'all' | 'one') => void;
   updateProgress: (progress: number, duration: number) => void;
 }
 
@@ -36,11 +36,22 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const songList = list || get().songList;
     const index = list ? list.findIndex(s => s.id === song.id) : 0;
 
-    if (list) {
-      await player.addTracks(list);
+    if (list && list.length > 0) {
+      await TrackPlayer.reset();
+      const tracks = list.map(s => ({
+        id: s.id,
+        url: `file://${s.filePath}`,
+        title: s.title,
+        artist: s.artist,
+        album: s.album,
+        duration: s.duration,
+      }));
+      await TrackPlayer.add(tracks);
     }
 
-    await player.play(index);
+    await TrackPlayer.skip(index);
+    await TrackPlayer.play();
+
     set({
       currentSong: song,
       songList,
@@ -51,32 +62,32 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   togglePlay: async () => {
     const { isPlaying } = get();
     if (isPlaying) {
-      await player.pause();
+      await TrackPlayer.pause();
     } else {
-      await player.resume();
+      await TrackPlayer.play();
     }
     set({ isPlaying: !isPlaying });
   },
 
   nextSong: async () => {
-    await player.skipToNext();
+    await TrackPlayer.skipToNext();
   },
 
   prevSong: async () => {
-    await player.skipToPrevious();
+    await TrackPlayer.skipToPrevious();
   },
 
   seek: async (position) => {
-    await player.seek(position);
+    await TrackPlayer.seekTo(position);
   },
 
   setRepeatMode: async (mode) => {
-    const repeatModeMap: Record<RepeatMode, number> = {
-      'none': 0,
-      'all': 1,
-      'one': 2,
+    const repeatModeMap: Record<string, RepeatMode> = {
+      'none': RepeatMode.Off,
+      'all': RepeatMode.Queue,
+      'one': RepeatMode.Track,
     };
-    await player.setRepeatMode(repeatModeMap[mode]);
+    await TrackPlayer.setRepeatMode(repeatModeMap[mode]);
     set({ repeatMode: mode });
   },
 

@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './src/screens/HomeScreen';
 import PlayerScreen from './src/screens/PlayerScreen';
+import { setupPlayer } from './src/utils/player';
 
 const Stack = createNativeStackNavigator();
 
 function App() {
+  useEffect(() => {
+    setupPlayer();
+  }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator

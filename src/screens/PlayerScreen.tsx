@@ -1,17 +1,44 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Image,
+  Animated,
+  PanResponder,
 } from 'react-native';
-import TrackPlayer, { Event, useActiveTrack, useProgress } from 'react-native-track-player';
+import TrackPlayer, { useProgress, Event } from 'react-native-track-player';
 import { usePlayerStore } from '../store/playerStore';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function PlayerScreen({ navigation }: any) {
-  const { currentSong, isPlaying, togglePlay, nextSong, prevSong, repeatMode, setRepeatMode } = usePlayerStore();
+  const { currentSong, isPlaying, togglePlay, nextSong, prevSong, repeatMode, setRepeatMode, lyrics, activeLine, setActiveLine, activeWord, setActiveWord } = usePlayerStore();
   const { position, duration } = useProgress();
+
+  const vinylRotation = useRef(new Animated.Value(0)).current;
+  const lyricsOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isPlaying) {
+      Animated.loop(
+        Animated.timing(vinylRotation, {
+          toValue: 1,
+          duration: 20000,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      vinylRotation.stopAnimation();
+    }
+  }, [isPlaying]);
+
+  useEffect(() => {
+    Animated.timing(lyricsOpacity, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [activeLine]);
 
   useEffect(() => {
     const setup = async () => {
@@ -46,8 +73,13 @@ export default function PlayerScreen({ navigation }: any) {
     }
   };
 
+  const spin = vinylRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backButton}>←</Text>
@@ -59,9 +91,9 @@ export default function PlayerScreen({ navigation }: any) {
       </View>
 
       <View style={styles.coverContainer}>
-        <View style={styles.cover}>
+        <Animated.View style={[styles.cover, { transform: [{ rotate: spin }] }]}>
           <Text style={styles.coverIcon}>♫</Text>
-        </View>
+        </Animated.View>
       </View>
 
       <Text style={styles.artistName}>{currentSong?.artist || 'Unknown Artist'}</Text>
@@ -97,7 +129,7 @@ export default function PlayerScreen({ navigation }: any) {
 
         <View style={{ width: 40 }} />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -111,7 +143,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
     paddingBottom: 20,
   },
   backButton: {

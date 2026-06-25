@@ -6,13 +6,15 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import { usePlayerStore } from '../store/playerStore';
 import { scanFolder, AudioFile } from '../utils/fileSystem';
 import { setupPlayer } from '../utils/player';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen({ navigation }: any) {
-  const { songList, setSongList, playSong } = usePlayerStore();
+  const { songList, setSongList, playSong, currentSong } = usePlayerStore();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -22,7 +24,6 @@ export default function HomeScreen({ navigation }: any) {
   const handleScan = async () => {
     setLoading(true);
     try {
-      // Scan Music directory
       const songs = await scanFolder('/storage/emulated/0/Music');
       setSongList(songs);
     } catch (error) {
@@ -36,25 +37,39 @@ export default function HomeScreen({ navigation }: any) {
     navigation.navigate('Player');
   };
 
-  const renderItem = ({ item }: { item: AudioFile }) => (
-    <TouchableOpacity
-      style={styles.songItem}
-      onPress={() => handlePlay(item)}
-    >
-      <View style={styles.songInfo}>
-        <Text style={styles.songTitle} numberOfLines={1}>{item.title}</Text>
-        <Text style={styles.songArtist} numberOfLines={1}>{item.artist}</Text>
-      </View>
-      <Text style={styles.songDuration}>
-        {Math.floor(item.duration / 60)}:{String(Math.floor(item.duration % 60)).padStart(2, '0')}
-      </Text>
-    </TouchableOpacity>
-  );
+  const formatDuration = (seconds: number) => {
+    if (!seconds) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const renderItem = ({ item }: { item: AudioFile }) => {
+    const isPlaying = currentSong?.id === item.id;
+    return (
+      <TouchableOpacity
+        style={[styles.songItem, isPlaying && styles.songItemActive]}
+        onPress={() => handlePlay(item)}
+      >
+        <View style={styles.songCover}>
+          <Text style={styles.songCoverIcon}>♫</Text>
+        </View>
+        <View style={styles.songInfo}>
+          <Text style={[styles.songTitle, isPlaying && styles.songTitleActive]} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <Text style={styles.songArtist} numberOfLines={1}>{item.artist}</Text>
+        </View>
+        <Text style={styles.songDuration}>{formatDuration(item.duration)}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F0A" />
       <View style={styles.header}>
-        <Text style={styles.title}>Music Player</Text>
+        <Text style={styles.title}>全部歌曲</Text>
         <TouchableOpacity style={styles.scanButton} onPress={handleScan}>
           <Text style={styles.scanButtonText}>
             {loading ? '扫描中...' : '扫描音乐'}
@@ -72,7 +87,7 @@ export default function HomeScreen({ navigation }: any) {
           contentContainerStyle={styles.list}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -83,7 +98,6 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 16,
-    paddingTop: 50,
     backgroundColor: '#1a1a16',
   },
   title: {
@@ -117,6 +131,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
+  songItemActive: {
+    backgroundColor: 'rgba(232, 180, 60, 0.1)',
+  },
+  songCover: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'linear-gradient(135deg, #e8b43c, #d4a017)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  songCoverIcon: {
+    fontSize: 20,
+    color: '#ffffff',
+  },
   songInfo: {
     flex: 1,
   },
@@ -124,6 +154,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ffffff',
     fontWeight: '500',
+  },
+  songTitleActive: {
+    color: '#e8b43c',
   },
   songArtist: {
     fontSize: 14,
