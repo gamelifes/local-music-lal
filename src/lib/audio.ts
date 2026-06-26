@@ -33,19 +33,31 @@ async function getAudioUri(filePath: string): Promise<string | null> {
       path = path.substring(1)
     }
 
-    // Try to get the file URI
-    const stat = await Filesystem.stat({
-      path: path,
-      directory: Directory.ExternalStorage
-    })
-
-    // Try different URI formats
-    if (stat.uri) {
-      return stat.uri
+    // Try to get the file URI via stat
+    let uri: string | null = null
+    try {
+      const stat = await Filesystem.stat({
+        path: path,
+        directory: Directory.ExternalStorage
+      })
+      if (stat.uri) {
+        // stat.uri might be content:// which Howler can't play
+        // Only use it if it's a file:// URI
+        if (stat.uri.startsWith('file://')) {
+          uri = stat.uri
+        }
+      }
+    } catch {
+      // stat failed, try direct construction
     }
 
-    // Fallback: construct file URI
-    return `file:///storage/emulated/0/${path}`
+    // Fallback: construct file:// URI directly
+    if (!uri) {
+      uri = `file:///storage/emulated/0/${path}`
+    }
+
+    console.log('Audio URI:', uri)
+    return uri
   } catch (e) {
     console.error('Failed to get audio URI:', filePath, e)
     return null
