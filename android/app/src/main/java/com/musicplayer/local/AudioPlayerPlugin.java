@@ -25,6 +25,8 @@ public class AudioPlayerPlugin extends Plugin {
             return;
         }
 
+        android.util.Log.d("AudioPlayer", "play called: " + path);
+
         try {
             // Stop existing playback
             if (mediaPlayer != null) {
@@ -37,14 +39,17 @@ public class AudioPlayerPlugin extends Plugin {
 
             File file = new File(path);
             if (!file.exists()) {
+                android.util.Log.e("AudioPlayer", "File not found: " + path);
                 call.reject("File not found: " + path);
                 return;
             }
 
+            android.util.Log.d("AudioPlayer", "File exists, preparing: " + file.length() + " bytes");
             mediaPlayer.setDataSource(path);
             mediaPlayer.prepare();
 
             mediaPlayer.setOnPreparedListener(mp -> {
+                android.util.Log.d("AudioPlayer", "Prepared, duration: " + mp.getDuration());
                 mp.start();
 
                 JSObject result = new JSObject();
@@ -54,6 +59,7 @@ public class AudioPlayerPlugin extends Plugin {
             });
 
             mediaPlayer.setOnErrorListener((mp, what, extra) -> {
+                android.util.Log.e("AudioPlayer", "Error: " + what + " / " + extra);
                 call.reject("Playback error: " + what + " / " + extra);
                 return true;
             });
