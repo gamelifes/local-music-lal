@@ -22,12 +22,8 @@ export function getFileHandle(filePath: string): FileSystemFileHandle | undefine
   return fileHandleStore.get(filePath)
 }
 
-// Read file from Capacitor Filesystem and create Blob URL for playback
+// Get audio file URI for Android playback
 async function getAudioUri(filePath: string): Promise<string | null> {
-  if (blobUrlStore.has(filePath)) {
-    return blobUrlStore.get(filePath)!
-  }
-
   try {
     const { Filesystem, Directory } = await import('@capacitor/filesystem')
 
@@ -36,34 +32,21 @@ async function getAudioUri(filePath: string): Promise<string | null> {
       path = path.substring(1)
     }
 
-    // Read file as base64
-    const result = await Filesystem.readFile({
+    // Use stat to get native URI - Android returns content:// URI that WebView can access
+    const stat = await Filesystem.stat({
       path: path,
-      directory: Directory.ExternalStorage,
+      directory: Directory.ExternalStorage
     })
 
-    // Convert base64 to Blob
-    const base64 = result.data as string
-    const binary = atob(base64)
-    const bytes = new Uint8Array(binary.length)
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i)
+    if (stat.uri) {
+      console.log('Audio URI:', stat.uri)
+      return stat.uri
     }
 
-    // Detect MIME type from extension
-    const ext = path.split('.').pop()?.toLowerCase() || 'mp3'
-    const mimeMap: Record<string, string> = {
-      mp3: 'audio/mpeg', flac: 'audio/flac', wav: 'audio/wav',
-      ogg: 'audio/ogg', aac: 'audio/aac', m4a: 'audio/mp4', ape: 'audio/ape',
-    }
-    const blob = new Blob([bytes], { type: mimeMap[ext] || 'audio/mpeg' })
-    const url = URL.createObjectURL(blob)
-
-    blobUrlStore.set(filePath, url)
-    console.log('Blob URL created:', filePath)
-    return url
+    // Fallback
+    return `file:///storage/emulated/0/${path}`
   } catch (e) {
-    console.error('Failed to create audio URL:', filePath, e)
+    console.error('Failed to get audio URI:', filePath, e)
     return null
   }
 }
