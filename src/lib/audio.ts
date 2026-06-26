@@ -1,5 +1,6 @@
 import { Howl, Howler } from 'howler'
 import type { Song } from '../types/song'
+import AudioPlayer from '../plugins/audio-player'
 
 let currentHowl: Howl | null = null
 let currentSongId: string | null = null
@@ -11,11 +12,10 @@ let nativePosition = 0
 let progressInterval: ReturnType<typeof setInterval> | null = null
 let onEndCallback: (() => void) | null = null
 let onLoadCallback: ((duration: number) => void) | null = null
+let trackCompleteListener: any = null
 
 // Store file handles for audio playback (Web only)
 const fileHandleStore: Map<string, FileSystemFileHandle> = new Map()
-
-// Store blob URLs
 const blobUrlStore: Map<string, string> = new Map()
 
 export function storeFileHandle(filePath: string, handle: FileSystemFileHandle) {
@@ -30,17 +30,11 @@ export function getFileHandle(filePath: string): FileSystemFileHandle | undefine
   return fileHandleStore.get(filePath)
 }
 
-async function getNativePlayer() {
-  const { default: AudioPlayer } = await import('../plugins/audio-player')
-  return AudioPlayer
-}
-
 export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duration: number) => void) {
-  console.log('playSong called:', song.filePath, 'Capacitor:', !!window.Capacitor)
+  console.log('playSong:', song.filePath, 'Capacitor:', !!window.Capacitor)
   onEndCallback = onEnd || null
   onLoadCallback = onLoad || null
 
-  // Android: use native MediaPlayer
   if (window.Capacitor) {
     await playNative(song)
     return
@@ -48,7 +42,8 @@ export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duratio
 
   // Web: use Howler
   if (currentSongId !== song.id) {
-    stop()
+    currentHowl?.stop()
+    currentHowl = null
   }
 
   let url: string | null = null
@@ -102,18 +97,17 @@ export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duratio
 }
 
 async function playNative(song: Song) {
-  console.log('playNative called for:', song.filePath)
+  console.log('playNative:', song.filePath)
   try {
-    // Stop current if different song
     if (currentSongId !== song.id) {
-      await stopNative()
+      try { await AudioPlayer.stop() } catch {}
+      nativePlaying = false
+      nativeDuration = 0
+      nativePosition = 0
+      if (progressInterval) { clearInterval(progressInterval); progressInterval = null }
+      if (trackCompleteListener) { trackCompleteListener.remove(); trackCompleteListener = null }
     }
 
-    console.log('Loading AudioPlayer plugin...')
-    const AudioPlayer = await getNativePlayer()
-    console.log('AudioPlayer plugin loaded:', !!AudioPlayer)
-
-    // Build full filesystem path
     const fullPath = `/storage/emulated/0/${song.filePath}`
     console.log('Native play:', fullPath)
 
@@ -124,56 +118,33 @@ async function playNative(song: Song) {
     nativeDuration = result.duration
     currentSongId = song.id
 
-    // Start progress tracking
-    startNativeProgress()
+    // Progress tracking
+    if (progressInterval) clearInterval(progressInterval)
+    progressInterval = setInterval(async () => {
+      if (!nativePlaying || !currentSongId) return
+      try {
+        const state = await AudioPlayer.getState()
+        nativePosition = state.position
+        nativePlaying = state.playing
+      } catch {}
+    }, 250)
 
-    // Listen for track completion
-    AudioPlayer.addListener('trackComplete', () => {
+    // Track completion listener
+    if (trackCompleteListener) { trackCompleteListener.remove(); trackCompleteListener = null }
+    trackCompleteListener = await AudioPlayer.addListener('trackComplete', () => {
       nativePlaying = false
       onEndCallback?.()
     })
 
-    // Notify load
     onLoadCallback?.(result.duration)
   } catch (e) {
     console.error('Native play failed:', e)
   }
 }
 
-function startNativeProgress() {
-  if (progressInterval) clearInterval(progressInterval)
-  progressInterval = setInterval(async () => {
-    if (!nativePlaying || !currentSongId) return
-    try {
-      const AudioPlayer = await getNativePlayer()
-      const state = await AudioPlayer.getState()
-      nativePosition = state.position
-      nativePlaying = state.playing
-    } catch {}
-  }, 250)
-}
-
-async function stopNative() {
-  try {
-    const AudioPlayer = await getNativePlayer()
-    await AudioPlayer.stop()
-  } catch {}
-  nativePlaying = false
-  nativeDuration = 0
-  nativePosition = 0
-  if (progressInterval) {
-    clearInterval(progressInterval)
-    progressInterval = null
-  }
-}
-
 export async function pause() {
   if (window.Capacitor) {
-    try {
-      const AudioPlayer = await getNativePlayer()
-      await AudioPlayer.pause()
-      nativePlaying = false
-    } catch {}
+    try { await AudioPlayer.pause(); nativePlaying = false } catch {}
   } else {
     currentHowl?.pause()
   }
@@ -181,11 +152,7 @@ export async function pause() {
 
 export async function resume() {
   if (window.Capacitor) {
-    try {
-      const AudioPlayer = await getNativePlayer()
-      await AudioPlayer.resume()
-      nativePlaying = true
-    } catch {}
+    try { await AudioPlayer.resume(); nativePlaying = true } catch {}
   } else {
     currentHowl?.play()
   }
@@ -193,7 +160,12 @@ export async function resume() {
 
 export async function stop() {
   if (window.Capacitor) {
-    await stopNative()
+    try { await AudioPlayer.stop() } catch {}
+    nativePlaying = false
+    nativeDuration = 0
+    nativePosition = 0
+    if (progressInterval) { clearInterval(progressInterval); progressInterval = null }
+    if (trackCompleteListener) { trackCompleteListener.remove(); trackCompleteListener = null }
   } else {
     currentHowl?.stop()
     currentHowl = null
@@ -203,43 +175,33 @@ export async function stop() {
 
 export async function seek(position: number) {
   if (window.Capacitor) {
-    try {
-      const AudioPlayer = await getNativePlayer()
-      await AudioPlayer.seek({ position })
-      nativePosition = position
-    } catch {}
+    try { await AudioPlayer.seek({ position }); nativePosition = position } catch {}
   } else {
     currentHowl?.seek(position)
   }
 }
 
 export function getPosition(): number {
-  if (window.Capacitor) {
-    return nativePosition
-  }
+  if (window.Capacitor) return nativePosition
   if (!currentHowl) return 0
   const pos = currentHowl.seek()
   return typeof pos === 'number' ? pos : 0
 }
 
 export function getDuration(): number {
-  if (window.Capacitor) {
-    return nativeDuration
-  }
+  if (window.Capacitor) return nativeDuration
   if (!currentHowl) return 0
   return currentHowl.duration() || 0
 }
 
 export function isPlaying(): boolean {
-  if (window.Capacitor) {
-    return nativePlaying
-  }
+  if (window.Capacitor) return nativePlaying
   return currentHowl?.playing() || false
 }
 
 export function setVolume(volume: number) {
   if (window.Capacitor) {
-    getNativePlayer().then(p => p.setVolume({ volume })).catch(() => {})
+    AudioPlayer.setVolume({ volume }).catch(() => {})
   } else {
     Howler.volume(volume)
   }
