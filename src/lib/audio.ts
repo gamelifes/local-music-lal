@@ -36,6 +36,7 @@ async function getNativePlayer() {
 }
 
 export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duration: number) => void) {
+  console.log('playSong called:', song.filePath, 'Capacitor:', !!window.Capacitor)
   onEndCallback = onEnd || null
   onLoadCallback = onLoad || null
 
@@ -101,19 +102,23 @@ export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duratio
 }
 
 async function playNative(song: Song) {
+  console.log('playNative called for:', song.filePath)
   try {
     // Stop current if different song
     if (currentSongId !== song.id) {
       await stopNative()
     }
 
+    console.log('Loading AudioPlayer plugin...')
     const AudioPlayer = await getNativePlayer()
+    console.log('AudioPlayer plugin loaded:', !!AudioPlayer)
 
     // Build full filesystem path
     const fullPath = `/storage/emulated/0/${song.filePath}`
     console.log('Native play:', fullPath)
 
     const result = await AudioPlayer.play({ path: fullPath })
+    console.log('Native play result:', result)
 
     nativePlaying = true
     nativeDuration = result.duration
