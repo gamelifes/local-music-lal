@@ -22,44 +22,48 @@ export function getFileHandle(filePath: string): FileSystemFileHandle | undefine
   return fileHandleStore.get(filePath)
 }
 
-// Get audio file URI for Android playback
+// Read file from Capacitor Filesystem and create Blob URL for playback
 async function getAudioUri(filePath: string): Promise<string | null> {
+  if (blobUrlStore.has(filePath)) {
+    return blobUrlStore.get(filePath)!
+  }
+
   try {
     const { Filesystem, Directory } = await import('@capacitor/filesystem')
 
-    // Remove leading slash if present
     let path = filePath
     if (path.startsWith('/')) {
       path = path.substring(1)
     }
 
-    // Try to get the file URI via stat
-    let uri: string | null = null
-    try {
-      const stat = await Filesystem.stat({
-        path: path,
-        directory: Directory.ExternalStorage
-      })
-      if (stat.uri) {
-        // stat.uri might be content:// which Howler can't play
-        // Only use it if it's a file:// URI
-        if (stat.uri.startsWith('file://')) {
-          uri = stat.uri
-        }
-      }
-    } catch {
-      // stat failed, try direct construction
+    // Read file as base64
+    const result = await Filesystem.readFile({
+      path: path,
+      directory: Directory.ExternalStorage,
+    })
+
+    // Convert base64 to Blob
+    const base64 = result.data as string
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i)
     }
 
-    // Fallback: construct file:// URI directly
-    if (!uri) {
-      uri = `file:///storage/emulated/0/${path}`
+    // Detect MIME type from extension
+    const ext = path.split('.').pop()?.toLowerCase() || 'mp3'
+    const mimeMap: Record<string, string> = {
+      mp3: 'audio/mpeg', flac: 'audio/flac', wav: 'audio/wav',
+      ogg: 'audio/ogg', aac: 'audio/aac', m4a: 'audio/mp4', ape: 'audio/ape',
     }
+    const blob = new Blob([bytes], { type: mimeMap[ext] || 'audio/mpeg' })
+    const url = URL.createObjectURL(blob)
 
-    console.log('Audio URI:', uri)
-    return uri
+    blobUrlStore.set(filePath, url)
+    console.log('Blob URL created:', filePath)
+    return url
   } catch (e) {
-    console.error('Failed to get audio URI:', filePath, e)
+    console.error('Failed to create audio URL:', filePath, e)
     return null
   }
 }
