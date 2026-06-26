@@ -18,13 +18,14 @@ export function ArtistDetail({ artist, onNavigate }: ArtistDetailProps) {
       title={artist}
       onBack={() => onNavigate('artists')}
       songs={filtered}
-      columns={[
-        { label: '' },
-        { label: '歌名' },
-        { label: '专辑' },
-        { label: '时长', width: 60, textAlign: 'right' }
-      ]}
-      onPlaySong={(song) => play(song, filtered)}
-    />
+  columns={[
+    { label: '', width: 48 },
+    { label: '歌名' },
+    { label: '专辑' },
+    { label: '时长', width: 60, textAlign: 'right' }
+  ]}
+  showIndex
+  onPlaySong={(song) => play(song, filtered)}
+/>
   )
 }

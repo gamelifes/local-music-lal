@@ -39,16 +39,17 @@ export function SongTable({ title, onBack, rightAction, songs, columns, onPlaySo
             <h2 style={{ fontSize: '18px', flex: 1 }}>{title}</h2>
             {rightAction}
           </div>
-          <table className="song-table" style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                {columns.map((col, i) => (
-                  <th key={i} style={{ width: col.width, textAlign: col.textAlign }}>{col.label}</th>
-                ))}
-                {extraColumns && <th style={{ width: 80, textAlign: 'right' }}></th>}
-              </tr>
-            </thead>
-          </table>
+    <table className="song-table" style={{ width: '100%' }}>
+    <thead>
+    <tr>
+      {showIndex && <th style={{ width: indexWidth, textAlign: 'center' }}>#</th>}
+      {columns.map((col, i) => (
+        <th key={i} style={{ width: i === 0 && showIndex ? 48 : col.width, textAlign: col.textAlign }}>{col.label}</th>
+      ))}
+      {extraColumns && <th style={{ width: 80, textAlign: 'right' }}></th>}
+    </tr>
+    </thead>
+    </table>
         </div>
 
         {/* Song List */}
