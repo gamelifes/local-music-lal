@@ -7,7 +7,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Register custom plugins
         registerPlugin(FolderPickerPlugin.class);
+        registerPlugin(AudioPlayerPlugin.class);
     }
 }
