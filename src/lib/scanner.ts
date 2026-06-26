@@ -71,7 +71,7 @@ async function readFileMetadata(
     })
 
     const data = base64ToUint8Array(result.data as string)
-    const metadata = await parseBuffer(data, { duration: true })
+    const metadata = await parseBuffer(data, undefined, { duration: true })
 
     return {
       title: metadata.common.title,
@@ -257,7 +257,7 @@ async function scanWithFilePicker(): Promise<ScanResult> {
           try {
             // Read first 256KB for metadata
             const chunk = file.slice(0, 262144)
-            const parsed = await parseBuffer(new Uint8Array(await chunk.arrayBuffer()), { duration: true })
+            const parsed = await parseBuffer(new Uint8Array(await chunk.arrayBuffer()), undefined, { duration: true })
             meta = {
               title: parsed.common.title || '',
               artist: parsed.common.artist || 'Unknown Artist',
