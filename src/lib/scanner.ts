@@ -186,9 +186,11 @@ export async function scanDirectoryByPath(dirPath: string, folderName: string): 
 
         if (isLyricsFile(name)) {
           try {
+            const { Encoding } = await import('@capacitor/filesystem')
             const content = await Filesystem.readFile({
               path: filePath,
-              directory: Directory.ExternalStorage
+              directory: Directory.ExternalStorage,
+              encoding: Encoding.UTF8,
             })
             const title = name.replace('.lrc', '')
             lyrics.set(title, content.data as string)

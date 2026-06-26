@@ -71,7 +71,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       lyrics = []
     }
 
-    // Set state first (duration will be updated by onLoad callback)
+    // Set state first - use song's duration from DB if available
     set({
       currentSong: song,
       songList,
@@ -79,7 +79,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       isPlaying: true,
       progress: 0,
       currentTime: 0,
-      duration: 0, // Will be updated by onLoad callback
+      duration: song.duration || 0,
       activeLine: 0,
       activeWord: -1,
       lyrics
@@ -160,7 +160,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       isPlaying: true,
       progress: 0,
       currentTime: 0,
-      duration: 0,
+      duration: nextSong.duration || 0,
       activeLine: 0,
       activeWord: -1,
       lyrics
@@ -202,7 +202,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         isPlaying: true,
         progress: 0,
         currentTime: 0,
-        duration: 0,
+        duration: prevSong.duration || 0,
         activeLine: 0,
         activeWord: -1,
         lyrics
