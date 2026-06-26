@@ -26,6 +26,7 @@
     "@capgo/capacitor-file-picker": "^8.1.11",
     "howler": "^2.2.4",
     "idb": "^8.0.3",
+    "music-metadata": "^11.13.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.18.0",
