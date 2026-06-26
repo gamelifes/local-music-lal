@@ -51,7 +51,6 @@ export function Scan({ onNavigate }: ScanProps) {
     setCompleted(false)
     setScannedCount(0)
     setCompletedCount(0)
-
     let pathToScan = selectedPath
     if (!pathToScan) {
       const existingSong = songs.find(s => s.folder === selectedFolder)
@@ -62,7 +61,6 @@ export function Scan({ onNavigate }: ScanProps) {
       if (picked) { pathToScan = picked.path; setSelectedPath(pathToScan) }
       else { setScanning(false); return }
     }
-
     const result = await scanDirectoryByPath(pathToScan, selectedFolder)
     if (result.songs.length > 0) await addSongs(result.songs, result.lyrics)
     setScannedCount(result.songs.length)
@@ -109,7 +107,7 @@ export function Scan({ onNavigate }: ScanProps) {
               <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
                 <img src="/icons/back.svg" alt="back" width="24" height="24" />
               </button>
-              <h2 style={{ fontSize: '18px', margin: 0 }}>{scanning ? '正在扫描' : '扫描音乐'}</h2>
+              <h2 style={{ fontSize: '18px', margin: 0 }}>扫描音乐</h2>
             </div>
             {!scanning && !completed && (
               <button onClick={handleAddFolder} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '22px', cursor: 'pointer', lineHeight: 1 }}>+</button>
@@ -155,7 +153,7 @@ export function Scan({ onNavigate }: ScanProps) {
                   <div
                     onClick={() => { if (!isSwiped) handleSelectFolder(entry) }}
                     className="group-header"
-                    style={{ margin: 0, borderColor: selectedFolder === entry.folder ? 'var(--accent)' : undefined, background: selectedFolder === entry.folder ? 'rgba(255,255,255,0.06)' : undefined, transform: isSwiped ? 'translateX(-80px)' : 'translateX(0)', transition: 'transform 0.3s ease', cursor: 'pointer' }}
+                    style={{ margin: 0, borderColor: selectedFolder === entry.folder ? 'var(--accent)' : undefined, background: selectedFolder === entry.folder ? 'rgba(255,255,255,0.06)' : undefined, boxShadow: selectedFolder === entry.folder ? '0 0 0 1px var(--accent)' : undefined, transform: isSwiped ? 'translateX(-80px)' : 'translateX(0)', transition: 'transform 0.3s ease', cursor: 'pointer' }}
                     onTouchStart={(e) => handleTouchStart(entry.folder, e.touches[0].clientX, e.touches[0].clientY)}
                     onTouchEnd={(e) => handleTouchEnd(entry.folder, e.changedTouches[0].clientX, e.changedTouches[0].clientY)}
                     onMouseDown={(e) => handleMouseDown(entry.folder, e.clientX, e.clientY)}
