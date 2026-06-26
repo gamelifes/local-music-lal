@@ -99,14 +99,9 @@ export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duratio
 async function playNative(song: Song) {
   console.log('playNative:', song.filePath)
   try {
-    if (currentSongId !== song.id) {
-      try { await AudioPlayer.stop() } catch {}
-      nativePlaying = false
-      nativeDuration = 0
-      nativePosition = 0
-      if (progressInterval) { clearInterval(progressInterval); progressInterval = null }
-      if (trackCompleteListener) { trackCompleteListener.remove(); trackCompleteListener = null }
-    }
+    // Release previous listener
+    if (trackCompleteListener) { trackCompleteListener.remove(); trackCompleteListener = null }
+    if (progressInterval) { clearInterval(progressInterval); progressInterval = null }
 
     const fullPath = `/storage/emulated/0/${song.filePath}`
     console.log('Native play:', fullPath)
