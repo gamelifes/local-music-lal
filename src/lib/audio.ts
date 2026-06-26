@@ -19,10 +19,8 @@ export function getFileHandle(filePath: string): FileSystemFileHandle | undefine
 }
 
 function getWebPath(filePath: string): string {
-  // Convert native file path to Capacitor web-accessible path
-  // On Android, convertFileSrc maps /storage/emulated/0/... to a local server URL
   const fullPath = `/storage/emulated/0/${filePath}`
-  return Capacitor.convertFileSrc(fullPath)
+  return Capacitor.convertFileSrc(`file://${fullPath}`)
 }
 
 export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duration: number) => void) {
