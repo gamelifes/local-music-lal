@@ -1,9 +1,14 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useLibraryStore } from '../store/library'
 import { pickDirectory, scanDirectoryByPath } from '../lib/scanner'
 
 interface ScanProps {
   onNavigate: (page: string) => void
+}
+
+interface FolderEntry {
+  folder: string
+  path?: string
 }
 
 export function Scan({ onNavigate }: ScanProps) {
@@ -19,10 +24,7 @@ export function Scan({ onNavigate }: ScanProps) {
 
   const handleRemoveFolder = async (f: string) => {
     await removeFolder(f)
-    if (selectedFolder === f) {
-      setSelectedFolder('')
-      setSelectedPath('')
-    }
+    if (selectedFolder === f) { setSelectedFolder(''); setSelectedPath('') }
     setSwipedFolder(null)
   }
 
@@ -31,92 +33,71 @@ export function Scan({ onNavigate }: ScanProps) {
     if (picked) {
       setSelectedFolder(picked.folderName)
       setSelectedPath(picked.path)
-      if (!folders.includes(picked.folderName)) {
+      if (!folders.some(f => f.folder === picked.folderName)) {
         const { addFolder } = useLibraryStore.getState()
-        await addFolder(picked.folderName)
+        await addFolder(picked.folderName, picked.path)
       }
     }
   }
 
-  const handleSelectFolder = async (f: string) => {
-    setSelectedFolder(f)
-    // If we don't have a path for this folder, get it
-    if (selectedFolder !== f && !selectedPath) {
-      const existingSong = songs.find(s => s.folder === f)
-      if (existingSong) {
-        const path = existingSong.filePath.replace(/\/[^/]+$/, '')
-        setSelectedPath(path)
-      }
-    }
+  const handleSelectFolder = (entry: FolderEntry) => {
+    setSelectedFolder(entry.folder)
+    setSelectedPath(entry.path || '')
   }
 
   const startScan = async () => {
     if (!selectedFolder) return
-
     setScanning(true)
     setCompleted(false)
     setScannedCount(0)
     setCompletedCount(0)
 
-    // Get the path
     let pathToScan = selectedPath
     if (!pathToScan) {
-      // Try to find from existing songs
       const existingSong = songs.find(s => s.folder === selectedFolder)
-      if (existingSong) {
-        pathToScan = existingSong.filePath.replace(/\/[^/]+$/, '')
-      }
+      if (existingSong) pathToScan = existingSong.filePath.replace(/\/[^/]+$/, '')
     }
-
     if (!pathToScan) {
-      // Need to pick directory
       const picked = await pickDirectory()
-      if (picked) {
-        pathToScan = picked.path
-        setSelectedPath(picked.path)
-      } else {
-        setScanning(false)
-        return
-      }
+      if (picked) { pathToScan = picked.path; setSelectedPath(pathToScan) }
+      else { setScanning(false); return }
     }
 
     const result = await scanDirectoryByPath(pathToScan, selectedFolder)
-
-    if (result.songs.length > 0) {
-      await addSongs(result.songs, result.lyrics)
-    }
-
+    if (result.songs.length > 0) await addSongs(result.songs, result.lyrics)
     setScannedCount(result.songs.length)
     setCompletedCount(result.songs.length)
     setScanning(false)
     setCompleted(true)
   }
 
-  const handleTouchStart = (_folder: string, x: number, y: number) => {
-    setSwipeStart({ x, y })
-  }
-
-  const handleTouchEnd = (folder: string, x: number, _y: number) => {
-    const dx = x - swipeStart.x
-    if (dx < -60) {
-      setSwipedFolder(folder)
-    } else {
-      setSwipedFolder(null)
+  const handleScanAll = async () => {
+    if (scanning || folders.length === 0) return
+    setScanning(true)
+    setCompleted(false)
+    setScannedCount(0)
+    setCompletedCount(0)
+    let total = 0
+    for (const entry of folders) {
+      let path = entry.path
+      if (!path) {
+        const s = songs.find(x => x.folder === entry.folder)
+        if (s) path = s.filePath.replace(/\/[^/]+$/, '')
+        if (!path) continue
+      }
+      const result = await scanDirectoryByPath(path, entry.folder)
+      if (result.songs.length > 0) { await addSongs(result.songs, result.lyrics); total += result.songs.length }
     }
+    setScannedCount(total)
+    setCompletedCount(total)
+    setScanning(false)
+    setCompleted(true)
   }
 
-  const handleMouseDown = (_folder: string, x: number, y: number) => {
-    setSwipeStart({ x, y })
-  }
-
-  const handleMouseUp = (folder: string, x: number, _y: number) => {
-    const dx = x - swipeStart.x
-    if (dx < -60) {
-      setSwipedFolder(folder)
-    } else {
-      setSwipedFolder(null)
-    }
-  }
+  const handleTouchStart = (_folder: string, x: number, y: number) => setSwipeStart({ x, y })
+  const handleTouchEnd = (folder: string, x: number, _y: number) => setSwipedFolder(x - swipeStart.x < -60 ? folder : null)
+  const handleMouseDown = (_folder: string, x: number, y: number) => setSwipeStart({ x, y })
+  const handleMouseUp = (folder: string, x: number, _y: number) => setSwipedFolder(x - swipeStart.x < -60 ? folder : null)
 
   return (
     <div className="page active">
@@ -143,30 +124,16 @@ export function Scan({ onNavigate }: ScanProps) {
             {completed ? '扫描完成' : scanning ? '正在扫描...' : selectedFolder || '选择扫描文件夹'}
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
-            {completed
-              ? `共发现 ${completedCount} 首歌曲`
-              : scanning
-                ? `已发现 ${scannedCount} 首歌曲`
-                : '点击右上角 + 选择文件夹，然后点击开始扫描'
-            }
+            {completed ? `共发现 ${completedCount} 首歌曲` : scanning ? `已发现 ${scannedCount} 首歌曲` : '点击右上角 + 选择文件夹，然后点击开始扫描'}
           </p>
         </div>
 
         {/* Scanning Animation */}
         {scanning && (
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-            <div style={{
-              width: '160px',
-              height: '160px',
-              borderRadius: '50%',
-              position: 'relative',
-              background: 'conic-gradient(var(--accent), var(--accent-glow), var(--accent))',
-              animation: 'spin 3s linear infinite'
-            }}>
+            <div style={{ width: '160px', height: '160px', borderRadius: '50%', position: 'relative', background: 'conic-gradient(var(--accent), var(--accent-glow), var(--accent))', animation: 'spin 3s linear infinite' }}>
               <div style={{ position: 'absolute', inset: '8px', borderRadius: '50%', background: 'var(--bg)' }}></div>
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: 'var(--text-secondary)', zIndex: 1 }}>
-                {scannedCount}
-              </div>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: 'var(--text-secondary)', zIndex: 1 }}>{scannedCount}</div>
             </div>
           </div>
         )}
@@ -175,63 +142,30 @@ export function Scan({ onNavigate }: ScanProps) {
         {!scanning && !completed && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
             {folders.length === 0 && !selectedFolder && (
-              <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px', padding: '16px 0' }}>
-                暂无文件夹，点击右上角 + 添加
-              </p>
+              <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px', padding: '16px 0' }}>暂无文件夹，点击右上角 + 添加</p>
             )}
-            {folders.map(f => {
-              const count = songs.filter(s => s.folder === f).length
-              const isSwiped = swipedFolder === f
+            {folders.map(entry => {
+              const count = songs.filter(s => s.folder === entry.folder).length
+              const isSwiped = swipedFolder === entry.folder
               return (
-                <div
-                  key={f}
-                  style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-md)' }}
-                >
+                <div key={entry.folder} style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-md)' }}>
                   {isSwiped && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        right: 0,
-                        bottom: 0,
-                        width: '80px',
-                        background: '#ff4d4d',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#fff',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        zIndex: 1,
-                      }}
-                      onClick={() => handleRemoveFolder(f)}
-                    >
-                      删除
-                    </div>
+                    <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '80px', background: '#ff4d4d', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer', zIndex: 1 }} onClick={() => handleRemoveFolder(entry.folder)}>删除</div>
                   )}
                   <div
-                    onClick={() => {
-                      if (!isSwiped) handleSelectFolder(f)
-                    }}
+                    onClick={() => { if (!isSwiped) handleSelectFolder(entry) }}
                     className="group-header"
-                    style={{
-                      margin: 0,
-                      borderColor: selectedFolder === f ? 'var(--accent)' : undefined,
-                      background: selectedFolder === f ? 'rgba(255,255,255,0.06)' : undefined,
-                      transform: isSwiped ? 'translateX(-80px)' : 'translateX(0)',
-                      transition: 'transform 0.3s ease',
-                      cursor: 'pointer',
-                    }}
-                    onTouchStart={(e) => handleTouchStart(f, e.touches[0].clientX, e.touches[0].clientY)}
-                    onTouchEnd={(e) => handleTouchEnd(f, e.changedTouches[0].clientX, e.changedTouches[0].clientY)}
-                    onMouseDown={(e) => handleMouseDown(f, e.clientX, e.clientY)}
-                    onMouseUp={(e) => handleMouseUp(f, e.clientX, e.clientY)}
+                    style={{ margin: 0, borderColor: selectedFolder === entry.folder ? 'var(--accent)' : undefined, background: selectedFolder === entry.folder ? 'rgba(255,255,255,0.06)' : undefined, transform: isSwiped ? 'translateX(-80px)' : 'translateX(0)', transition: 'transform 0.3s ease', cursor: 'pointer' }}
+                    onTouchStart={(e) => handleTouchStart(entry.folder, e.touches[0].clientX, e.touches[0].clientY)}
+                    onTouchEnd={(e) => handleTouchEnd(entry.folder, e.changedTouches[0].clientX, e.changedTouches[0].clientY)}
+                    onMouseDown={(e) => handleMouseDown(entry.folder, e.clientX, e.clientY)}
+                    onMouseUp={(e) => handleMouseUp(entry.folder, e.clientX, e.clientY)}
                   >
                     <div className="group-cover">📁</div>
                     <div className="group-info">
-                      <div className="group-name">{f}</div>
+                      <div className="group-name">{entry.folder}</div>
                       <div className="group-count">{count} 首歌曲</div>
+                      {entry.path && <div style={{ fontSize: '11px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.path}</div>}
                     </div>
                   </div>
                 </div>
@@ -250,17 +184,12 @@ export function Scan({ onNavigate }: ScanProps) {
 
         {/* Scan Buttons */}
         {!completed && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
-            <button
-              className="btn primary"
-              onClick={startScan}
-              disabled={!selectedFolder || scanning}
-            >
-              {scanning ? '扫描中...' : '开始扫描'}
-            </button>
-            {scanning && (
-              <button className="btn" onClick={() => setScanning(false)}>停止</button>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <button className="btn primary" onClick={startScan} disabled={!selectedFolder || scanning}>{scanning ? '扫描中...' : '开始扫描'}</button>
+            {folders.length > 1 && (
+              <button className="btn" onClick={handleScanAll} disabled={scanning}>全部扫描 ({folders.length})</button>
             )}
+            {scanning && <button className="btn" onClick={() => setScanning(false)}>停止</button>}
           </div>
         )}
       </div>

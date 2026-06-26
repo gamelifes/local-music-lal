@@ -11,6 +11,8 @@ interface SongTableProps {
   onPlaySong?: (song: Song) => void
   extraColumns?: (song: Song) => ReactNode
   renderSong?: (song: Song, index: number) => ReactNode
+  showIndex?: boolean
+  indexWidth?: number
 }
 
 function formatDuration(seconds: number): string {
@@ -20,7 +22,7 @@ function formatDuration(seconds: number): string {
   return `${mins}:${String(secs).padStart(2, '0')}`
 }
 
-export function SongTable({ title, onBack, rightAction, songs, columns, onPlaySong, extraColumns, renderSong }: SongTableProps) {
+export function SongTable({ title, onBack, rightAction, songs, columns, onPlaySong, extraColumns, renderSong, showIndex = false, indexWidth = 36 }: SongTableProps) {
   const { currentSong } = usePlayerStore()
 
   return (
@@ -58,18 +60,23 @@ export function SongTable({ title, onBack, rightAction, songs, columns, onPlaySo
                   key={song.id}
                   className={currentSong?.id === song.id ? 'song-playing' : ''}
                   onClick={() => onPlaySong?.(song)}
-                  style={{ cursor: onPlaySong ? 'pointer' : undefined }}
-                >
-                  <td className="col-cover">
-                    <div className="cover-thumb">
-                      <img src="/icons/music-note.svg" alt="music" className="music-icon" />
-                    </div>
-                  </td>
-                  <td className="col-song">{song.title}</td>
-                  <td className="col-artist">{song.artist}</td>
-                  <td className="col-duration">{formatDuration(song.duration)}</td>
-                  {extraColumns && <td>{extraColumns(song)}</td>}
-                </tr>
+        style={{ cursor: onPlaySong ? 'pointer' : undefined }}
+      >
+        {showIndex && (
+          <td className="col-index" style={{ width: indexWidth, textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
+            {index + 1}
+          </td>
+        )}
+        <td className="col-cover" style={{ width: showIndex ? 48 : undefined }}>
+          <div className="cover-thumb">
+            <img src="/icons/music-note.svg" alt="music" className="music-icon" />
+          </div>
+        </td>
+        <td className="col-song">{song.title}</td>
+        <td className="col-artist">{song.artist}</td>
+        <td className="col-duration">{formatDuration(song.duration)}</td>
+        {extraColumns && <td>{extraColumns(song)}</td>}
+      </tr>
               )
             ))}
           </tbody>

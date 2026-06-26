@@ -2,11 +2,16 @@ import { create } from 'zustand'
 import type { Song } from '../types/song'
 import * as db from '../lib/db'
 
+interface ScanHistoryEntry {
+  folder: string
+  path?: string
+}
+
 interface LibraryState {
   songs: Song[]
   lyrics: Map<string, string>
   hiddenIds: Set<string>
-  folders: string[]
+  folders: ScanHistoryEntry[]
   isLoading: boolean
 
   loadSongs: () => Promise<void>
@@ -15,7 +20,7 @@ interface LibraryState {
   removeSongsByFolder: (folder: string) => Promise<void>
   hideSong: (filePath: string) => Promise<void>
   unhideSong: (filePath: string) => Promise<void>
-  addFolder: (folder: string) => Promise<void>
+  addFolder: (folder: string, path?: string) => Promise<void>
   removeFolder: (folder: string) => Promise<void>
   getVisibleSongs: () => Song[]
   getLyrics: (filePath: string) => string | undefined
@@ -33,7 +38,8 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const songs = await db.getAllSongs()
     const hiddenIds = await db.getHiddenSongs()
     const lyrics = await db.getAllLyrics()
-    const folders = await db.getScanHistory()
+    const folderEntries = await db.getScanHistory()
+    const folders: ScanHistoryEntry[] = folderEntries.map(e => ({ folder: e.folder, path: e.path }))
     set({ songs, hiddenIds, lyrics, folders, isLoading: false })
   },
 
@@ -80,17 +86,17 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     set(state => ({ songs: state.songs.filter(s => s.folder !== folder) }))
   },
 
-  addFolder: async (folder) => {
-    await db.saveScanHistory(folder)
+  addFolder: async (folder, path) => {
+    await db.saveScanHistory(folder, path)
     set(state => ({
-      folders: [...new Set([...state.folders, folder])]
+      folders: [...state.folders, { folder, path: path || '' }]
     }))
   },
 
   removeFolder: async (folder) => {
     await db.deleteScanHistory(folder)
     set(state => ({
-      folders: state.folders.filter(f => f !== folder)
+      folders: state.folders.filter(f => f.folder !== folder)
     }))
   },
 

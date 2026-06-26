@@ -18,8 +18,8 @@ interface MusicDB extends DBSchema {
     value: EqPreset
   }
   scanHistory: {
-    key: string
-    value: { folder: string; scannedAt: number; songCount: number }
+  key: string
+  value: { folder: string; path?: string; scannedAt: number; songCount: number }
   }
   lyrics: {
     key: string
@@ -106,15 +106,15 @@ export async function deleteEqPreset(name: string): Promise<void> {
 }
 
 // Scan History (folders) functions
-export async function saveScanHistory(folder: string): Promise<void> {
+export async function saveScanHistory(folder: string, path?: string): Promise<void> {
   const db = await getDB()
-  await db.put('scanHistory', { folder, scannedAt: Date.now(), songCount: 0 })
+  await db.put('scanHistory', { folder, path, scannedAt: Date.now(), songCount: 0 })
 }
 
-export async function getScanHistory(): Promise<string[]> {
+export async function getScanHistory(): Promise<Array<{ folder: string; path?: string }>> {
   const db = await getDB()
   const history = await db.getAll('scanHistory')
-  return history.map(h => h.folder)
+  return history.map(h => ({ folder: h.folder, path: (h as any).path || '' }))
 }
 
 export async function deleteScanHistory(folder: string): Promise<void> {

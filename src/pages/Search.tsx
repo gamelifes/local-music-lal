@@ -55,24 +55,25 @@ export function Search({ onNavigate }: SearchProps) {
         )}
         {query && results.length > 0 && (
           <table className="song-table" style={{ width: '100%' }}>
-            <tbody>
-              {results.map(s => (
-                <tr
-                  key={s.id}
-                  onClick={() => { play(s, results); onNavigate('player') }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <td style={{ width: 64, padding: '8px', textAlign: 'center' }}>
-                    <div className="cover-thumb">
-                      <img src="/icons/music-note.svg" alt="music" className="music-icon" />
-                    </div>
-                  </td>
-                  <td className="col-song">{s.title}</td>
-                  <td className="col-artist">{s.artist}</td>
-                  <td style={{ width: 60, textAlign: 'right' }}>{formatDuration(s.duration)}</td>
-                </tr>
-              ))}
-            </tbody>
+          <tbody>
+            {results.map((s, i) => (
+              <tr
+                key={s.id}
+                onClick={() => { play(s, results); onNavigate('player') }}
+                style={{ cursor: 'pointer' }}
+              >
+                <td className="col-index" style={{ width: 36, textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>{i + 1}</td>
+                <td style={{ width: 48, padding: '8px', textAlign: 'center' }}>
+                  <div className="cover-thumb">
+                    <img src="/icons/music-note.svg" alt="music" className="music-icon" />
+                  </div>
+                </td>
+                <td className="col-song">{s.title}</td>
+                <td className="col-artist">{s.artist}</td>
+                <td style={{ width: 60, textAlign: 'right' }}>{formatDuration(s.duration)}</td>
+              </tr>
+            ))}
+          </tbody>
           </table>
         )}
       </div>

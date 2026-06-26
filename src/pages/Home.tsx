@@ -22,7 +22,6 @@ export function Home({ onToggleDrawer }: HomeProps) {
   return (
     <div className="page active">
       <div className="page-content" style={{ paddingTop: 0 }}>
-        {/* Sticky Header */}
         <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#0F0F0A', padding: '8px 0 0' }}>
           <div style={{ padding: '8px 0' }}>
             <button
@@ -36,7 +35,8 @@ export function Home({ onToggleDrawer }: HomeProps) {
           <table className="song-table" style={{ width: '100%' }}>
             <thead>
               <tr>
-                <th style={{ width: 64 }}></th>
+                <th style={{ width: 36, textAlign: 'center' }}>#</th>
+                <th style={{ width: 48 }}></th>
                 <th>歌名</th>
                 <th>歌手</th>
                 <th style={{ width: 60, textAlign: 'right' }}>时长</th>
@@ -45,16 +45,16 @@ export function Home({ onToggleDrawer }: HomeProps) {
           </table>
         </div>
 
-        {/* Song List */}
         <table className="song-table" style={{ width: '100%' }}>
           <tbody>
-            {visibleSongs.map(s => (
+            {visibleSongs.map((s, i) => (
               <tr
                 key={s.id}
                 className={currentSong?.id === s.id ? 'song-playing' : ''}
                 onClick={() => play(s, visibleSongs)}
                 style={{ cursor: 'pointer' }}
               >
+                <td className="col-index" style={{ width: 36, textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>{i + 1}</td>
                 <td className="col-cover">
                   <div className="cover-thumb">
                     <img src="/icons/music-note.svg" alt="music" className="music-icon" />
