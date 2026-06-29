@@ -12,6 +12,7 @@ interface LibraryState {
   lyrics: Map<string, string>
   hiddenIds: Set<string>
   folders: ScanHistoryEntry[]
+  selectedScanFolders: string[]
   isLoading: boolean
 
   loadSongs: () => Promise<void>
@@ -22,6 +23,8 @@ interface LibraryState {
   unhideSong: (filePath: string) => Promise<void>
   addFolder: (folder: string, path?: string) => Promise<void>
   removeFolder: (folder: string) => Promise<void>
+  toggleSelectedScanFolder: (folder: string) => Promise<void>
+  setSelectedScanFolders: (folders: string[]) => Promise<void>
   getVisibleSongs: () => Song[]
   getLyrics: (filePath: string) => string | undefined
 }
@@ -31,6 +34,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   lyrics: new Map(),
   hiddenIds: new Set(),
   folders: [],
+  selectedScanFolders: [] as string[],
   isLoading: false,
 
   loadSongs: async () => {
@@ -39,9 +43,10 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const hiddenIds = await db.getHiddenSongs()
     const lyrics = await db.getAllLyrics()
     const folderEntries = await db.getScanHistory()
-    const folders: ScanHistoryEntry[] = folderEntries.map(e => ({ folder: e.folder, path: e.path }))
-    set({ songs, hiddenIds, lyrics, folders, isLoading: false })
-  },
+  const folders: ScanHistoryEntry[] = folderEntries.map(e => ({ folder: e.folder, path: e.path }))
+  const selectedScanFolders = await db.loadSelectedScanFolders()
+  set({ songs, hiddenIds, lyrics, folders, selectedScanFolders, isLoading: false })
+},
 
   addSongs: async (songs, lyrics) => {
     const existingSongs = get().songs
@@ -96,7 +101,8 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   removeFolder: async (folder) => {
     await db.deleteScanHistory(folder)
     set(state => ({
-      folders: state.folders.filter(f => f.folder !== folder)
+      folders: state.folders.filter(f => f.folder !== folder),
+      selectedScanFolders: state.selectedScanFolders.filter(f => f !== folder)
     }))
   },
 
@@ -121,6 +127,18 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     return songs.filter(s => !hiddenIds.has(s.filePath))
   },
 
+  setSelectedScanFolders: async (folders: string[]) => {
+    await db.saveSelectedScanFolders(folders)
+    set({ selectedScanFolders: folders })
+  },
+  toggleSelectedScanFolder: async (folder: string) => {
+    const current = get().selectedScanFolders
+    const next = current.includes(folder)
+      ? current.filter(f => f !== folder)
+      : [...current, folder]
+    await db.saveSelectedScanFolders(next)
+    set({ selectedScanFolders: next })
+  },
   getLyrics: (filePath) => {
     const { lyrics, songs } = get()
     // Try exact path match

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useLibraryStore } from '../store/library'
 import { pickDirectory, scanDirectoryByPath } from '../lib/scanner'
 
@@ -12,8 +12,7 @@ interface FolderEntry {
 }
 
 export function Scan({ onNavigate }: ScanProps) {
-  const { songs, addSongs, folders, removeFolder } = useLibraryStore()
-  const [selectedFolders, setSelectedFolders] = useState<string[]>([])
+  const { songs, addSongs, folders, removeFolder, selectedScanFolders, toggleSelectedScanFolder, setSelectedScanFolders } = useLibraryStore()
   const [scanning, setScanning] = useState(false)
   const [scannedCount, setScannedCount] = useState(0)
   const [completed, setCompleted] = useState(false)
@@ -21,17 +20,8 @@ export function Scan({ onNavigate }: ScanProps) {
   const [swipedFolder, setSwipedFolder] = useState<string | null>(null)
   const [swipeStart, setSwipeStart] = useState({ x: 0, y: 0 })
 
-  const initialLoadRef = { current: true }
-  useEffect(() => {
-    if (initialLoadRef.current && folders.length > 0 && selectedFolders.length === 0) {
-      setSelectedFolders(folders.map(f => f.folder))
-      initialLoadRef.current = false
-    }
-  }, [folders.length])
-
   const handleRemoveFolder = async (f: string) => {
     await removeFolder(f)
-    setSelectedFolders(prev => prev.filter(s => s !== f))
     setSwipedFolder(null)
   }
 
@@ -43,29 +33,47 @@ export function Scan({ onNavigate }: ScanProps) {
         const { addFolder } = useLibraryStore.getState()
         await addFolder(picked.folderName, picked.path)
       }
-      setSelectedFolders(prev => {
-        if (prev.includes(picked.folderName)) return prev
-        return [...prev, picked.folderName]
-      })
+      if (!selectedScanFolders.includes(picked.folderName)) {
+        await toggleSelectedScanFolder(picked.folderName)
+      }
     }
   }
 
   const handleSelectFolder = (entry: FolderEntry) => {
-    setSelectedFolders(prev =>
-      prev.includes(entry.folder)
-        ? prev.filter(f => f !== entry.folder)
-        : [...prev, entry.folder]
-    )
+    toggleSelectedScanFolder(entry.folder)
   }
 
-  const startScan = async () => {
-    if (selectedFolders.length === 0) return
+  const handleScanAll = async () => {
+    if (scanning || folders.length === 0) return
     setScanning(true)
     setCompleted(false)
     setScannedCount(0)
     setCompletedCount(0)
     let total = 0
-    for (const folderName of selectedFolders) {
+    for (const entry of folders) {
+      let pathToScan = entry.path
+      if (!pathToScan) {
+        const existingSong = songs.find(s => s.folder === entry.folder)
+        if (existingSong) pathToScan = existingSong.filePath.replace(/\/[^/]+$/, '')
+        if (!pathToScan) continue
+      }
+      const result = await scanDirectoryByPath(pathToScan, entry.folder)
+      if (result.songs.length > 0) { await addSongs(result.songs, result.lyrics); total += result.songs.length }
+    }
+    setScannedCount(total)
+    setCompletedCount(total)
+    setScanning(false)
+    setCompleted(true)
+  }
+
+  const startScan = async () => {
+    if (selectedScanFolders.length === 0) return
+    setScanning(true)
+    setCompleted(false)
+    setScannedCount(0)
+    setCompletedCount(0)
+    let total = 0
+    for (const folderName of selectedScanFolders) {
       const entry = folders.find(f => f.folder === folderName)
       let pathToScan = entry?.path
       if (!pathToScan) {
@@ -107,7 +115,7 @@ export function Scan({ onNavigate }: ScanProps) {
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
           <div style={{ fontSize: '64px', marginBottom: '16px' }}>{completed ? '✅' : scanning ? '📡' : '📁'}</div>
           <h2 style={{ fontSize: '22px', marginBottom: '8px' }}>
-            {completed ? '扫描完成' : scanning ? '正在扫描...' : selectedFolders.length > 0 ? `已选 ${selectedFolders.length} 个文件夹` : '选择扫描文件夹'}
+            {completed ? '扫描完成' : scanning ? '正在扫描...' : selectedScanFolders.length > 0 ? `已选 ${selectedScanFolders.length} 个文件夹` : '选择扫描文件夹'}
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
             {completed ? `共发现 ${completedCount} 首歌曲` : scanning ? `已发现 ${scannedCount} 首歌曲` : '点击右上角 + 添加文件夹，然后点击开始扫描'}
@@ -131,7 +139,7 @@ export function Scan({ onNavigate }: ScanProps) {
             {folders.map(entry => {
               const count = songs.filter(s => s.folder === entry.folder).length
               const isSwiped = swipedFolder === entry.folder
-              const isSelected = selectedFolders.includes(entry.folder)
+              const isSelected = selectedScanFolders.includes(entry.folder)
               return (
                 <div key={entry.folder} style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-md)' }}>
                   {isSwiped && (
@@ -167,16 +175,14 @@ export function Scan({ onNavigate }: ScanProps) {
         {completed && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '16px' }}>
             <button className="btn primary" onClick={() => onNavigate('home')}>查看歌曲</button>
-            <button className="btn" onClick={() => { setCompleted(false); setSelectedFolders([]) }}>重新扫描</button>
+            <button className="btn" onClick={() => { setCompleted(false); setSelectedScanFolders([]) }}>重新扫描</button>
           </div>
         )}
 
         {!completed && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <button className="btn primary" onClick={startScan} disabled={selectedFolders.length === 0 || scanning}>{scanning ? '扫描中...' : '开始扫描'}</button>
-            {!scanning && selectedFolders.length < folders.length && (
-              <button className="btn" onClick={() => setSelectedFolders(folders.map(f => f.folder))}>全部扫描 ({folders.length})</button>
-            )}
+            <button className="btn primary" onClick={startScan} disabled={selectedScanFolders.length === 0 || scanning}>{scanning ? '扫描中...' : '开始扫描'}</button>
+            <button className="btn" onClick={handleScanAll} disabled={scanning}>全部扫描 ({folders.length})</button>
             {scanning && <button className="btn" onClick={() => setScanning(false)}>停止</button>}
           </div>
         )}
