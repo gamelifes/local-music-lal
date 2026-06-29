@@ -139,12 +139,9 @@ export function Scan({ onNavigate }: ScanProps) {
                   )}
                   <div
                     onClick={() => { if (!isSwiped) handleSelectFolder(entry) }}
-                    className="group-header"
+                    className={`group-header${isSelected ? ' selected' : ''}`}
                     style={{
                       margin: 0,
-                      borderColor: isSelected ? 'var(--accent)' : undefined,
-                      background: isSelected ? 'rgba(255,255,255,0.08)' : undefined,
-                      boxShadow: isSelected ? '0 0 0 2px var(--accent)' : undefined,
                       transform: isSwiped ? 'translateX(-80px)' : 'translateX(0)',
                       transition: 'all 0.2s ease',
                       cursor: 'pointer'

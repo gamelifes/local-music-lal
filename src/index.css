@@ -161,7 +161,7 @@ body {
   border-bottom: none;
 }
 
-.col-cover { width: 64px; padding: 8px; text-align: center; }
+/* .col-cover removed — cover column no longer used */
 .col-song { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .col-artist { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .col-duration { font-variant-numeric: tabular-nums; text-align: right; width: 60px; }
@@ -208,6 +208,11 @@ body {
 
 .group-header:hover {
   background: var(--bg-card-hover);
+}
+.group-header.selected {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .group-cover {

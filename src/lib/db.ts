@@ -18,8 +18,12 @@ interface MusicDB extends DBSchema {
     value: EqPreset
   }
   scanHistory: {
-  key: string
-  value: { folder: string; path?: string; scannedAt: number; songCount: number }
+    key: string
+    value: { folder: string; path?: string; scannedAt: number; songCount: number }
+  }
+  selectedScanFolders: {
+    key: string
+    value: { id: string; folders: string[] }
   }
   lyrics: {
     key: string
@@ -31,7 +35,7 @@ let dbPromise: Promise<IDBPDatabase<MusicDB>> | null = null
 
 export function getDB() {
   if (!dbPromise) {
-    dbPromise = openDB<MusicDB>('musicplayer', 2, {
+    dbPromise = openDB<MusicDB>('musicplayer', 3, {
       upgrade(db, oldVersion) {
         if (oldVersion < 1) {
           const songStore = db.createObjectStore('songs', { keyPath: 'id' })
@@ -43,9 +47,12 @@ export function getDB() {
           db.createObjectStore('eqPresets', { keyPath: 'name' })
           db.createObjectStore('scanHistory', { keyPath: 'folder' })
         }
-        if (oldVersion < 2) {
-          db.createObjectStore('lyrics', { keyPath: 'filePath' })
-        }
+  if (oldVersion < 2) {
+    db.createObjectStore('lyrics', { keyPath: 'filePath' })
+  }
+  if (oldVersion < 3) {
+    db.createObjectStore('selectedScanFolders', { keyPath: 'id' })
+  }
       },
     })
   }
