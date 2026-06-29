@@ -47,30 +47,80 @@ export function Playlists({ onNavigate, onSelectPlaylist }: PlaylistsProps) {
               <h2 style={{ fontSize: '18px', margin: 0 }}>歌单</h2>
             </div>
             {!showCreate && (
-              <button onClick={() => setShowCreate(true)} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '22px', cursor: 'pointer', lineHeight: 1 }}>+</button>
+              <button
+                onClick={() => setShowCreate(true)}
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: 'var(--accent)',
+                  color: '#fff', fontSize: '22px', fontWeight: 300,
+                  border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(var(--accent-rgb), 0.3)',
+                  transition: 'transform 0.15s, box-shadow 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(var(--accent-rgb), 0.4)' }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(var(--accent-rgb), 0.3)' }}
+              >+</button>
             )}
           </div>
         </div>
 
         {showCreate && (
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+          <div style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '16px',
+            marginBottom: '16px',
+          }}>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', marginBottom: '12px' }}>新建歌单</div>
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="歌单名称"
-              style={{ flex: 1, padding: '8px 12px', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', color: 'var(--text)', fontSize: '14px' }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') { setShowCreate(false); setNewName('') } }}
+              placeholder="输入歌单名称"
+              style={{
+                width: '100%', padding: '10px 14px',
+                background: 'var(--bg)',
+                border: '1px solid var(--glass-border)',
+                borderRadius: 'var(--radius-md)',
+                color: 'var(--text)', fontSize: '14px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
               autoFocus
             />
-            <button className="btn primary" onClick={handleCreate}>创建</button>
-            <button className="btn" onClick={() => { setShowCreate(false); setNewName('') }}>取消</button>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'flex-end' }}>
+              <button
+                className="btn"
+                onClick={() => { setShowCreate(false); setNewName('') }}
+                style={{ padding: '8px 16px', fontSize: '13px' }}
+              >取消</button>
+              <button
+                className="btn primary"
+                onClick={handleCreate}
+                style={{ padding: '8px 20px', fontSize: '13px', opacity: newName.trim() ? 1 : 0.5 }}
+              >创建</button>
+            </div>
           </div>
         )}
 
         {playlists.length === 0 && !showCreate && (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-secondary)' }}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎵</div>
-            <div>还没有歌单</div>
-            <div style={{ fontSize: '13px', marginTop: '8px' }}>点击右上角 + 创建你的第一个歌单</div>
+          <div style={{ textAlign: 'center', padding: '64px 0', color: 'var(--text-secondary)' }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: '50%',
+              background: 'linear-gradient(135deg, var(--accent), var(--accent-glow))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 20px', fontSize: '36px',
+              boxShadow: '0 4px 20px rgba(var(--accent-rgb), 0.25)',
+            }}>🎶</div>
+            <div style={{ fontSize: '16px', fontWeight: 500, marginBottom: '8px' }}>还没有歌单</div>
+            <div style={{ fontSize: '13px', marginBottom: '20px' }}>创建你的第一个歌单，整理喜欢的音乐</div>
+            <button
+              className="btn primary"
+              onClick={() => setShowCreate(true)}
+              style={{ padding: '10px 24px', fontSize: '14px', borderRadius: '24px' }}
+            >+ 新建歌单</button>
           </div>
         )}
 
@@ -84,7 +134,13 @@ export function Playlists({ onNavigate, onSelectPlaylist }: PlaylistsProps) {
                 style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
                 onClick={() => onSelectPlaylist(pl.id)}
               >
-                <div className="group-cover" style={{ width: 48, height: 48, borderRadius: 'var(--radius-md)', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '20px', fontWeight: 600 }}>
+                <div className="group-cover" style={{
+                  width: 48, height: 48, borderRadius: 'var(--radius-md)',
+                  background: 'linear-gradient(135deg, var(--accent), var(--accent-glow))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', fontSize: '20px', fontWeight: 600,
+                  boxShadow: '0 2px 8px rgba(var(--accent-rgb), 0.2)',
+                }}>
                   {pl.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="group-info" style={{ flex: 1 }}>
