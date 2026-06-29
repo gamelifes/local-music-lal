@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Song } from '../types/song'
 import * as db from '../lib/db'
+import { usePlayerStore } from './player'
 
 interface ScanHistoryEntry {
   folder: string
@@ -110,6 +111,11 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     await db.hideSong(filePath)
     set(state => ({
       hiddenIds: new Set([...state.hiddenIds, filePath])
+    }))
+    usePlayerStore.setState(prev => ({
+      songList: prev.songList.filter(s => s.filePath !== filePath),
+      currentSong: prev.currentSong?.filePath === filePath ? prev.songList[prev.currentIndex + 1] ?? null : prev.currentSong,
+      currentIndex: prev.currentSong?.filePath === filePath ? Math.min(prev.currentIndex, prev.songList.filter(s => s.filePath !== filePath).length - 1) : prev.currentIndex
     }))
   },
 
