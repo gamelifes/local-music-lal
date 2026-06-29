@@ -1,4 +1,4 @@
-﻿import { useLibraryStore } from '../store/library'
+import { useLibraryStore } from '../store/library'
 import { usePlayerStore } from '../store/player'
 import { SongTable } from '../components/SongTable'
 
@@ -7,7 +7,7 @@ interface HomeProps {
   onToggleDrawer: () => void
 }
 
-export function Home({ onToggleDrawer }: HomeProps) {
+export function Home({ onNavigate, onToggleDrawer }: HomeProps) {
   const { songs, hiddenIds } = useLibraryStore()
   const { play } = usePlayerStore()
 
@@ -28,9 +28,9 @@ export function Home({ onToggleDrawer }: HomeProps) {
         <div>
           <div style={{ fontSize: '48px', marginBottom: '12px' }}>📁</div>
           <div style={{ marginBottom: '16px' }}>还没有歌曲</div>
-          <button className="btn primary" onClick={() => onToggleDrawer()}>
-            去扫描
-          </button>
+<button className="btn primary" onClick={() => onNavigate('scan')}>
+          去扫描
+        </button>
         </div>
       }
       onPlaySong={(song) => play(song, visibleSongs)}
