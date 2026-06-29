@@ -6,7 +6,8 @@ interface ArtistsProps {
 }
 
 export function Artists({ onNavigate, onSelectArtist }: ArtistsProps) {
-  const { songs } = useLibraryStore()
+  const { getVisibleSongs } = useLibraryStore()
+  const songs = getVisibleSongs()
 
   const groups = Object.entries(
     songs.reduce((acc, s) => {

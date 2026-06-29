@@ -6,7 +6,8 @@ interface AlbumsProps {
 }
 
 export function Albums({ onNavigate, onSelectAlbum }: AlbumsProps) {
-  const { songs } = useLibraryStore()
+  const { getVisibleSongs } = useLibraryStore()
+  const songs = getVisibleSongs()
 
   const groups = Object.entries(
     songs.reduce((acc, s) => {
