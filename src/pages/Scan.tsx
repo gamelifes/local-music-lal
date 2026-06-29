@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useLibraryStore } from '../store/library'
 import { pickDirectory, scanDirectoryByPath } from '../lib/scanner'
 
@@ -164,6 +164,9 @@ export function Scan({ onNavigate }: ScanProps) {
         {!completed && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <button className="btn primary" onClick={startScan} disabled={selectedFolders.length === 0 || scanning}>{scanning ? '扫描中...' : '开始扫描'}</button>
+            {!scanning && selectedFolders.length < folders.length && (
+              <button className="btn" onClick={() => setSelectedFolders(folders.map(f => f.folder))}>全部扫描 ({folders.length})</button>
+            )}
             {scanning && <button className="btn" onClick={() => setScanning(false)}>停止</button>}
           </div>
         )}
