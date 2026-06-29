@@ -1,7 +1,25 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": true,
+    "moduleResolution": "Bundler",
+    "module": "ESNext",
+    "target": "ES2020",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+"ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "/*": ["src/*"]
+    },
+    "types": ["vite/client"]
+  },
+  "include": ["src"]
 }

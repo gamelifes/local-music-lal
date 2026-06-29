@@ -19,12 +19,15 @@ import { ArtistDetail } from './pages/ArtistDetail'
 import { Albums } from './pages/Albums'
 import { AlbumDetail } from './pages/AlbumDetail'
 import { Debug } from './pages/Debug'
+import { Playlists } from './pages/Playlists'
+import { PlaylistDetail } from './pages/PlaylistDetail'
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [selectedArtist, setSelectedArtist] = useState('')
   const [selectedAlbum, setSelectedAlbum] = useState('')
+  const [selectedPlaylist, setSelectedPlaylist] = useState('')
   const loadSongs = useLibraryStore((s) => s.loadSongs)
   const loadPresets = useEqStore((s) => s.loadPresets)
 
@@ -62,9 +65,13 @@ function App() {
         return <Albums onNavigate={navigateTo} onSelectAlbum={(name) => { setSelectedAlbum(name); setCurrentPage('album-detail') }} />
       case 'album-detail':
         return <AlbumDetail album={selectedAlbum} onNavigate={navigateTo} />
-      case 'debug':
-        return <Debug onNavigate={navigateTo} />
-      default:
+  case 'playlists':
+    return <Playlists onNavigate={navigateTo} onSelectPlaylist={(id) => { setSelectedPlaylist(id); setCurrentPage('playlist-detail') }} />
+  case 'playlist-detail':
+    return <PlaylistDetail playlistId={selectedPlaylist} onNavigate={navigateTo} />
+  case 'debug':
+    return <Debug onNavigate={navigateTo} />
+  default:
         return <Home onNavigate={navigateTo} onToggleDrawer={() => setDrawerOpen(o => !o)} />
     }
   }

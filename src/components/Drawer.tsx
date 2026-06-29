@@ -14,13 +14,14 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
-    label: '音乐库',
-    items: [
-      { id: 'home', icon: '🏠', label: '全部' },
-      { id: 'artists', icon: '🎤', label: '歌手' },
-      { id: 'albums', icon: '💿', label: '专辑' },
-      { id: 'hidden', icon: '🔒', label: '已隐藏' },
-    ]
+  label: '音乐库',
+  items: [
+    { id: 'home', icon: '🏠', label: '全部' },
+    { id: 'artists', icon: '🎤', label: '歌手' },
+    { id: 'albums', icon: '💿', label: '专辑' },
+    { id: 'playlists', icon: '📑', label: '歌单' },
+    { id: 'hidden', icon: '🔒', label: '已隐藏' },
+  ]
   },
   {
     label: '工具',
