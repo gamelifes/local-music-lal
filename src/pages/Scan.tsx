@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLibraryStore } from '../store/library'
 import { pickDirectory, scanDirectoryByPath } from '../lib/scanner'
 
@@ -21,6 +21,14 @@ export function Scan({ onNavigate }: ScanProps) {
   const [swipedFolder, setSwipedFolder] = useState<string | null>(null)
   const [swipeStart, setSwipeStart] = useState({ x: 0, y: 0 })
 
+  const initialLoadRef = { current: true }
+  useEffect(() => {
+    if (initialLoadRef.current && folders.length > 0 && selectedFolders.length === 0) {
+      setSelectedFolders(folders.map(f => f.folder))
+      initialLoadRef.current = false
+    }
+  }, [folders.length])
+
   const handleRemoveFolder = async (f: string) => {
     await removeFolder(f)
     setSelectedFolders(prev => prev.filter(s => s !== f))
@@ -30,10 +38,15 @@ export function Scan({ onNavigate }: ScanProps) {
   const handleAddFolder = async () => {
     const picked = await pickDirectory()
     if (picked) {
-      if (!folders.some(f => f.folder === picked.folderName)) {
+      const isNew = !folders.some(f => f.folder === picked.folderName)
+      if (isNew) {
         const { addFolder } = useLibraryStore.getState()
         await addFolder(picked.folderName, picked.path)
       }
+      setSelectedFolders(prev => {
+        if (prev.includes(picked.folderName)) return prev
+        return [...prev, picked.folderName]
+      })
     }
   }
 
