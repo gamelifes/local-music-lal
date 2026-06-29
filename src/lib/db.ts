@@ -129,6 +129,22 @@ export async function deleteScanHistory(folder: string): Promise<void> {
   await db.delete('scanHistory', folder)
 }
 
+export async function saveSelectedScanFolders(folders: string[]): Promise<void> {
+  const db = await getDB()
+  await db.put('selectedScanFolders', { id: 'current', folders })
+}
+
+export async function loadSelectedScanFolders(): Promise<string[]> {
+  const db = await getDB()
+  const record = await db.get('selectedScanFolders', 'current')
+  return (record as any)?.folders ?? []
+}
+
+export async function clearSelectedScanFolders(): Promise<void> {
+  const db = await getDB()
+  await db.delete('selectedScanFolders', 'current')
+}
+
 // Lyrics functions
 export async function saveLyrics(lyrics: Map<string, string>): Promise<void> {
   const db = await getDB()
