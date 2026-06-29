@@ -15,7 +15,7 @@ export function Home({ onToggleDrawer }: HomeProps) {
 
   return (
     <SongTable
-      title="全部歌曲"
+      title="本地音乐"
       onMenu={onToggleDrawer}
       songs={visibleSongs}
       columns={[
@@ -24,6 +24,15 @@ export function Home({ onToggleDrawer }: HomeProps) {
         { label: '时长', width: 60, textAlign: 'right' }
       ]}
       showIndex
+      emptyState={
+        <div>
+          <div style={{ fontSize: '48px', marginBottom: '12px' }}>📁</div>
+          <div style={{ marginBottom: '16px' }}>还没有歌曲</div>
+          <button className="btn primary" onClick={() => onToggleDrawer()}>
+            去扫描
+          </button>
+        </div>
+      }
       onPlaySong={(song) => play(song, visibleSongs)}
     />
   )

@@ -100,7 +100,6 @@ export function Scan({ onNavigate }: ScanProps) {
   return (
     <div className="page active">
       <div className="page-content">
-        {/* Header */}
         <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', padding: '8px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -115,7 +114,6 @@ export function Scan({ onNavigate }: ScanProps) {
           </div>
         </div>
 
-        {/* Icon */}
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
           <div style={{ fontSize: '64px', marginBottom: '16px' }}>{completed ? '✅' : scanning ? '📡' : '📁'}</div>
           <h2 style={{ fontSize: '22px', marginBottom: '8px' }}>
@@ -126,17 +124,15 @@ export function Scan({ onNavigate }: ScanProps) {
           </p>
         </div>
 
-        {/* Scanning Animation */}
         {scanning && (
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
             <div style={{ width: '160px', height: '160px', borderRadius: '50%', position: 'relative', background: 'conic-gradient(var(--accent), var(--accent-glow), var(--accent))', animation: 'spin 3s linear infinite' }}>
-              <div style={{ position: 'absolute', inset: '8px', borderRadius: '50%', background: 'var(--bg)' }}></div>
+              <div style={{ position: 'absolute', inset: '8px', borderRadius: '50%', background: 'var(--bg)' }} />
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: 'var(--text-secondary)', zIndex: 1 }}>{scannedCount}</div>
             </div>
           </div>
         )}
 
-        {/* Folder List */}
         {!scanning && !completed && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
             {folders.length === 0 && !selectedFolder && (
@@ -153,7 +149,15 @@ export function Scan({ onNavigate }: ScanProps) {
                   <div
                     onClick={() => { if (!isSwiped) handleSelectFolder(entry) }}
                     className="group-header"
-                    style={{ margin: 0, borderColor: selectedFolder === entry.folder ? 'var(--accent)' : undefined, background: selectedFolder === entry.folder ? 'rgba(255,255,255,0.06)' : undefined, boxShadow: selectedFolder === entry.folder ? '0 0 0 1px var(--accent)' : undefined, transform: isSwiped ? 'translateX(-80px)' : 'translateX(0)', transition: 'transform 0.3s ease', cursor: 'pointer' }}
+                    style={{
+                      margin: 0,
+                      borderColor: selectedFolder === entry.folder ? 'var(--accent)' : undefined,
+                      background: selectedFolder === entry.folder ? 'rgba(255,255,255,0.06)' : undefined,
+                      boxShadow: selectedFolder === entry.folder ? '0 0 0 1px var(--accent)' : undefined,
+                      transform: isSwiped ? 'translateX(-80px)' : 'translateX(0)',
+                      transition: 'transform 0.3s ease',
+                      cursor: 'pointer'
+                    }}
                     onTouchStart={(e) => handleTouchStart(entry.folder, e.touches[0].clientX, e.touches[0].clientY)}
                     onTouchEnd={(e) => handleTouchEnd(entry.folder, e.changedTouches[0].clientX, e.changedTouches[0].clientY)}
                     onMouseDown={(e) => handleMouseDown(entry.folder, e.clientX, e.clientY)}
@@ -172,7 +176,6 @@ export function Scan({ onNavigate }: ScanProps) {
           </div>
         )}
 
-        {/* Completed Buttons */}
         {completed && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '16px' }}>
             <button className="btn primary" onClick={() => onNavigate('home')}>查看歌曲</button>
@@ -180,7 +183,6 @@ export function Scan({ onNavigate }: ScanProps) {
           </div>
         )}
 
-        {/* Scan Buttons */}
         {!completed && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <button className="btn primary" onClick={startScan} disabled={!selectedFolder || scanning}>{scanning ? '扫描中...' : '开始扫描'}</button>

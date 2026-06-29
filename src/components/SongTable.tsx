@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+﻿import type { ReactNode } from 'react'
 import { usePlayerStore } from '../store/player'
 import type { Song } from '../types/song'
 
@@ -24,69 +24,73 @@ function formatDuration(seconds: number): string {
   return `${mins}:${String(secs).padStart(2, '0')}`
 }
 
-export function SongTable({ title, onBack, onMenu, rightAction, songs, columns, onPlaySong, extraColumns, renderSong, showIndex = false, indexWidth = 36, emptyState }: SongTableProps) {
+export function SongTable({
+  title, onBack, onMenu, rightAction, songs, columns,
+  onPlaySong, extraColumns, renderSong,
+  showIndex = false, indexWidth = 36, emptyState
+}: SongTableProps) {
   const { currentSong } = usePlayerStore()
 
   return (
     <div className="page active">
       <div className="page-content" style={{ paddingTop: 0 }}>
-        {/* Sticky Header */}
         <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', padding: '8px 0 0' }}>
-  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0 8px' }}>
-    {onBack && (
-      <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
-        <img src="/icons/back.svg" alt="back" width="24" height="24" />
-      </button>
-    )}
-    {onMenu && (
-      <button onClick={onMenu} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '24px', cursor: 'pointer' }}>☰</button>
-    )}
-    <h2 style={{ fontSize: '18px', flex: 1 }}>{title}</h2>
-    {rightAction}
-  </div>
-    <table className="song-table" style={{ width: '100%' }}>
-    <thead>
-    <tr>
-      {showIndex && <th style={{ width: indexWidth, textAlign: 'center' }}>#</th>}
-      {columns.map((col, i) => (
-        <th key={i} style={{ width: col.width, textAlign: col.textAlign }}>{col.label}</th>
-      ))}
-      {extraColumns && <th style={{ width: 80, textAlign: 'right' }}></th>}
-    </tr>
-    </thead>
-    </table>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0 8px' }}>
+            {onBack && (
+              <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
+                <img src="/icons/back.svg" alt="back" width="24" height="24" />
+              </button>
+            )}
+            {onMenu && (
+              <button onClick={onMenu} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '24px', cursor: 'pointer' }}>☰</button>
+            )}
+            <h2 style={{ fontSize: '18px', flex: 1 }}>{title}</h2>
+            {rightAction}
+          </div>
+          <table className="song-table" style={{ width: '100%' }}>
+            <thead>
+              <tr>
+                {showIndex && <th style={{ width: indexWidth, textAlign: 'center' }}>#</th>}
+                {columns.map((col, i) => (
+                  <th key={i} style={{ width: col.width, textAlign: col.textAlign }}>{col.label}</th>
+                ))}
+                {extraColumns && <th style={{ width: 80, textAlign: 'right' }}></th>}
+              </tr>
+            </thead>
+          </table>
         </div>
 
-{/* Song List */}
-{songs.length === 0 && emptyState ? (
-  <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-secondary)' }}>{emptyState}</div>
-  ) : (
-    <table className="song-table" style={{ width: '100%' }}>
-      <tbody>
-        {songs.map((song, index) => (
-          renderSong ? renderSong(song, index) : (
-            <tr
-              key={song.id}
-              className={currentSong?.id === song.id ? 'song-playing' : ''}
-              onClick={() => onPlaySong?.(song)}
-              style={{ cursor: onPlaySong ? 'pointer' : undefined }}
-            >
-              {showIndex && (
-                <td className="col-index" style={{ width: indexWidth, textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                  {index + 1}
-                </td>
-              )}
-              <td className="col-song">{song.title}</td>
-              <td className="col-artist">{song.artist}</td>
-              <td className="col-duration">{formatDuration(song.duration)}</td>
-              {extraColumns && <td>{extraColumns(song)}</td>}
-            </tr>
-          )
-        ))}
-      </tbody>
-    </table>
-  )}
-</div>
-</div>
+        {songs.length === 0 && emptyState ? (
+          <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-secondary)' }}>
+            {emptyState}
+          </div>
+        ) : (
+          <table className="song-table" style={{ width: '100%' }}>
+            <tbody>
+              {songs.map((song, index) => (
+                renderSong ? renderSong(song, index) : (
+                  <tr
+                    key={song.id}
+                    className={currentSong?.id === song.id ? 'song-playing' : ''}
+                    onClick={() => onPlaySong?.(song)}
+                    style={{ cursor: onPlaySong ? 'pointer' : undefined }}
+                  >
+                    {showIndex && (
+                      <td className="col-index" style={{ width: indexWidth, textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                        {index + 1}
+                      </td>
+                    )}
+                    <td className="col-song">{song.title}</td>
+                    <td className="col-artist">{song.artist}</td>
+                    <td className="col-duration">{formatDuration(song.duration)}</td>
+                    {extraColumns && <td>{extraColumns(song)}</td>}
+                  </tr>
+                )
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
   )
 }
