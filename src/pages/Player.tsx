@@ -9,11 +9,12 @@ interface PlayerProps {
 }
 
 export function Player({ onNavigate }: PlayerProps) {
-  const { currentSong, isPlaying, togglePlay, nextSong, prevSong, progress, updateProgress, viewMode, setViewMode, activeLine, activeWord, setActiveLine, setActiveWord, currentTime, duration, lyrics, repeatMode, toggleRepeatMode } = usePlayerStore()
+  const { currentSong, isPlaying, togglePlay, nextSong, prevSong, progress, updateProgress, viewMode, setViewMode, activeLine, activeWord, setActiveLine, setActiveWord, currentTime, duration, lyrics, repeatMode, toggleRepeatMode, volume, setVolume } = usePlayerStore()
   const { openModal } = useAppStore()
   const { hideSong } = useLibraryStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [queueOpen, setQueueOpen] = useState(false)
+  const [volumeOpen, setVolumeOpen] = useState(false)
   const [swipeStart, setSwipeStart] = useState({ x: 0, y: 0 })
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lyricsContainerRef = useRef<HTMLDivElement>(null)
@@ -53,7 +54,7 @@ export function Player({ onNavigate }: PlayerProps) {
 
   if (!currentSong) {
     return (
-      <div className="page active player-page">
+    <div className="page active player-page" onClick={() => { if (volumeOpen) setVolumeOpen(false) }}>
         <div className="player-header">
           <button className="player-header-btn" onClick={() => onNavigate('home')}>
             <img src="/icons/back.svg" alt="back" width="24" height="24" />
@@ -183,10 +184,44 @@ export function Player({ onNavigate }: PlayerProps) {
         <button className="player-action-btn" onClick={() => openModal('sleep')} title="睡眠">
           <img src="/icons/sleep.svg" alt="sleep" width="20" height="20" />
         </button>
+        <button className="player-action-btn" onClick={() => setVolumeOpen(o => !o)} title="音量">
+          <img src="/icons/volume.svg" alt="volume" width="20" height="20" />
+        </button>
         <button className="player-action-btn" onClick={() => { if (currentSong) { hideSong(currentSong.filePath); nextSong(); onNavigate('home') } }} title="隐藏">
           <img src="/icons/hide.svg" alt="hide" width="20" height="20" />
         </button>
       </div>
+
+      {/* Volume Slider Popup */}
+      {volumeOpen && (
+        <div onClick={e => e.stopPropagation()} style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: '12px', padding: '8px 24px', margin: '0 auto',
+          background: 'rgba(22,22,20,0.85)', backdropFilter: 'blur(16px)',
+          borderRadius: 'var(--radius-lg)', border: '1px solid var(--glass-border)',
+          width: '280px',
+        }}>
+          <img src="/icons/volume.svg" alt="vol" width="16" height="16" style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
+          <div
+            style={{ flex: 1, height: '24px', display: 'flex', alignItems: 'center', cursor: 'pointer', position: 'relative' }}
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect()
+              const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
+              setVolume(pct)
+            }}
+          >
+            <div style={{ position: 'absolute', inset: 0, top: '50%', transform: 'translateY(-50%)', height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
+            <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', height: 4, borderRadius: 2, background: 'var(--accent)', width: `${volume * 100}%` }} />
+            <div style={{
+              position: 'absolute', left: `${volume * 100}%`, top: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 14, height: 14, borderRadius: '50%',
+              background: 'var(--accent)', boxShadow: '0 0 8px rgba(var(--accent-rgb), 0.4)',
+            }} />
+          </div>
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', minWidth: 32, textAlign: 'right' }}>{Math.round(volume * 100)}%</span>
+        </div>
+      )}
 
       {/* Progress Bar */}
       <div className="player-progress">
