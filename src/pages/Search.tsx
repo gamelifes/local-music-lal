@@ -30,9 +30,8 @@ export function Search({ onNavigate }: SearchProps) {
   return (
     <div className="page active">
       <div className="page-content" style={{ paddingTop: 0 }}>
-        {/* Sticky Header */}
         <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', padding: '8px 0 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0 8px' }}>
             <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
               <img src="/icons/back.svg" alt="back" width="24" height="24" />
             </button>
@@ -41,41 +40,58 @@ export function Search({ onNavigate }: SearchProps) {
               placeholder="搜索歌曲、歌手、专辑..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'var(--bg-card)', color: 'var(--text)', fontSize: '16px', outline: 'none' }}
+              style={{ flex: 1, padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)', background: 'var(--bg-card)', color: 'var(--text)', fontSize: '14px', outline: 'none' }}
             />
           </div>
         </div>
 
-        {/* Results */}
-        {!query && (
-          <p style={{ textAlign: 'center', marginTop: '48px', color: 'var(--text-secondary)' }}>输入关键词开始搜索</p>
-        )}
-        {query && results.length === 0 && (
-          <p style={{ textAlign: 'center', marginTop: '48px', color: 'var(--text-secondary)' }}>无搜索结果</p>
-        )}
-        {query && results.length > 0 && (
-          <table className="song-table" style={{ width: '100%' }}>
+        <table className="song-table" style={{ width: '100%', tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: 36 }} />
+            <col />
+            <col />
+            <col style={{ width: 60 }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'center' }}>#</th>
+              <th>歌名</th>
+              <th>歌手</th>
+              <th>时长</th>
+            </tr>
+          </thead>
           <tbody>
+            {query && results.length === 0 && (
+              <tr>
+                <td colSpan={4} style={{ textAlign: 'center', padding: '48px 12px', color: 'var(--text-secondary)' }}>
+                  <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔍</div>
+                  <div style={{ fontSize: '14px', marginBottom: '4px' }}>没有找到相关歌曲</div>
+                  <div style={{ fontSize: '12px' }}>试试其他关键词</div>
+                </td>
+              </tr>
+            )}
+            {!query && (
+              <tr>
+                <td colSpan={4} style={{ textAlign: 'center', padding: '48px 12px', color: 'var(--text-secondary)' }}>
+                  <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔍</div>
+                  <div style={{ fontSize: '14px' }}>输入关键词开始搜索</div>
+                </td>
+              </tr>
+            )}
             {results.map((s, i) => (
               <tr
                 key={s.id}
                 onClick={() => { play(s, results); onNavigate('player') }}
                 style={{ cursor: 'pointer' }}
               >
-                <td className="col-index" style={{ width: 36, textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>{i + 1}</td>
-                <td style={{ width: 48, padding: '8px', textAlign: 'center' }}>
-                  <div className="cover-thumb">
-                    <img src="/icons/music-note.svg" alt="music" className="music-icon" />
-                  </div>
-                </td>
+                <td className="col-index" style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>{i + 1}</td>
                 <td className="col-song">{s.title}</td>
                 <td className="col-artist">{s.artist}</td>
-                <td style={{ width: 60, textAlign: 'right' }}>{formatDuration(s.duration)}</td>
+                <td className="col-duration">{formatDuration(s.duration)}</td>
               </tr>
             ))}
           </tbody>
-          </table>
-        )}
+        </table>
       </div>
     </div>
   )
