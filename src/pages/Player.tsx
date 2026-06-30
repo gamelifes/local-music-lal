@@ -229,43 +229,43 @@ export function Player({ onNavigate }: PlayerProps) {
         <button className="player-action-btn" onClick={() => openModal('sleep')} title="睡眠">
           <img src="/icons/sleep.svg" alt="sleep" width="20" height="20" />
         </button>
-        <button className="player-action-btn" onClick={() => setVolumeOpen(o => !o)} title="音量">
-          <img src="/icons/volume.svg" alt="volume" width="20" height="20" />
-        </button>
+        <div style={{ position: 'relative' }}>
+          <button className="player-action-btn" onClick={() => setVolumeOpen(o => !o)} title="音量">
+            <img src="/icons/volume.svg" alt="volume" width="20" height="20" />
+          </button>
+          {volumeOpen && (
+            <div onClick={e => e.stopPropagation()} style={{
+              position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
+              marginBottom: 8, zIndex: 100,
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: '6px', padding: '12px 16px',
+              background: 'rgba(22,22,20,0.9)', backdropFilter: 'blur(16px)',
+              borderRadius: 'var(--radius-lg)', border: '1px solid var(--glass-border)',
+              width: '60px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            }}>
+              <div
+                ref={volumeBarRef}
+                style={{ width: 4, height: 120, borderRadius: 2, background: 'rgba(255,255,255,0.15)', position: 'relative', cursor: 'pointer', touchAction: 'none' }}
+                onClick={(e) => handleVolumeFromEvent(e.clientY)}
+                onTouchStart={(e) => { e.stopPropagation(); volumeDragging.current = true; handleVolumeFromEvent(e.touches[0].clientY) }}
+                onMouseDown={(e) => { e.stopPropagation(); volumeDragging.current = true; handleVolumeFromEvent(e.clientY) }}
+              >
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${volume * 100}%`, borderRadius: 2, background: 'var(--accent)' }} />
+                <div style={{
+                  position: 'absolute', left: '50%', bottom: `${volume * 100}%`,
+                  transform: 'translate(-50%, 50%)',
+                  width: 14, height: 14, borderRadius: '50%',
+                  background: 'var(--accent)', boxShadow: '0 0 8px rgba(var(--accent-rgb), 0.4)',
+                }} />
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{Math.round(volume * 100)}</span>
+            </div>
+          )}
+        </div>
         <button className="player-action-btn" onClick={() => { if (currentSong) { hideSong(currentSong.filePath); nextSong(); onNavigate('home') } }} title="隐藏">
           <img src="/icons/hide.svg" alt="hide" width="20" height="20" />
         </button>
       </div>
-
-      {/* Volume Vertical Slider */}
-      {volumeOpen && (
-        <div onClick={e => e.stopPropagation()} style={{
-          position: 'relative', zIndex: 50,
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          gap: '6px', padding: '12px 16px', margin: '0 auto',
-          background: 'rgba(22,22,20,0.85)', backdropFilter: 'blur(16px)',
-          borderRadius: 'var(--radius-lg)', border: '1px solid var(--glass-border)',
-          width: '60px',
-        }}>
-          <img src="/icons/volume.svg" alt="vol" width="18" height="18" style={{ opacity: 0.6 }} />
-          <div
-            ref={volumeBarRef}
-            style={{ width: 4, height: 120, borderRadius: 2, background: 'rgba(255,255,255,0.15)', position: 'relative', cursor: 'pointer', touchAction: 'none' }}
-            onClick={(e) => handleVolumeFromEvent(e.clientY)}
-            onTouchStart={(e) => { e.stopPropagation(); volumeDragging.current = true; handleVolumeFromEvent(e.touches[0].clientY) }}
-            onMouseDown={(e) => { e.stopPropagation(); volumeDragging.current = true; handleVolumeFromEvent(e.clientY) }}
-          >
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${volume * 100}%`, borderRadius: 2, background: 'var(--accent)' }} />
-            <div style={{
-              position: 'absolute', left: '50%', bottom: `${volume * 100}%`,
-              transform: 'translate(-50%, 50%)',
-              width: 14, height: 14, borderRadius: '50%',
-              background: 'var(--accent)', boxShadow: '0 0 8px rgba(var(--accent-rgb), 0.4)',
-            }} />
-          </div>
-          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{Math.round(volume * 100)}</span>
-        </div>
-      )}
 
       {/* Progress Bar */}
       <div className="player-progress">
