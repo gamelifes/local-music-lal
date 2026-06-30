@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+﻿import type { ReactNode } from 'react'
 import { usePlayerStore } from '../store/player'
 import type { Song } from '../types/song'
 
@@ -30,9 +30,7 @@ export function SongTable({
   showIndex = false, indexWidth = 36, emptyState
 }: SongTableProps) {
   const { currentSong } = usePlayerStore()
-
-  const hasSongs = songs.length > 0
-  const showEmpty = songs.length === 0 && emptyState
+  const colCount = (showIndex ? 1 : 0) + columns.length + (extraColumns ? 1 : 0)
 
   return (
     <div className="page active">
@@ -52,32 +50,32 @@ export function SongTable({
           </div>
         </div>
 
-        {showEmpty && (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-secondary)' }}>
-            {emptyState}
-          </div>
-        )}
-
-        {hasSongs && (
-          <table className="song-table" style={{ width: '100%', tableLayout: 'fixed' }}>
-            <colgroup>
-              {showIndex && <col style={{ width: indexWidth }} />}
+        <table className="song-table" style={{ width: '100%', tableLayout: 'fixed' }}>
+          <colgroup>
+            {showIndex && <col style={{ width: indexWidth }} />}
+            {columns.map((col, i) => (
+              <col key={i} style={col.width ? { width: col.width } : undefined} />
+            ))}
+            {extraColumns && <col style={{ width: 48 }} />}
+          </colgroup>
+          <thead>
+            <tr>
+              {showIndex && <th style={{ textAlign: 'center' }}>#</th>}
               {columns.map((col, i) => (
-                <col key={i} style={col.width ? { width: col.width } : undefined} />
+                <th key={i}>{col.label}</th>
               ))}
-              {extraColumns && <col style={{ width: 48 }} />}
-            </colgroup>
-            <thead>
+              {extraColumns && <th></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {songs.length === 0 && emptyState ? (
               <tr>
-                {showIndex && <th style={{ textAlign: 'center' }}>#</th>}
-                {columns.map((col, i) => (
-                  <th key={i} style={{ textAlign: col.textAlign }}>{col.label}</th>
-                ))}
-                {extraColumns && <th style={{ textAlign: 'right' }}></th>}
+                <td colSpan={colCount} style={{ textAlign: 'center', padding: '48px 12px', color: 'var(--text-secondary)' }}>
+                  {emptyState}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {songs.map((song, index) => (
+            ) : (
+              songs.map((song, index) => (
                 renderSong ? renderSong(song, index) : (
                   <tr
                     key={song.id}
@@ -96,10 +94,10 @@ export function SongTable({
                     {extraColumns && <td style={{ textAlign: 'right' }}>{extraColumns(song)}</td>}
                   </tr>
                 )
-              ))}
-            </tbody>
-          </table>
-        )}
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   )

@@ -37,9 +37,16 @@ export function PlaylistDetail({ playlistId, onNavigate }: PlaylistDetailProps) 
       columns={[
         { label: '歌名' },
         { label: '歌手' },
-        { label: '时长', width: 60, textAlign: 'right' }
+        { label: '时长', width: 60 }
       ]}
       showIndex
+      emptyState={
+        <div style={{ padding: '32px 0' }}>
+          <div style={{ fontSize: '36px', marginBottom: '12px' }}>🎶</div>
+          <div style={{ fontSize: '14px', marginBottom: '4px' }}>歌单还没有歌曲</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>在歌曲列表中点击 + 将歌曲添加到这个歌单</div>
+        </div>
+      }
       onPlaySong={(song) => play(song, playlist.songs)}
       extraColumns={(song) => (
         <button

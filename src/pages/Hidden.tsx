@@ -18,9 +18,16 @@ export function Hidden({ onNavigate }: HiddenProps) {
       columns={[
         { label: '歌名' },
         { label: '歌手' },
-        { label: '时长', width: 60, textAlign: 'right' }
+        { label: '时长', width: 60 }
       ]}
       showIndex
+      emptyState={
+        <div style={{ padding: '32px 0' }}>
+          <div style={{ fontSize: '36px', marginBottom: '12px' }}>🎵</div>
+          <div style={{ fontSize: '14px', marginBottom: '4px' }}>没有已隐藏的歌曲</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>在歌曲列表中隐藏的歌曲会显示在这里</div>
+        </div>
+      }
       extraColumns={(song) => (
         <button
           onClick={(e) => { e.stopPropagation(); unhideSong(song.filePath) }}
