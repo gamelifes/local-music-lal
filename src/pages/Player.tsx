@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePlayerStore } from '../store/player'
 import { useAppStore } from '../store/appStore'
 import { useLibraryStore } from '../store/library'
@@ -16,6 +16,9 @@ export function Player({ onNavigate }: PlayerProps) {
   const [queueOpen, setQueueOpen] = useState(false)
   const [volumeOpen, setVolumeOpen] = useState(false)
   const [swipeStart, setSwipeStart] = useState({ x: 0, y: 0 })
+  const [swipeDir, setSwipeDir] = useState<'h' | 'v' | null>(null)
+  const volumeDragging = useRef(false)
+  const volumeBarRef = useRef<HTMLDivElement>(null)
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lyricsContainerRef = useRef<HTMLDivElement>(null)
 
@@ -40,11 +43,7 @@ export function Player({ onNavigate }: PlayerProps) {
         const lineHeight = lineElement.clientHeight
         const containerHeight = container.clientHeight
         const targetScroll = lineTop - containerHeight / 2 + lineHeight / 2
-
-        container.scrollTo({
-          top: Math.max(0, targetScroll),
-          behavior: 'smooth'
-        })
+        container.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' })
       }
     }
   }, [activeLine, viewMode, lyrics.length])
@@ -52,9 +51,66 @@ export function Player({ onNavigate }: PlayerProps) {
   // Reset karaoke when song changes
   useEffect(() => { setActiveLine(0); setActiveWord(-1) }, [currentSong])
 
+  // Volume bar drag handlers
+  const handleVolumeFromEvent = useCallback((clientY: number) => {
+    if (!volumeBarRef.current) return
+    const r = volumeBarRef.current.getBoundingClientRect()
+    const pct = Math.max(0, Math.min(1, 1 - (clientY - r.top) / r.height))
+    setVolume(pct)
+  }, [setVolume])
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!volumeDragging.current) return
+      e.preventDefault()
+      const y = 'touches' in e ? e.touches[0].clientY : e.clientY
+      handleVolumeFromEvent(y)
+    }
+    const onUp = () => { volumeDragging.current = false }
+    window.addEventListener('mousemove', onMove, { passive: false })
+    window.addEventListener('mouseup', onUp)
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchend', onUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', onUp)
+    }
+  }, [handleVolumeFromEvent])
+
+  // Cover area swipe → view switch (horizontal) or volume (vertical)
+  const onStart = (x: number, y: number) => { setSwipeStart({ x, y }); setSwipeDir(null) }
+  const onMove = (x: number, y: number) => {
+    if (swipeDir) return
+    const dx = x - swipeStart.x
+    const dy = y - swipeStart.y
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+      setSwipeDir(Math.abs(dx) > Math.abs(dy) ? 'h' : 'v')
+    }
+  }
+  const onEnd = (x: number, y: number) => {
+    const dx = x - swipeStart.x
+    const dy = y - swipeStart.y
+    if (swipeDir === 'h' && Math.abs(dx) > 50) {
+      if (dx < 0 && viewMode === 'vinyl') setViewMode('lyrics')
+      else if (dx > 0 && viewMode === 'lyrics') setViewMode('vinyl')
+    } else if (swipeDir === 'v' && Math.abs(dy) > 30) {
+      const delta = -dy / 200
+      setVolume(Math.max(0, Math.min(1, volume + delta)))
+    }
+    setSwipeDir(null)
+  }
+  const handleTouchStart = (e: React.TouchEvent) => onStart(e.touches[0].clientX, e.touches[0].clientY)
+  const handleTouchMove = (e: React.TouchEvent) => onMove(e.touches[0].clientX, e.touches[0].clientY)
+  const handleTouchEnd = (e: React.TouchEvent) => onEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
+  const handleMouseDown = (e: React.MouseEvent) => { onStart(e.clientX, e.clientY) }
+  const handleMouseMove = (e: React.MouseEvent) => { if (e.buttons === 1) onMove(e.clientX, e.clientY) }
+  const handleMouseUp = (e: React.MouseEvent) => { onEnd(e.clientX, e.clientY) }
+
   if (!currentSong) {
     return (
-    <div className="page active player-page" onClick={() => { if (volumeOpen) setVolumeOpen(false) }}>
+      <div className="page active player-page">
         <div className="player-header">
           <button className="player-header-btn" onClick={() => onNavigate('home')}>
             <img src="/icons/back.svg" alt="back" width="24" height="24" />
@@ -67,21 +123,6 @@ export function Player({ onNavigate }: PlayerProps) {
 
   const prog = progress
   const fmt = (s: number) => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0')
-
-  // Swipe handling
-  const onStart = (x: number, y: number) => { setSwipeStart({ x, y }) }
-  const onEnd = (x: number, y: number) => {
-    const dx = x - swipeStart.x
-    const dy = y - swipeStart.y
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-      if (dx < 0 && viewMode === 'vinyl') setViewMode('lyrics')
-      else if (dx > 0 && viewMode === 'lyrics') setViewMode('vinyl')
-    }
-  }
-  const handleTouchStart = (e: React.TouchEvent) => onStart(e.touches[0].clientX, e.touches[0].clientY)
-  const handleTouchEnd = (e: React.TouchEvent) => onEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
-  const handleMouseDown = (e: React.MouseEvent) => onStart(e.clientX, e.clientY)
-  const handleMouseUp = (e: React.MouseEvent) => onEnd(e.clientX, e.clientY)
 
   return (
     <div className="page active player-page">
@@ -105,8 +146,10 @@ export function Player({ onNavigate }: PlayerProps) {
       <div
         className="player-cover-area"
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
       >
@@ -192,34 +235,32 @@ export function Player({ onNavigate }: PlayerProps) {
         </button>
       </div>
 
-      {/* Volume Slider Popup */}
+      {/* Volume Vertical Slider */}
       {volumeOpen && (
         <div onClick={e => e.stopPropagation()} style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          gap: '12px', padding: '8px 24px', margin: '0 auto',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          gap: '6px', padding: '12px 16px', margin: '0 auto',
           background: 'rgba(22,22,20,0.85)', backdropFilter: 'blur(16px)',
           borderRadius: 'var(--radius-lg)', border: '1px solid var(--glass-border)',
-          width: '280px',
+          width: '60px',
         }}>
-          <img src="/icons/volume.svg" alt="vol" width="16" height="16" style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
+          <img src="/icons/volume.svg" alt="vol" width="18" height="18" style={{ opacity: 0.6 }} />
           <div
-            style={{ flex: 1, height: '24px', display: 'flex', alignItems: 'center', cursor: 'pointer', position: 'relative' }}
-            onClick={(e) => {
-              const r = e.currentTarget.getBoundingClientRect()
-              const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
-              setVolume(pct)
-            }}
+            ref={volumeBarRef}
+            style={{ width: 4, height: 120, borderRadius: 2, background: 'rgba(255,255,255,0.15)', position: 'relative', cursor: 'pointer', touchAction: 'none' }}
+            onClick={(e) => handleVolumeFromEvent(e.clientY)}
+            onTouchStart={(e) => { e.stopPropagation(); volumeDragging.current = true; handleVolumeFromEvent(e.touches[0].clientY) }}
+            onMouseDown={(e) => { e.stopPropagation(); volumeDragging.current = true; handleVolumeFromEvent(e.clientY) }}
           >
-            <div style={{ position: 'absolute', inset: 0, top: '50%', transform: 'translateY(-50%)', height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
-            <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', height: 4, borderRadius: 2, background: 'var(--accent)', width: `${volume * 100}%` }} />
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${volume * 100}%`, borderRadius: 2, background: 'var(--accent)' }} />
             <div style={{
-              position: 'absolute', left: `${volume * 100}%`, top: '50%',
-              transform: 'translate(-50%, -50%)',
+              position: 'absolute', left: '50%', bottom: `${volume * 100}%`,
+              transform: 'translate(-50%, 50%)',
               width: 14, height: 14, borderRadius: '50%',
               background: 'var(--accent)', boxShadow: '0 0 8px rgba(var(--accent-rgb), 0.4)',
             }} />
           </div>
-          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', minWidth: 32, textAlign: 'right' }}>{Math.round(volume * 100)}%</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{Math.round(volume * 100)}</span>
         </div>
       )}
 
