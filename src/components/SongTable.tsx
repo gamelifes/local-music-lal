@@ -31,6 +31,9 @@ export function SongTable({
 }: SongTableProps) {
   const { currentSong } = usePlayerStore()
 
+  const hasSongs = songs.length > 0 && !emptyState
+  const showEmpty = songs.length === 0 && emptyState
+
   return (
     <div className="page active">
       <div className="page-content" style={{ paddingTop: 0 }}>
@@ -47,25 +50,32 @@ export function SongTable({
             <h2 style={{ fontSize: '18px', flex: 1 }}>{title}</h2>
             {rightAction}
           </div>
-          <table className="song-table" style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                {showIndex && <th style={{ width: indexWidth, textAlign: 'center' }}>#</th>}
-                {columns.map((col, i) => (
-                  <th key={i} style={{ width: col.width, textAlign: col.textAlign }}>{col.label}</th>
-                ))}
-                {extraColumns && <th style={{ width: 80, textAlign: 'right' }}></th>}
-              </tr>
-            </thead>
-          </table>
         </div>
 
-        {songs.length === 0 && emptyState ? (
+        {showEmpty && (
           <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-secondary)' }}>
             {emptyState}
           </div>
-        ) : (
-          <table className="song-table" style={{ width: '100%' }}>
+        )}
+
+        {hasSongs && (
+          <table className="song-table" style={{ width: '100%', tableLayout: 'fixed' }}>
+            <colgroup>
+              {showIndex && <col style={{ width: indexWidth }} />}
+              {columns.map((col, i) => (
+                <col key={i} style={col.width ? { width: col.width } : undefined} />
+              ))}
+              {extraColumns && <col style={{ width: 48 }} />}
+            </colgroup>
+            <thead>
+              <tr>
+                {showIndex && <th style={{ textAlign: 'center' }}>#</th>}
+                {columns.map((col, i) => (
+                  <th key={i} style={{ textAlign: col.textAlign }}>{col.label}</th>
+                ))}
+                {extraColumns && <th style={{ textAlign: 'right' }}></th>}
+              </tr>
+            </thead>
             <tbody>
               {songs.map((song, index) => (
                 renderSong ? renderSong(song, index) : (
@@ -76,14 +86,14 @@ export function SongTable({
                     style={{ cursor: onPlaySong ? 'pointer' : undefined }}
                   >
                     {showIndex && (
-                      <td className="col-index" style={{ width: indexWidth, textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                      <td className="col-index" style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
                         {index + 1}
                       </td>
                     )}
                     <td className="col-song">{song.title}</td>
                     <td className="col-artist">{song.artist}</td>
                     <td className="col-duration">{formatDuration(song.duration)}</td>
-                    {extraColumns && <td>{extraColumns(song)}</td>}
+                    {extraColumns && <td style={{ textAlign: 'right' }}>{extraColumns(song)}</td>}
                   </tr>
                 )
               ))}

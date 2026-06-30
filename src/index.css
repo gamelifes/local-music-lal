@@ -132,16 +132,14 @@ body {
 }
 
 .song-table th {
-  text-align: left;
-  padding: 8px 12px;
+  padding: 8px 8px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text-secondary);
-  border-bottom: 1px solid var(--divider);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--glass-border);
 }
-
-.song-table th:first-child { width: 64px; text-align: center; }
-.song-table th:last-child { width: 60px; text-align: right; }
 
 .song-table td {
   padding: 10px 12px;
@@ -163,7 +161,7 @@ body {
 
 /* .col-cover removed — cover column no longer used */
 .col-song { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.col-artist { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100px; }
+.col-artist { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .col-duration { font-variant-numeric: tabular-nums; text-align: right; width: 60px; }
 
 .cover-thumb {
