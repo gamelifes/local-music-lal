@@ -1,4 +1,4 @@
-﻿import type { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { usePlayerStore } from '../store/player'
 import type { Song } from '../types/song'
 
@@ -31,7 +31,7 @@ export function SongTable({
 }: SongTableProps) {
   const { currentSong } = usePlayerStore()
 
-  const hasSongs = songs.length > 0 && !emptyState
+  const hasSongs = songs.length > 0
   const showEmpty = songs.length === 0 && emptyState
 
   return (
