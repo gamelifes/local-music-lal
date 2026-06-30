@@ -52,6 +52,13 @@ export function Player({ onNavigate }: PlayerProps) {
   // Reset karaoke when song changes
   useEffect(() => { setActiveLine(0); setActiveWord(-1) }, [currentSong])
 
+  // Close volume after 5s inactivity
+  useEffect(() => {
+    if (!volumeOpen) return
+    const timer = setTimeout(() => setVolumeOpen(false), 5000)
+    return () => clearTimeout(timer)
+  }, [volumeOpen, volume])
+
   // Volume bar drag handlers
   const handleVolumeFromEvent = useCallback((clientY: number) => {
     if (!volumeBarRef.current) return
