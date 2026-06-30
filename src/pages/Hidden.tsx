@@ -1,4 +1,4 @@
-﻿import { useLibraryStore } from '../store/library'
+import { useLibraryStore } from '../store/library'
 import { SongTable } from '../components/SongTable'
 
 interface HiddenProps {
@@ -24,9 +24,12 @@ export function Hidden({ onNavigate }: HiddenProps) {
       extraColumns={(song) => (
         <button
           onClick={(e) => { e.stopPropagation(); unhideSong(song.filePath) }}
-          style={{ padding: '4px 8px', fontSize: '12px', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'var(--text)', cursor: 'pointer' }}
+          title="恢复显示"
+          style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px', padding: '4px', borderRadius: '50%', transition: 'color 0.15s' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
         >
-          恢复
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
       )}
     />
