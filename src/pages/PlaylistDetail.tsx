@@ -44,9 +44,12 @@ export function PlaylistDetail({ playlistId, onNavigate }: PlaylistDetailProps) 
       extraColumns={(song) => (
         <button
           onClick={(e) => { e.stopPropagation(); removeFromPlaylist(playlistId, song.id) }}
-          style={{ padding: '4px 8px', fontSize: '12px', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'var(--text)', cursor: 'pointer' }}
+          title="从歌单移除"
+          style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px', padding: '4px', borderRadius: '50%', transition: 'color 0.15s' }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#ff4d4d')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
         >
-          移除
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
         </button>
       )}
     />
