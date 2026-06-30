@@ -144,6 +144,7 @@ body {
 
 .song-table td {
   padding: 10px 12px;
+  text-align: left;
   border-bottom: 1px solid var(--divider);
   vertical-align: middle;
   transition: background 0.15s;
