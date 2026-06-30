@@ -17,6 +17,7 @@ export function Player({ onNavigate }: PlayerProps) {
   const [volumeOpen, setVolumeOpen] = useState(false)
   const [swipeStart, setSwipeStart] = useState({ x: 0, y: 0 })
   const [swipeDir, setSwipeDir] = useState<'h' | 'v' | null>(null)
+  const swipeStartVolume = useRef(0)
   const volumeDragging = useRef(false)
   const volumeBarRef = useRef<HTMLDivElement>(null)
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -80,24 +81,25 @@ export function Player({ onNavigate }: PlayerProps) {
   }, [handleVolumeFromEvent])
 
   // Cover area swipe → view switch (horizontal) or volume (vertical)
-  const onStart = (x: number, y: number) => { setSwipeStart({ x, y }); setSwipeDir(null) }
+  const onStart = (x: number, y: number) => { setSwipeStart({ x, y }); setSwipeDir(null); swipeStartVolume.current = usePlayerStore.getState().volume }
   const onMove = (x: number, y: number) => {
-    if (swipeDir) return
     const dx = x - swipeStart.x
     const dy = y - swipeStart.y
-    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-      setSwipeDir(Math.abs(dx) > Math.abs(dy) ? 'h' : 'v')
+    if (!swipeDir) {
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+        setSwipeDir(Math.abs(dx) > Math.abs(dy) ? 'h' : 'v')
+      }
+    }
+    if (swipeDir === 'v') {
+      const delta = -dy / 200
+      setVolume(Math.max(0, Math.min(1, swipeStartVolume.current + delta)))
     }
   }
   const onEnd = (x: number, y: number) => {
     const dx = x - swipeStart.x
-    const dy = y - swipeStart.y
     if (swipeDir === 'h' && Math.abs(dx) > 50) {
       if (dx < 0 && viewMode === 'vinyl') setViewMode('lyrics')
       else if (dx > 0 && viewMode === 'lyrics') setViewMode('vinyl')
-    } else if (swipeDir === 'v' && Math.abs(dy) > 30) {
-      const delta = -dy / 200
-      setVolume(Math.max(0, Math.min(1, volume + delta)))
     }
     setSwipeDir(null)
   }
@@ -238,6 +240,7 @@ export function Player({ onNavigate }: PlayerProps) {
       {/* Volume Vertical Slider */}
       {volumeOpen && (
         <div onClick={e => e.stopPropagation()} style={{
+          position: 'relative', zIndex: 50,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           gap: '6px', padding: '12px 16px', margin: '0 auto',
           background: 'rgba(22,22,20,0.85)', backdropFilter: 'blur(16px)',
