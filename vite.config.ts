@@ -3,5 +3,17 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  base: './',
+  plugins: [
+    react(),
+    tailwindcss(),
+    {
+      name: 'fix-android-loading',
+      transformIndexHtml(html) {
+        return html
+          .replace(/ crossorigin/g, '')
+          .replace(/<link rel="modulepreload"[^>]*>\n?/g, '')
+      }
+    }
+  ],
 })
