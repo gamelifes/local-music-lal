@@ -6,12 +6,11 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebChromeClient;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import androidx.webkit.WebViewAssetLoader;
 import android.webkit.WebViewClient;
+
+import androidx.webkit.WebViewAssetLoader;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -35,6 +34,7 @@ public class MainActivity extends Activity {
         settings.setDatabaseEnabled(true);
 
         jsBridge = new JsBridge(this);
+        webBridge = new JsBridge(this);
         webView.addJavascriptInterface(jsBridge, "AndroidBridge");
 
         jsBridge.setDirectoryPickerCallback(path -> {
@@ -47,13 +47,16 @@ public class MainActivity extends Activity {
         });
 
         WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
-                .addPathHandler("/", new WebViewAssetLoader.AssetsPathHandler(this))
+                .addPathHandler("/", new WebViewAssetLoader.AssetsPathHandler(this, "public"))
                 .build();
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                return false;
+                if (assetLoader.shouldInterceptRequest(android.net.Uri.parse(url)) != null) {
+                    return false;
+                }
+                return true;
             }
 
             @Override
@@ -64,7 +67,7 @@ public class MainActivity extends Activity {
 
         webView.setWebChromeClient(new WebChromeClient());
 
-        webView.loadUrl("https://appassets.android_asset/public/index.html");
+        webView.loadUrl("https://appassets.android_asset/index.html");
     }
 
     @Override

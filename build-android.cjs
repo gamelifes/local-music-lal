@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 /**
  * build-android.js — replaces `cap sync`
- * Copies dist/ to Android assets/public/
+ * Copies dist/ to Android assets/ (root, not public/)
  */
 const fs = require('fs');
 const path = require('path');
 
 const srcDir = path.join(__dirname, 'dist');
-const destDir = path.join(__dirname, 'android', 'app', 'src', 'main', 'assets', 'public');
+const destDir = path.join(__dirname, 'android', 'app', 'src', 'main', 'assets');
 
 function copyDirSync(src, dest) {
   if (!fs.existsSync(dest)) {
     fs.mkdirSync(dest, { recursive: true });
   }
-  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+  for (const entry of fs.readdirSync(src, { withDirents: true })) {
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
     if (entry.isDirectory()) {
@@ -29,11 +29,9 @@ if (!fs.existsSync(srcDir)) {
   process.exit(1);
 }
 
-// Clean old assets
 if (fs.existsSync(destDir)) {
   fs.rmSync(destDir, { recursive: true });
 }
 
-// Copy
 copyDirSync(srcDir, destDir);
-console.log(`Copied dist/ -> ${destDir}`);
+console.log('Copied dist/ -> ' + destDir);
