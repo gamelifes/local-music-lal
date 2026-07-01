@@ -13,6 +13,8 @@ export default defineConfig({
         return html
           .replace(/ crossorigin/g, '')
           .replace(/<link rel="modulepreload"[^>]*>\n?/g, '')
+          .replace(/type="module"/g, '')
+          .replace(/\n{3,}/g, '\n\n')
       }
     }
   ],
