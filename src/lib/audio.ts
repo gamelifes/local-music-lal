@@ -1,22 +1,11 @@
 import { Howl, Howler } from 'howler'
-import { Capacitor } from '@capacitor/core'
+import { Capacitor, getFileHandle } from './capacitor-shim'
 import type { Song } from '../types/song'
 
 let currentHowl: Howl | null = null
 let currentSongId: string | null = null
 let onEndCallback: (() => void) | null = null
 let onLoadCallback: ((duration: number) => void) | null = null
-
-const fileHandleStore: Map<string, FileSystemFileHandle> = new Map()
-
-export function storeFileHandle(filePath: string, handle: FileSystemFileHandle) {
-  fileHandleStore.set(filePath, handle)
-}
-
-export function storeBlobUrl(_filePath: string, _url: string) {}
-export function getFileHandle(filePath: string): FileSystemFileHandle | undefined {
-  return fileHandleStore.get(filePath)
-}
 
 function getWebPath(filePath: string): string {
   const fullPath = `/storage/emulated/0/${filePath}`
@@ -28,7 +17,6 @@ export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duratio
   onEndCallback = onEnd || null
   onLoadCallback = onLoad || null
 
-  // Stop if different song
   if (currentSongId !== song.id && currentHowl) {
     currentHowl.stop()
     currentHowl.unload()
@@ -39,8 +27,8 @@ export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duratio
 
   if (Capacitor.getPlatform() === 'android') {
     url = getWebPath(song.filePath)
-  } else if (fileHandleStore.has(song.filePath)) {
-    const fileHandle = fileHandleStore.get(song.filePath)!
+  } else if (getFileHandle(song.filePath)) {
+    const fileHandle = getFileHandle(song.filePath)!
     const file = await fileHandle.getFile()
     url = URL.createObjectURL(file)
   } else {

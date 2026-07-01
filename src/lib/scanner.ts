@@ -1,11 +1,10 @@
 import type { Song } from '../types/song'
-import { storeFileHandle } from './audio'
+import { storeFileHandle, Capacitor, FilesystemBridge } from './capacitor-shim'
 import { parseBuffer } from 'music-metadata'
 
 declare global {
   interface Window {
     showDirectoryPicker(): Promise<FileSystemDirectoryHandle>
-    Capacitor?: any
   }
 }
 
@@ -41,17 +40,6 @@ function isLyricsFile(filename: string): boolean {
   return filename.toLowerCase().endsWith('.lrc')
 }
 
-// Base64 to Uint8Array
-function base64ToUint8Array(base64: string): Uint8Array {
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i)
-  }
-  return bytes
-}
-
-// Read file chunk and parse metadata using music-metadata
 async function readFileMetadata(
   filePath: string,
   fileSize: number
@@ -59,18 +47,8 @@ async function readFileMetadata(
   const defaults = { duration: 0, bitrate: 320, sampleRate: 44100, channels: 2 }
 
   try {
-    const { Filesystem, Directory } = await import('@capacitor/filesystem')
-
-    // Read first 256KB - enough for most format headers
     const chunkSize = Math.min(262144, fileSize)
-    const result = await Filesystem.readFile({
-      path: filePath,
-      directory: Directory.ExternalStorage,
-      offset: 0,
-      length: chunkSize,
-    })
-
-    const data = base64ToUint8Array(result.data as string)
+    const data = await FilesystemBridge.readFileChunk(filePath, 0, chunkSize)
     const metadata = await parseBuffer(data, undefined, { duration: true })
 
     return {
@@ -87,13 +65,8 @@ async function readFileMetadata(
   }
 }
 
-// Parse SAF content URI to get the actual filesystem path
-// Format: content://com.android.externalstorage.documents/tree/primary%3AMusic/SubFolder
-//   primary → /storage/emulated/0/
-//   Other IDs (e.g. AABB-CCDD) → /storage/AABB-CCDD/
 function parseContentUri(uri: string): { path: string; relativePath: string; folderName: string } {
   try {
-    // Match tree URI pattern: .../tree/<volumeId>%3A<relativePath>
     const treeMatch = uri.match(/\/tree\/([^/]+)/)
     if (treeMatch) {
       const volumeAndPath = decodeURIComponent(treeMatch[1])
@@ -101,22 +74,12 @@ function parseContentUri(uri: string): { path: string; relativePath: string; fol
       if (colonIdx !== -1) {
         const volumeId = volumeAndPath.substring(0, colonIdx)
         const relativePath = volumeAndPath.substring(colonIdx + 1)
-
-        let basePath: string
-        if (volumeId === 'primary') {
-          basePath = '/storage/emulated/0'
-        } else {
-          basePath = `/storage/${volumeId}`
-        }
-
+        const basePath = volumeId === 'primary' ? '/storage/emulated/0' : `/storage/${volumeId}`
         const fullPath = relativePath ? `${basePath}/${relativePath}` : basePath
         const folderName = relativePath ? relativePath.split('/').pop() || 'Music' : 'Music'
-
         return { path: fullPath, relativePath, folderName }
       }
     }
-
-    // Fallback: treat as a plain path
     const folderName = uri.split('/').pop() || 'Music'
     return { path: uri, relativePath: folderName, folderName }
   } catch {
@@ -125,13 +88,11 @@ function parseContentUri(uri: string): { path: string; relativePath: string; fol
   }
 }
 
-// Pick a directory
 export async function pickDirectory(): Promise<{ path: string; relativePath: string; folderName: string } | null> {
   try {
-    const { CapgoFilePicker } = await import('@capgo/capacitor-file-picker')
-    const result = await CapgoFilePicker.pickDirectory()
-    if (result && result.path) {
-      return parseContentUri(result.path)
+    const result = await FilesystemBridge.pickDirectory()
+    if (result) {
+      return parseContentUri(result)
     }
     return null
   } catch (e) {
@@ -140,16 +101,11 @@ export async function pickDirectory(): Promise<{ path: string; relativePath: str
   }
 }
 
-// Scan a directory using Capacitor Filesystem
 export async function scanDirectoryByPath(dirPath: string, folderName: string): Promise<ScanResult> {
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
 
   try {
-    const { Filesystem, Directory } = await import('@capacitor/filesystem')
-
-    // dirPath is full path like /storage/emulated/0/Music
-    // Filesystem.readdir with ExternalStorage expects path relative to /storage/emulated/0/
     let pathToScan = dirPath
     if (pathToScan.startsWith('/storage/emulated/0/')) {
       pathToScan = pathToScan.substring('/storage/emulated/0/'.length)
@@ -158,25 +114,19 @@ export async function scanDirectoryByPath(dirPath: string, folderName: string): 
     } else if (pathToScan.startsWith('/')) {
       pathToScan = pathToScan.substring(1)
     }
-
-    // Remove trailing slash
     if (pathToScan.endsWith('/')) {
       pathToScan = pathToScan.slice(0, -1)
     }
 
     async function scanDir(relativePath: string): Promise<void> {
-      const dirResult = await Filesystem.readdir({
-        path: relativePath,
-        directory: Directory.ExternalStorage
-      })
-
-      const files = dirResult.files || []
+      const files = await FilesystemBridge.readdir(
+        `/storage/emulated/0/${relativePath}`
+      )
 
       for (const file of files) {
         const name = file.name
 
         if (file.type === 'directory') {
-          // Recurse into subdirectories
           const subPath = relativePath ? `${relativePath}/${name}` : name
           await scanDir(subPath)
           continue
@@ -186,15 +136,10 @@ export async function scanDirectoryByPath(dirPath: string, folderName: string): 
 
         if (isLyricsFile(name)) {
           try {
-            const { Encoding } = await import('@capacitor/filesystem')
-            const content = await Filesystem.readFile({
-              path: filePath,
-              directory: Directory.ExternalStorage,
-              encoding: Encoding.UTF8,
-            })
+            const content = await FilesystemBridge.readFileText(`/storage/emulated/0/${filePath}`)
             const title = name.replace('.lrc', '')
-            lyrics.set(title, content.data as string)
-          } catch (e) {}
+            lyrics.set(title, content)
+          } catch {}
           continue
         }
 
@@ -204,7 +149,7 @@ export async function scanDirectoryByPath(dirPath: string, folderName: string): 
           const fallbackTitle = name.replace(ext, '')
           const fileSize = file.size || 0
 
-          const meta = await readFileMetadata(filePath, fileSize)
+          const meta = await readFileMetadata(`/storage/emulated/0/${filePath}`, fileSize)
 
           const song: Song = {
             id: generateId(filePath),
@@ -236,7 +181,6 @@ export async function scanDirectoryByPath(dirPath: string, folderName: string): 
   return { songs, lyrics }
 }
 
-// Scan using File System Access API (Web)
 async function scanWithFilePicker(): Promise<ScanResult> {
   const dirHandle = await window.showDirectoryPicker()
   const songs: Song[] = []
@@ -257,7 +201,6 @@ async function scanWithFilePicker(): Promise<ScanResult> {
 
           let meta = { title: '', artist: 'Unknown Artist', album: 'Unknown Album', duration: 0, bitrate: 320, sampleRate: 44100, channels: 2 }
           try {
-            // Read first 256KB for metadata
             const chunk = file.slice(0, 262144)
             const parsed = await parseBuffer(new Uint8Array(await chunk.arrayBuffer()), undefined, { duration: true })
             meta = {
@@ -306,7 +249,7 @@ async function scanWithFilePicker(): Promise<ScanResult> {
 }
 
 export async function scanFolder(): Promise<ScanResult> {
-  if (window.Capacitor) {
+  if (Capacitor.getPlatform() === 'android') {
     const picked = await pickDirectory()
     if (picked) {
       return scanDirectoryByPath(picked.path, picked.folderName)

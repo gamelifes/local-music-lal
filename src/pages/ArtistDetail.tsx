@@ -26,7 +26,7 @@ export function ArtistDetail({ artist, onNavigate }: ArtistDetailProps) {
         columns={[
           { label: '歌名' },
           { label: '专辑' },
-          { label: '时长', width: 60, textAlign: 'right' }
+          { label: '时长', width: 60 }
         ]}
         showIndex
         extraColumns={(song) => (

@@ -25,6 +25,9 @@ jobs:
       - name: Build web app
         run: npm run build
 
+      - name: Copy assets to Android
+        run: node build-android.cjs
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -33,9 +36,6 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Capacitor Sync
-        run: npx cap sync android
 
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew

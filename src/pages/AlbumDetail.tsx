@@ -26,7 +26,7 @@ export function AlbumDetail({ album, onNavigate }: AlbumDetailProps) {
         columns={[
           { label: '歌名' },
           { label: '歌手' },
-          { label: '时长', width: 60, textAlign: 'right' }
+          { label: '时长', width: 60 }
         ]}
         showIndex
         extraColumns={(song) => (
