@@ -6,8 +6,11 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import androidx.webkit.WebViewAssetLoader;
 import android.webkit.WebViewClient;
 
 public class MainActivity extends Activity {
@@ -18,28 +21,22 @@ public class MainActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Full screen
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         webView = new WebView(this);
         setContentView(webView);
 
-        // Configure WebView
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(true);
-        settings.setAllowFileAccessFromFileURLs(true);
-        settings.setAllowUniversalAccessFromFileURLs(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setDatabaseEnabled(true);
 
-        // JavaScript bridge
         jsBridge = new JsBridge(this);
         webView.addJavascriptInterface(jsBridge, "AndroidBridge");
 
-        // Handle directory picker results
         jsBridge.setDirectoryPickerCallback(path -> {
             webView.post(() -> {
                 webView.evaluateJavascript(
@@ -49,19 +46,25 @@ public class MainActivity extends Activity {
             });
         });
 
-        // WebViewClient — handle link navigation
+        WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
+                .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+                .build();
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return false;
             }
+
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
         });
 
-        // WebChromeClient — handle console logs
         webView.setWebChromeClient(new WebChromeClient());
 
-        // Load the app
-        webView.loadUrl("file:///android_asset/public/index.html");
+        webView.loadUrl("https://appassets.android_asset/public/index.html");
     }
 
     @Override

@@ -129,6 +129,7 @@ body {
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
+  background: var(--bg);
 }
 
 .song-table th {
@@ -140,6 +141,7 @@ body {
   letter-spacing: 0.05em;
   text-align: left;
   border-bottom: 1px solid var(--glass-border);
+  background: var(--bg);
 }
 
 .song-table td {
@@ -151,6 +153,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  background: var(--bg);
 }
 
 .song-table tr:hover td {
