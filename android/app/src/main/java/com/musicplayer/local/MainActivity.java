@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebChromeClient;
@@ -11,20 +12,17 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import fi.iki.elonen.NanoHTTPD;
-import fi.iki.elonen.NanoHTTPD.IHTTPSession;
-import fi.iki.elonen.NanoHTTPD.Response;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.net.URLConnection;
 
 public class MainActivity extends Activity {
     private WebView webView;
     private JsBridge jsBridge;
-    private NanoHTTPD server;
+    private LocalHttpServer server;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -55,8 +53,7 @@ public class MainActivity extends Activity {
             });
         });
 
-        // Start local HTTP server to serve assets
-        server = new MyHttpServer(0, this);
+        server = new LocalHttpServer(0, this);
         try {
             server.start();
         } catch (IOException e) {
@@ -104,53 +101,57 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 
-    private class MyHttpServer extends NanoHTTPD {
+    private static class LocalHttpServer extends fi.iki.elonen.NanoHTTPD {
         private final android.content.Context context;
 
-        public MyHttpServer(int port, android.content.Context context) {
+        LocalHttpServer(int port, android.content.Context context) {
             super(port);
             this.context = context;
         }
 
         @Override
+        public String getMimeTypeForFile(String uri) {
+            if (uri.endsWith(".html")) return "text/html";
+            if (uri.endsWith(".js")) return "application/javascript";
+            if (uri.endsWith(".css")) return "text/css";
+            if (uri.endsWith(".json")) return "application/json";
+            if (uri.endsWith(".png")) return "image/png";
+            if (uri.endsWith(".jpg") || uri.endsWith(".jpeg")) return "image/jpeg";
+            if (uri.endsWith(".svg")) return "image/svg+xml";
+            if (uri.endsWith(".wasm")) return "application/wasm";
+            if (uri.endsWith(".ico")) return "image/x-icon";
+            if (uri.endsWith(".woff")) return "font/woff";
+            if (uri.endsWith(".woff2")) return "font/woff2";
+            String g = URLConnection.guessContentTypeFromName(uri);
+            return g != null ? g : "application/octet-stream";
+        }
+
+        @Override
         public Response serve(IHTTPSession session) {
             String uri = session.getUri();
-            if (uri.equals("/")) {
-                uri = "/index.html";
-            }
-            String path = uri.startsWith("/") ? uri.substring(1) : uri;
+            String path = uri.equals("/") ? "index.html" : uri.substring(1);
+
             try {
                 AssetManager assets = context.getAssets();
-                InputStream inputStream = assets.open(path);
-
-                // Read full content to determine length for Response ctor
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                byte[] buf = new byte[8192];
-                int n;
-                while ((n = inputStream.read(buf)) != -1) {
-                    baos.write(buf, 0, n);
-                }
-                inputStream.close();
-                byte[] data = baos.toByteArray();
-
-                String mime = "application/octet-stream";
-                if (path.endsWith(".html") || path.endsWith(".htm")) mime = "text/html";
-                else if (path.endsWith(".js")) mime = "application/javascript";
-                else if (path.endsWith(".css")) mime = "text/css";
-                else if (path.endsWith(".json")) mime = "application/json";
-                else if (path.endsWith(".png")) mime = "image/png";
-                else if (path.endsWith(".jpg") || path.endsWith(".jpeg")) mime = "image/jpeg";
-                else if (path.endsWith(".svg")) mime = "image/svg+xml";
-                else if (path.endsWith(".wasm")) mime = "application/wasm";
-                else {
-                    String guessed = URLConnection.guessContentTypeFromName(path);
-                    if (guessed != null) mime = guessed;
-                }
-
-                return new Response(Response.Status.OK, mime, new ByteArrayInputStream(data));
+                InputStream is = assets.open(path);
+                String text = readStream(is);
+                String mime = getMimeTypeForFile(path);
+                return newFixedLengthResponse(Response.Status.OK, mime, text);
             } catch (IOException e) {
-                return new Response(Response.Status.NOT_FOUND, "text/plain", "Not Found");
+                return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Not Found: " + path);
             }
+        }
+
+        private String readStream(InputStream is) throws IOException {
+            Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
+            StringBuilder sb = new StringBuilder();
+            char[] buf = new char[4096];
+            int n;
+            while ((n = reader.read(buf)) != -1) {
+                sb.append(buf, 0, n);
+            }
+            reader.close();
+            return sb.toString();
         }
     }
 }
