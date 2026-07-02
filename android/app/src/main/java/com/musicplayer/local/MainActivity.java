@@ -15,6 +15,8 @@ import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.NanoHTTPD.IHTTPSession;
 import fi.iki.elonen.NanoHTTPD.Response;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLConnection;
@@ -116,12 +118,21 @@ public class MainActivity extends Activity {
             if (uri.equals("/")) {
                 uri = "/index.html";
             }
-            // Remove leading slash
             String path = uri.startsWith("/") ? uri.substring(1) : uri;
             try {
                 AssetManager assets = context.getAssets();
                 InputStream inputStream = assets.open(path);
-                // Determine MIME type
+
+                // Read full content to determine length for Response ctor
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                byte[] buf = new byte[8192];
+                int n;
+                while ((n = inputStream.read(buf)) != -1) {
+                    baos.write(buf, 0, n);
+                }
+                inputStream.close();
+                byte[] data = baos.toByteArray();
+
                 String mime = "application/octet-stream";
                 if (path.endsWith(".html") || path.endsWith(".htm")) mime = "text/html";
                 else if (path.endsWith(".js")) mime = "application/javascript";
@@ -132,13 +143,13 @@ public class MainActivity extends Activity {
                 else if (path.endsWith(".svg")) mime = "image/svg+xml";
                 else if (path.endsWith(".wasm")) mime = "application/wasm";
                 else {
-                    // Try to guess from file name
-                    String guessed = java.net.URLConnection.guessContentTypeFromName(path);
+                    String guessed = URLConnection.guessContentTypeFromName(path);
                     if (guessed != null) mime = guessed;
                 }
-                return new Response(Response.Status.OK, mime, inputStream);
+
+                return new Response(Response.Status.OK, mime, new ByteArrayInputStream(data), data.length);
             } catch (IOException e) {
-                return new Response(Response.Status.NOT_FOUND, "text/plain", "Not Found");
+                return new Response(Response.Status.NOT_FOUND, "text/plain", new ByteArrayInputStream("Not Found".getBytes()), "Not Found".getBytes().length);
             }
         }
     }
