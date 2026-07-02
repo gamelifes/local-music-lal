@@ -12,10 +12,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.nio.charset.StandardCharsets;
 import java.net.URLConnection;
 
 public class MainActivity extends Activity {
@@ -26,7 +24,6 @@ public class MainActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         webView = new WebView(this);
@@ -55,21 +52,24 @@ public class MainActivity extends Activity {
         server = new fi.iki.elonen.NanoHTTPD(0) {
             private final AssetManager assets = getAssets();
 
-            @Override
             public fi.iki.elonen.NanoHTTPD.Response serve(fi.iki.elonen.NanoHTTPD.IHTTPSession session) {
                 String uri = session.getUri();
                 String path = uri.equals("/") ? "index.html" : uri.substring(1);
                 try {
-                    InputStream is = assets.open(path);
-                    String text = readStream(is);
-                    String mime = guessMime(path);
-                    return newFixedLengthResponse(fi.iki.elonen.NanoHTTPD.Response.Status.OK, mime, text);
+                    InputStreamReader reader = new InputStreamReader(assets.open(path), "UTF-8");
+                    StringBuilder sb = new StringBuilder();
+                    char[] buf = new char[4096];
+                    int n;
+                    while ((n = reader.read(buf)) != -1) sb.append(buf, 0, n);
+                    reader.close();
+                    String mime = mimeFor(path);
+                    return newFixedLengthResponse(fi.iki.elonen.NanoHTTPD.Response.Status.OK, mime, sb.toString());
                 } catch (IOException e) {
-                    return newFixedLengthResponse(fi.iki.elonen.NanoHTTPD.Response.Status.NOT_FOUND, "text/plain", "Not Found: " + path);
+                    return newFixedLengthResponse(fi.iki.elonen.NanoHTTPD.Response.Status.NOT_FOUND, "text/plain", "Not Found");
                 }
             }
 
-            private String guessMime(String path) {
+            private String mimeFor(String path) {
                 if (path.endsWith(".html")) return "text/html";
                 if (path.endsWith(".js")) return "application/javascript";
                 if (path.endsWith(".css")) return "text/css";
@@ -79,67 +79,40 @@ public class MainActivity extends Activity {
                 if (path.endsWith(".svg")) return "image/svg+xml";
                 if (path.endsWith(".wasm")) return "application/wasm";
                 if (path.endsWith(".ico")) return "image/x-icon";
-                if (path.endsWith(".woff")) return "font/woff";
-                if (path.endsWith(".woff2")) return "font/woff2";
                 String g = URLConnection.guessContentTypeFromName(path);
                 return g != null ? g : "application/octet-stream";
             }
         };
+
         try {
             server.start();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        int port = server.getListeningPort();
-        webView.loadUrl("http://127.0.0.1:" + port + "/index.html");
+        webView.loadUrl("http://127.0.0.1:" + server.getListeningPort() + "/index.html");
 
         webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                return false;
-            }
+            public boolean shouldOverrideUrlLoading(WebView view, String url) { return false; }
         });
-
         webView.setWebChromeClient(new WebChromeClient());
-    }
-
-    private String readStream(InputStream is) throws IOException {
-        Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
-        StringBuilder sb = new StringBuilder();
-        char[] buf = new char[4096];
-        int n;
-        while ((n = reader.read(buf)) != -1) {
-            sb.append(buf, 0, n);
-        }
-        reader.close();
-        return sb.toString();
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 9999 && jsBridge != null) {
-            jsBridge.handleDirectoryPicked(resultCode, data);
-        }
+        if (requestCode == 9999 && jsBridge != null) jsBridge.handleDirectoryPicked(resultCode, data);
     }
 
     @Override
     public void onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
+        if (webView.canGoBack()) webView.goBack();
+        else super.onBackPressed();
     }
 
     @Override
     public void onDestroy() {
-        if (webView != null) {
-            webView.destroy();
-        }
-        if (server != null) {
-            server.stop();
-        }
+        if (webView != null) webView.destroy();
+        if (server != null) server.stop();
         super.onDestroy();
     }
 }
