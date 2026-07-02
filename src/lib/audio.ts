@@ -8,8 +8,8 @@ let onEndCallback: (() => void) | null = null
 let onLoadCallback: ((duration: number) => void) | null = null
 
 function getWebPath(filePath: string): string {
-  const fullPath = `/storage/emulated/0/${filePath}`
-  return Capacitor.convertFileSrc(`file://${fullPath}`)
+  // filePath is already absolute like "/storage/emulated/0/Music/song.mp3"
+  return `file://${filePath}`
 }
 
 export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duration: number) => void) {
