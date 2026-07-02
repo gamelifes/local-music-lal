@@ -147,9 +147,9 @@ public class MainActivity extends Activity {
                     if (guessed != null) mime = guessed;
                 }
 
-                return new Response(Response.Status.OK, mime, new ByteArrayInputStream(data), data.length);
+                return Response.newFixedLengthResponse(Response.Status.OK, mime, new ByteArrayInputStream(data), data.length);
             } catch (IOException e) {
-                return new Response(Response.Status.NOT_FOUND, "text/plain", new ByteArrayInputStream("Not Found".getBytes()), "Not Found".getBytes().length);
+                return Response.newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", new ByteArrayInputStream("Not Found".getBytes()), "Not Found".getBytes().length);
             }
         }
     }
