@@ -84,7 +84,15 @@ export const FilesystemBridge = {
 
   async pickDirectory(): Promise<string | null> {
     if (window.AndroidBridge) {
-      return await window.AndroidBridge.pickDirectory()
+      return new Promise<string | null>((resolve) => {
+        const timeout = setTimeout(() => { resolve(null) }, 60000)
+        ;(window as any)._directoryPicked = (path: string) => {
+          clearTimeout(timeout)
+          ;(window as any)._directoryPicked = undefined
+          resolve(path || null)
+        }
+        window.AndroidBridge!.pickDirectory()
+      })
     }
     return null
   }

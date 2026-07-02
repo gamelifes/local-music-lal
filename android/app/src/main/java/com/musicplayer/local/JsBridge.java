@@ -135,17 +135,22 @@ public class JsBridge {
             String[] split = docId.split(":");
             String volumeId = split[0];
             String relativePath = split.length > 1 ? split[1] : "";
-
-            String basePath;
             if ("primary".equals(volumeId)) {
-                basePath = "/storage/emulated/0";
-            } else {
-                basePath = "/storage/" + volumeId;
+                return "/storage/emulated/0" + (relativePath.isEmpty() ? "" : "/" + relativePath);
             }
-
-            return relativePath.isEmpty() ? basePath : basePath + "/" + relativePath;
+            return "/storage/" + volumeId + (relativePath.isEmpty() ? "" : "/" + relativePath);
         } catch (Exception e) {
-            return null;
+            try {
+                final int TAKE_FLAGS = Intent.FLAG_GRANT_READ_URI_PERMISSION;
+                activity.getContentResolver().takePersistableUriPermission(treeUri, TAKE_FLAGS);
+                String path = treeUri.getPath();
+                if (path != null && path.startsWith("/tree/")) {
+                    path = "/storage/emulated/0/" + path.substring("/tree/".length()).replace(":", "/");
+                }
+                return path;
+            } catch (Exception e2) {
+                return treeUri.toString();
+            }
         }
     }
 }
