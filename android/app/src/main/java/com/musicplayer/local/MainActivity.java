@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.os.Bundle;
-import android.util.Base64;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebChromeClient;
@@ -22,7 +21,7 @@ import java.net.URLConnection;
 public class MainActivity extends Activity {
     private WebView webView;
     private JsBridge jsBridge;
-    private LocalHttpServer server;
+    private fi.iki.elonen.NanoHTTPD server;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -53,15 +52,46 @@ public class MainActivity extends Activity {
             });
         });
 
-        server = new LocalHttpServer(0, this);
+        server = new fi.iki.elonen.NanoHTTPD(0) {
+            private final AssetManager assets = getAssets();
+
+            @Override
+            public fi.iki.elonen.NanoHTTPD.Response serve(fi.iki.elonen.NanoHTTPD.IHTTPSession session) {
+                String uri = session.getUri();
+                String path = uri.equals("/") ? "index.html" : uri.substring(1);
+                try {
+                    InputStream is = assets.open(path);
+                    String text = readStream(is);
+                    String mime = guessMime(path);
+                    return newFixedLengthResponse(fi.iki.elonen.NanoHTTPD.Response.Status.OK, mime, text);
+                } catch (IOException e) {
+                    return newFixedLengthResponse(fi.iki.elonen.NanoHTTPD.Response.Status.NOT_FOUND, "text/plain", "Not Found: " + path);
+                }
+            }
+
+            private String guessMime(String path) {
+                if (path.endsWith(".html")) return "text/html";
+                if (path.endsWith(".js")) return "application/javascript";
+                if (path.endsWith(".css")) return "text/css";
+                if (path.endsWith(".json")) return "application/json";
+                if (path.endsWith(".png")) return "image/png";
+                if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
+                if (path.endsWith(".svg")) return "image/svg+xml";
+                if (path.endsWith(".wasm")) return "application/wasm";
+                if (path.endsWith(".ico")) return "image/x-icon";
+                if (path.endsWith(".woff")) return "font/woff";
+                if (path.endsWith(".woff2")) return "font/woff2";
+                String g = URLConnection.guessContentTypeFromName(path);
+                return g != null ? g : "application/octet-stream";
+            }
+        };
         try {
             server.start();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         int port = server.getListeningPort();
-        String url = "http://127.0.0.1:" + port + "/index.html";
-        webView.loadUrl(url);
+        webView.loadUrl("http://127.0.0.1:" + port + "/index.html");
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -71,6 +101,18 @@ public class MainActivity extends Activity {
         });
 
         webView.setWebChromeClient(new WebChromeClient());
+    }
+
+    private String readStream(InputStream is) throws IOException {
+        Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
+        StringBuilder sb = new StringBuilder();
+        char[] buf = new char[4096];
+        int n;
+        while ((n = reader.read(buf)) != -1) {
+            sb.append(buf, 0, n);
+        }
+        reader.close();
+        return sb.toString();
     }
 
     @Override
@@ -99,59 +141,5 @@ public class MainActivity extends Activity {
             server.stop();
         }
         super.onDestroy();
-    }
-
-    private static class LocalHttpServer extends fi.iki.elonen.NanoHTTPD {
-        private final android.content.Context context;
-
-        LocalHttpServer(int port, android.content.Context context) {
-            super(port);
-            this.context = context;
-        }
-
-        @Override
-        public String getMimeTypeForFile(String uri) {
-            if (uri.endsWith(".html")) return "text/html";
-            if (uri.endsWith(".js")) return "application/javascript";
-            if (uri.endsWith(".css")) return "text/css";
-            if (uri.endsWith(".json")) return "application/json";
-            if (uri.endsWith(".png")) return "image/png";
-            if (uri.endsWith(".jpg") || uri.endsWith(".jpeg")) return "image/jpeg";
-            if (uri.endsWith(".svg")) return "image/svg+xml";
-            if (uri.endsWith(".wasm")) return "application/wasm";
-            if (uri.endsWith(".ico")) return "image/x-icon";
-            if (uri.endsWith(".woff")) return "font/woff";
-            if (uri.endsWith(".woff2")) return "font/woff2";
-            String g = URLConnection.guessContentTypeFromName(uri);
-            return g != null ? g : "application/octet-stream";
-        }
-
-        @Override
-        public Response serve(IHTTPSession session) {
-            String uri = session.getUri();
-            String path = uri.equals("/") ? "index.html" : uri.substring(1);
-
-            try {
-                AssetManager assets = context.getAssets();
-                InputStream is = assets.open(path);
-                String text = readStream(is);
-                String mime = getMimeTypeForFile(path);
-                return newFixedLengthResponse(Response.Status.OK, mime, text);
-            } catch (IOException e) {
-                return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Not Found: " + path);
-            }
-        }
-
-        private String readStream(InputStream is) throws IOException {
-            Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
-            StringBuilder sb = new StringBuilder();
-            char[] buf = new char[4096];
-            int n;
-            while ((n = reader.read(buf)) != -1) {
-                sb.append(buf, 0, n);
-            }
-            reader.close();
-            return sb.toString();
-        }
     }
 }
