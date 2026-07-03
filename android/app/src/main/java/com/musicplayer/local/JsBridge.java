@@ -25,10 +25,6 @@ public class JsBridge {
         this.activity = activity;
     }
 
-    public JsBridge(Activity activity) {
-        this.activity = activity;
-    }
-
     public void setDirectoryPickerCallback(DirectoryPickerCallback cb) {
         this.callback = cb;
     }

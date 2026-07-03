@@ -13,6 +13,7 @@ import android.webkit.WebViewClient;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URLConnection;
+import java.net.URLDecoder;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -58,7 +59,8 @@ public class MainActivity extends Activity {
                 // /ext/... → /storage/emulated/0/...
                 if (path.startsWith("ext/")) {
                     String rel = path.substring(4);
-                    String absPath = "/storage/emulated/0/" + rel;
+                    String decoded = URLDecoder.decode(rel, "UTF-8");
+                    String absPath = "/storage/emulated/0/" + decoded;
                     return serveFile(absPath);
                 }
 
@@ -86,7 +88,9 @@ public class MainActivity extends Activity {
                 try {
                     byte[] data = java.nio.file.Files.readAllBytes(file.toPath());
                     java.io.ByteArrayInputStream bais = new java.io.ByteArrayInputStream(data);
-                    return newFixedLengthResponse(fi.iki.elonen.NanoHTTPD.Response.Status.OK, mime, bais);
+                    fi.iki.elonen.NanoHTTPD.Response res = new fi.iki.elonen.NanoHTTPD.Response(
+                            fi.iki.elonen.NanoHTTPD.Response.Status.OK, mime, bais, data.length);
+                    return res;
                 } catch (java.io.IOException e) {
                     return newFixedLengthResponse(fi.iki.elonen.NanoHTTPD.Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
                 }
