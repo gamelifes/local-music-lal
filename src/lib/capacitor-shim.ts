@@ -7,6 +7,7 @@ declare global {
   interface Window {
     AndroidBridge?: {
       getPlatform(): string
+      getHttpServerPort(): number
       readdir(path: string): Promise<string>
       readFileChunk(path: string, offset: number, length: number): Promise<string>
       readFileText(path: string): Promise<string>
@@ -21,10 +22,29 @@ function isAndroid(): boolean {
 }
 
 function getWebPath(filePath: string): string {
-  // Convert absolute path to WebView-accessible file:// URL
   if (filePath.startsWith('file://')) return filePath
+  if (filePath.startsWith('/storage/emulated/0/')) {
+    const rel = filePath.slice('/storage/emulated/0/'.length)
+    const port = getHttpPort()
+    if (port > 0) return `http://127.0.0.1:${port}/ext/${rel}`
+    return `file://${filePath}`
+  }
   if (filePath.startsWith('/')) return `file://${filePath}`
   return `file:///storage/emulated/0/${filePath}`
+}
+
+let _httpPort: number | null = null
+
+function getHttpPort(): number {
+  if (_httpPort !== null) return _httpPort
+  if (window.AndroidBridge) {
+    const port = window.AndroidBridge.getHttpServerPort()
+    if (port > 0) {
+      _httpPort = port
+      return _httpPort
+    }
+  }
+  return 0
 }
 
 export const Capacitor = {

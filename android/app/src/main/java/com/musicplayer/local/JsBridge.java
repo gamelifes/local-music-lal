@@ -19,9 +19,10 @@ import java.util.Base64;
 public class JsBridge {
     private final Activity activity;
     private DirectoryPickerCallback callback;
+    public int httpServerPort = 0;
 
-    public interface DirectoryPickerCallback {
-        void onResult(String path);
+    public JsBridge(Activity activity) {
+        this.activity = activity;
     }
 
     public JsBridge(Activity activity) {
@@ -35,6 +36,11 @@ public class JsBridge {
     @JavascriptInterface
     public String getPlatform() {
         return "android";
+    }
+
+    @JavascriptInterface
+    public int getHttpServerPort() {
+        return httpServerPort;
     }
 
     @JavascriptInterface
