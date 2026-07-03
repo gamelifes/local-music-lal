@@ -66,7 +66,7 @@ public class MainActivity extends Activity {
         new Thread(() -> {
             try {
                 serverSocket = new ServerSocket(0);
-                int port = serverSocket.getListeningPort();
+                int port = serverSocket.getLocalPort();
                 jsBridge.httpServerPort = port;
                 webView.post(() -> webView.loadUrl("http://127.0.0.1:" + port + "/index.html"));
 

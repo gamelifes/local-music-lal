@@ -21,6 +21,10 @@ public class JsBridge {
     private DirectoryPickerCallback callback;
     public int httpServerPort = 0;
 
+    public interface DirectoryPickerCallback {
+        void onResult(String path);
+    }
+
     public JsBridge(Activity activity) {
         this.activity = activity;
     }
