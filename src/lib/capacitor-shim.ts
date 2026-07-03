@@ -21,35 +21,37 @@ function isAndroid(): boolean {
   return typeof navigator !== 'undefined' && navigator.userAgent.includes('Android')
 }
 
-function getWebPath(filePath: string): string {
-  if (filePath.startsWith('file://')) return filePath
-  if (filePath.startsWith('/storage/emulated/0/')) {
-    const rel = filePath.slice('/storage/emulated/0/'.length)
-    const port = getHttpPort()
-    if (port > 0) return `http://127.0.0.1:${port}/ext/${rel}`
-    return `file://${filePath}`
-  }
-  if (filePath.startsWith('/')) return `file://${filePath}`
-  return `file:///storage/emulated/0/${filePath}`
+function encodePathForUri(path: string): string {
+  return path.split('/').map(segment => {
+    if (!segment) return segment
+    return encodeURIComponent(segment)
+  }).join('/')
 }
 
-let _httpPort: number | null = null
-
 function getHttpPort(): number {
-  if (_httpPort !== null) return _httpPort
+  if (typeof window !== 'undefined' && window.location && window.location.port) {
+    return parseInt(window.location.port, 10)
+  }
   if (window.AndroidBridge) {
     const port = window.AndroidBridge.getHttpServerPort()
-    if (port > 0) {
-      _httpPort = port
-      return _httpPort
-    }
+    if (port > 0) return port
   }
   return 0
 }
 
 export const Capacitor = {
   convertFileSrc(path: string): string {
-    return getWebPath(path)
+    if (path.startsWith('file://')) return path
+    if (path.startsWith('/storage/emulated/0/')) {
+      const rel = path.slice('/storage/emulated/0/'.length)
+      const port = getHttpPort()
+      if (port > 0) {
+        return `http://127.0.0.1:${port}/ext/${encodePathForUri(rel)}`
+      }
+      return `file://${path}`
+    }
+    if (path.startsWith('/')) return `file://${path}`
+    return `file:///storage/emulated/0/${path}`
   },
 
   getPlatform(): string {
