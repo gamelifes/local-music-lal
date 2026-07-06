@@ -1,37 +1,33 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppStore } from '../store/appStore'
+import { useSleepStore } from '../store/sleep'
 
 export function SleepModal() {
   const { modals, closeModal } = useAppStore()
+  const { finishAfterCurrent, setFinishAfterCurrent, enabled: sleepEnabled, remaining: sleepRemaining, duration: sleepDuration, startTimer, cancelTimer } = useSleepStore()
   const [selected, setSelected] = useState('不开启')
   const [customMinutes, setCustomMinutes] = useState('')
+
   const options = ['不开启', '15分钟后', '30分钟后', '一小时后', '自定义']
-  const [timerActive, setTimerActive] = useState(false)
-  const [remaining, setRemaining] = useState(0)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const clearTimer = () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null } }
-  useEffect(() => () => clearTimer(), [])
-
-  const startTimer = (mins: number) => {
-    clearTimer()
-    if (mins <= 0) { setTimerActive(false); setRemaining(0); return }
-    setRemaining(mins * 60)
-    setTimerActive(true)
-    timerRef.current = setInterval(() => {
-      setRemaining(r => {
-        if (r <= 1) { clearTimer(); setTimerActive(false); return 0 }
-        return r - 1
-      })
-    }, 1000)
-  }
+  useEffect(() => {
+    if (modals.sleep && sleepEnabled && sleepDuration !== null) {
+      if (sleepDuration === 15) setSelected('15分钟后')
+      else if (sleepDuration === 30) setSelected('30分钟后')
+      else if (sleepDuration === 60) setSelected('一小时后')
+      else setSelected('自定义')
+    } else if (modals.sleep) {
+      setSelected('不开启')
+    }
+  }, [modals.sleep, sleepEnabled, sleepDuration])
 
   const handleSelect = (opt: string) => {
     setSelected(opt)
     if (opt === '自定义') return
-    clearTimer()
-    setTimerActive(false)
-    setRemaining(0)
+    if (opt === '不开启') {
+      cancelTimer()
+      return
+    }
     if (opt === '15分钟后') startTimer(15)
     else if (opt === '30分钟后') startTimer(30)
     else if (opt === '一小时后') startTimer(60)
@@ -72,15 +68,18 @@ export function SleepModal() {
               </button>
             </div>
           )}
-          {timerActive && (
+          {sleepEnabled && sleepRemaining !== null && (
             <div style={{ padding: '12px 0', textAlign: 'center', color: 'var(--accent)', fontSize: '20px', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-              {fmtTime(remaining)}
+              {fmtTime(sleepRemaining)}
             </div>
           )}
-          <div style={{ padding: '14px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{ padding: '14px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => setFinishAfterCurrent(!finishAfterCurrent)}
+          >
             <span style={{ fontSize: '15px', color: 'var(--text-secondary)' }}>播放完当前歌曲再关闭</span>
-            <div style={{ width: 36, height: 20, borderRadius: 10, background: 'var(--accent)', position: 'relative', cursor: 'pointer' }}>
-              <div style={{ position: 'absolute', right: 2, top: 2, width: 16, height: 16, borderRadius: '50%', background: '#fff' }}></div>
+            <div style={{ width: 36, height: 20, borderRadius: 10, background: finishAfterCurrent ? 'var(--accent)' : 'var(--bg-card)', position: 'relative', transition: 'background 0.2s' }}>
+              <div style={{ position: 'absolute', top: 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', left: finishAfterCurrent ? 18 : 2 }}></div>
             </div>
           </div>
         </div>

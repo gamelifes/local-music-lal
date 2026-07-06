@@ -4,6 +4,7 @@ import type { LyricLine } from '../lib/lyrics'
 import { parseLRC } from '../lib/lyrics'
 import * as audio from '../lib/audio'
 import { useLibraryStore } from './library'
+import { useSleepStore } from './sleep'
 
 interface PlayerState {
   currentSong: Song | null
@@ -87,17 +88,16 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     // Start playback
     await audio.playSong(song, () => {
+      if (useSleepStore.getState().triggerFinish()) return
+
       const state = get()
       const { repeatMode } = state
 
       if (repeatMode === 'one') {
-        // Repeat current song
         get().play(song, songList)
       } else if (repeatMode === 'shuffle') {
-        // Random next song
         get().nextSong()
       } else {
-        // Repeat all
         get().nextSong()
       }
     }, (duration) => {
@@ -168,6 +168,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     // Start playback
     audio.playSong(nextSong, () => {
+      if (useSleepStore.getState().triggerFinish()) return
       const state = get()
       if (state.currentIndex < state.songList.length - 1) {
         get().nextSong()
@@ -210,6 +211,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
       // Start playback
       audio.playSong(prevSong, () => {
+        if (useSleepStore.getState().triggerFinish()) return
         const state = get()
         if (state.currentIndex < state.songList.length - 1) {
           get().nextSong()
