@@ -42,16 +42,12 @@ function getHttpPort(): number {
 export const Capacitor = {
   convertFileSrc(path: string): string {
     if (path.startsWith('file://')) return path
-    if (path.startsWith('/storage/emulated/0/')) {
-      const rel = path.slice('/storage/emulated/0/'.length)
-      const port = getHttpPort()
-      if (port > 0) {
-        return `http://127.0.0.1:${port}/ext/${encodePathForUri(rel)}`
-      }
-      return `file://${path}`
+    const port = getHttpPort()
+    if (port > 0) {
+      const rel = path.startsWith('/') ? path.replace('/storage/emulated/0/', '') : path
+      return `http://127.0.0.1:${port}/ext/${encodePathForUri(rel)}`
     }
-    if (path.startsWith('/')) return `file://${path}`
-    return `file:///storage/emulated/0/${path}`
+    return `file://${path}`
   },
 
   getPlatform(): string {

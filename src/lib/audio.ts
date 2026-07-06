@@ -8,8 +8,7 @@ let onEndCallback: (() => void) | null = null
 let onLoadCallback: ((duration: number) => void) | null = null
 
 function getWebPath(filePath: string): string {
-  // filePath is already absolute like "/storage/emulated/0/Music/song.mp3"
-  return `file://${filePath}`
+  return Capacitor.convertFileSrc(filePath)
 }
 
 export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duration: number) => void) {
@@ -25,8 +24,11 @@ export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duratio
 
   let url: string
 
+  console.log('playSong filePath:', JSON.stringify(song.filePath), 'platform:', Capacitor.getPlatform())
+
   if (Capacitor.getPlatform() === 'android') {
     url = getWebPath(song.filePath)
+    console.log('playSong resolved URL:', url)
   } else if (getFileHandle(song.filePath)) {
     const fileHandle = getFileHandle(song.filePath)!
     const file = await fileHandle.getFile()
