@@ -381,6 +381,8 @@ body {
   border-radius: 50%;
   background: linear-gradient(135deg, #e8b43c, #d4a017);
   box-shadow: 0 0 12px var(--accent-glow);
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .musicbar-info {

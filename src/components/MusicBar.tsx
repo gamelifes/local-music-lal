@@ -11,7 +11,11 @@ export function MusicBar({ onNavigate }: MusicBarProps) {
 
   return (
     <div className="musicbar" onClick={() => onNavigate('player')}>
-      <div className="musicbar-cover"></div>
+      <div className="musicbar-cover">
+        {currentSong.cover ? (
+          <img src={currentSong.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : null}
+      </div>
       <div className="musicbar-info">
         <div className="musicbar-song">{currentSong.title}</div>
         <div className="musicbar-artist">{currentSong.artist}</div>

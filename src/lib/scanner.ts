@@ -43,13 +43,24 @@ function isLyricsFile(filename: string): boolean {
 async function readFileMetadata(
   filePath: string,
   fileSize: number
-): Promise<{ title?: string; artist?: string; album?: string; duration: number; bitrate: number; sampleRate: number; channels: number }> {
+): Promise<{ title?: string; artist?: string; album?: string; duration: number; bitrate: number; sampleRate: number; channels: number; cover?: string }> {
   const defaults = { duration: 0, bitrate: 320, sampleRate: 44100, channels: 2 }
 
   try {
-    const chunkSize = Math.min(262144, fileSize)
+    const chunkSize = Math.min(1048576, fileSize)
     const data = await FilesystemBridge.readFileChunk(filePath, 0, chunkSize)
     const metadata = await parseBuffer(data, undefined, { duration: true })
+
+    let cover: string | undefined
+    const pic = metadata.common.picture?.[0]
+    if (pic?.data) {
+      const bytes = pic.data instanceof Uint8Array ? pic.data : new Uint8Array(pic.data)
+      let binary = ''
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i])
+      }
+      cover = `data:${pic.format};base64,${btoa(binary)}`
+    }
 
     return {
       title: metadata.common.title,
@@ -59,6 +70,7 @@ async function readFileMetadata(
       bitrate: metadata.format.bitrate ?? defaults.bitrate,
       sampleRate: metadata.format.sampleRate ?? defaults.sampleRate,
       channels: metadata.format.numberOfChannels ?? defaults.channels,
+      cover,
     }
   } catch {
     return defaults
@@ -167,6 +179,7 @@ export async function scanDirectoryByPath(dirPath: string, folderName: string): 
             folder: folderName,
             hidden: false,
             addedAt: Date.now(),
+            cover: meta.cover,
           }
           songs.push(song)
         }
@@ -199,10 +212,20 @@ async function scanWithFilePicker(): Promise<ScanResult> {
 
           storeFileHandle(audioPath, entry)
 
-          let meta = { title: '', artist: 'Unknown Artist', album: 'Unknown Album', duration: 0, bitrate: 320, sampleRate: 44100, channels: 2 }
+          let meta = { title: '', artist: 'Unknown Artist', album: 'Unknown Album', duration: 0, bitrate: 320, sampleRate: 44100, channels: 2, cover: undefined as string | undefined }
           try {
-            const chunk = file.slice(0, 262144)
+            const chunk = file.slice(0, 1048576)
             const parsed = await parseBuffer(new Uint8Array(await chunk.arrayBuffer()), undefined, { duration: true })
+            let cover: string | undefined
+            const pic = parsed.common.picture?.[0]
+            if (pic?.data) {
+              const bytes = pic.data instanceof Uint8Array ? pic.data : new Uint8Array(pic.data)
+              let binary = ''
+              for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i])
+              }
+              cover = `data:${pic.format};base64,${btoa(binary)}`
+            }
             meta = {
               title: parsed.common.title || '',
               artist: parsed.common.artist || 'Unknown Artist',
@@ -211,6 +234,7 @@ async function scanWithFilePicker(): Promise<ScanResult> {
               bitrate: parsed.format.bitrate ?? 320,
               sampleRate: parsed.format.sampleRate ?? 44100,
               channels: parsed.format.numberOfChannels ?? 2,
+              cover,
             }
           } catch {}
 
@@ -230,6 +254,7 @@ async function scanWithFilePicker(): Promise<ScanResult> {
             folder: dirHandle.name,
             hidden: false,
             addedAt: Date.now(),
+            cover: meta.cover,
           }
           songs.push(song)
         } else if (isLyricsFile(name)) {

@@ -14,4 +14,5 @@ export interface Song {
   folder: string
   hidden: boolean
   addedAt: number // timestamp
+  cover?: string // data URL
 }

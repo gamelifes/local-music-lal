@@ -174,7 +174,11 @@ export function Player({ onNavigate }: PlayerProps) {
             <div className={`player-cover-outer ${isPlaying ? 'playing' : ''}`}>
               <div className="player-cover">
                 <div className="player-cover-art">
-                  <span className="player-cover-art-icon">♫</span>
+                  {currentSong?.cover ? (
+                    <img src={currentSong.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  ) : (
+                    <span className="player-cover-art-icon">♫</span>
+                  )}
                 </div>
                 <div className="player-cover-grooves"></div>
                 <div className="player-cover-label"><div className="player-cover-label-dot"></div></div>
