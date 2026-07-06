@@ -8,6 +8,7 @@ declare global {
     AndroidBridge?: {
       getPlatform(): string
       getHttpServerPort(): number
+      exitApp(): void
       readdir(path: string): Promise<string>
       readFileChunk(path: string, offset: number, length: number): Promise<string>
       readFileText(path: string): Promise<string>

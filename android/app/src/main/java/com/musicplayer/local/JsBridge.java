@@ -44,6 +44,14 @@ public class JsBridge {
     }
 
     @JavascriptInterface
+    public void exitApp() {
+        activity.runOnUiThread(() -> {
+            activity.finish();
+            System.exit(0);
+        });
+    }
+
+    @JavascriptInterface
     public String readdir(String dirPath) throws Exception {
         JSONArray result = new JSONArray();
         File dir = new File(dirPath);

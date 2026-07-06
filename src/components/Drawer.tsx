@@ -149,6 +149,20 @@ export function Drawer({ open, onClose, activePage, onNavigate }: DrawerProps) {
             </div>
           ))}
         </div>
+        <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '12px', marginTop: 'auto' }}>
+          <div
+            className="drawer-item"
+            onClick={() => {
+              if (window.AndroidBridge) {
+                (window.AndroidBridge).exitApp()
+              } else {
+                window.close()
+              }
+            }}
+          >
+            <span>🚪 退出应用</span>
+          </div>
+        </div>
       </div>
     </>
   )
