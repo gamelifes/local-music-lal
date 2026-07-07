@@ -40,11 +40,12 @@ public class MainActivity extends Activity {
 @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         if (getActionBar() != null) getActionBar().hide();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             getWindow().setStatusBarColor(0xFF0F0F0A);
             getWindow().setNavigationBarColor(0xFF0F0F0A);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -55,8 +56,8 @@ getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             }
         }
 
-webView = new WebView(this);
-setContentView(webView);
+        webView = new WebView(this);
+        setContentView(webView);
 
 WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
