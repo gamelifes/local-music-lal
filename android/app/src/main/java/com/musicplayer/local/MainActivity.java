@@ -55,18 +55,10 @@ getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             }
         }
 
-        webView = new WebView(this);
-        setContentView(webView);
-        }
+webView = new WebView(this);
+setContentView(webView);
 
-        webView = new WebView(this);
-        setContentView(webView);
-        }
-
-        webView = new WebView(this);
-        setContentView(webView);
-
-        WebSettings settings = webView.getSettings();
+WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(true);
