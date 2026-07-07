@@ -5,7 +5,9 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.WindowInsets;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -42,10 +44,13 @@ public class MainActivity extends Activity {
 
         if (getActionBar() != null) getActionBar().hide();
 
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        getWindow().addFlags(
+            WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
+            WindowManager.LayoutParams.FLAG_LAYOUT_FULLSCREEN
+        );
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(0xFF0F0F0A);
+            getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
             getWindow().setNavigationBarColor(0xFF0F0F0A);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 WindowManager.LayoutParams params = getWindow().getAttributes();
@@ -57,6 +62,14 @@ public class MainActivity extends Activity {
 
         webView = new WebView(this);
         setContentView(webView);
+
+        final int statusBarHeight;
+        int resId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        statusBarHeight = resId > 0 ? getResources().getDimensionPixelSize(resId) : 0;
+
+        if (statusBarHeight > 0) {
+            webView.setPadding(0, statusBarHeight, 0, 0);
+        }
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
