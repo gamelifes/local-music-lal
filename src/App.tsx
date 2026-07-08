@@ -77,7 +77,7 @@ function App() {
   }
 
   return (
-    <div className="h-screen bg-[var(--bg)] text-[var(--text)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       {renderPage()}
       {currentPage !== 'player' && <MusicBar onNavigate={navigateTo} />}
       <Drawer
