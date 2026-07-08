@@ -43,13 +43,25 @@ public class JsBridge {
         return httpServerPort;
     }
 
-    @JavascriptInterface
-    public void exitApp() {
-        activity.runOnUiThread(() -> {
-            activity.finish();
-            System.exit(0);
-        });
-    }
+private static final String NAV_DEFAULT = "{\"type\":\"back\",\"source\":\"\"}";
+
+@JavascriptInterface
+public void exitApp() {
+    activity.runOnUiThread(() -> {
+        activity.finish();
+        System.exit(0);
+    });
+}
+
+@JavascriptInterface
+public void close(String entryJson) {
+    activity.runOnUiThread(() -> {
+        String target = entryJson != null && !entryJson.isEmpty() ? entryJson : NAV_DEFAULT;
+        activity.getIntent().putExtra("closeEntry", target);
+        activity.setResult(Activity.RESULT_OK, activity.getIntent());
+        activity.finish();
+    });
+}
 
     @JavascriptInterface
     public String readdir(String dirPath) throws Exception {
