@@ -66,14 +66,7 @@ const handleScanAll = async () => {
      setScanning(false)
      setCompleted(true)
    }
-      const result = await scanDirectoryByPath(pathToScan, entry.folder)
-      if (result.songs.length > 0) { await addSongs(result.songs, result.lyrics); total += result.songs.length }
-    }
-    setScannedCount(total)
-    setCompletedCount(total)
-    setScanning(false)
-    setCompleted(true)
-  }
+
 
 const startScan = async () => {
      if (selectedScanFolders.length === 0) return
@@ -99,14 +92,7 @@ const startScan = async () => {
      setScanning(false)
      setCompleted(true)
    }
-      const result = await scanDirectoryByPath(pathToScan, folderName)
-      if (result.songs.length > 0) { await addSongs(result.songs, result.lyrics); total += result.songs.length }
-    }
-    setScannedCount(total)
-    setCompletedCount(total)
-    setScanning(false)
-    setCompleted(true)
-  }
+
 
   const handleTouchStart = (_folder: string, x: number, y: number) => setSwipeStart({ x, y })
   const handleTouchEnd = (folder: string, x: number, _y: number) => setSwipedFolder(x - swipeStart.x < -60 ? folder : null)
