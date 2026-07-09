@@ -1,28 +1,36 @@
-apply plugin: 'com.android.application'
+ apply plugin: 'com.android.application'
 
-android {
-    namespace "com.musicplayer.local"
-    compileSdk rootProject.ext.compileSdkVersion
-    defaultConfig {
-        applicationId "com.musicplayer.local"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-    }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-    applicationVariants.configureEach { variant ->
-        variant.outputs.configureEach {
-            outputFileName = "LMusic.apk"
-        }
-    }
-}
+ android {
+     namespace "com.musicplayer.local"
+     compileSdk rootProject.ext.compileSdkVersion
+     
+     defaultConfig {
+         applicationId "com.musicplayer.local"
+         minSdkVersion rootProject.ext.minSdkVersion
+         targetSdkVersion rootProject.ext.targetSdkVersion
+         versionCode 1
+         versionName "1.0"
+         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+     }
+     
+     compileOptions {
+         sourceCompatibility JavaVersion.VERSION_11
+         targetCompatibility JavaVersion.VERSION_11
+     }
+     
+     buildTypes {
+         release {
+             minifyEnabled false
+             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+         }
+     }
+     
+     applicationVariants.configureEach { variant ->
+         variant.outputs.configureEach {
+             outputFileName = "LMusic.apk"
+         }
+     }
+ }
 
 repositories {
     flatDir {
