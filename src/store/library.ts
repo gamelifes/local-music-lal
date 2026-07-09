@@ -110,12 +110,16 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
          if (savedSongs) {
            const songs = JSON.parse(savedSongs) as Song[]
            set(state => ({ songs, isLoading: false }))
+         } else {
+           set({ isLoading: false })
          }
          if (savedLyrics) {
            const lyricsObj = JSON.parse(savedLyrics) as Record<string, string>
            const lyrics = new Map<string, string>(Object.entries(lyricsObj))
            set(state => ({ lyrics }))
          }
+         // Note: folders, selectedScanFolders, hiddenIds, playlists cannot be restored from localStorage
+         // User may need to re-scan folders if IndexedDB is completely unavailable
        } catch (localError) {
          console.error('Failed to load from localStorage:', localError)
          set({ isLoading: false })

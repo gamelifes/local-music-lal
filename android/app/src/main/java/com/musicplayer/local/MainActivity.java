@@ -2,6 +2,8 @@ package com.musicplayer.local;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowManager;
 import android.webkit.WebChromeClient;
@@ -33,14 +35,14 @@ public class MainActivity extends Activity {
     private ExecutorService executor;
     private volatile boolean running = true;
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        webView = new WebView(this);
-        setContentView(webView);
-
+     @Override
+     public void onCreate(Bundle savedInstanceState) {
+         super.onCreate(savedInstanceState);
+         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+ 
+         webView = new WebView(this);
+         setContentView(webView);
+ 
          WebSettings settings = webView.getSettings();
          settings.setJavaScriptEnabled(true);
          settings.setDomStorageEnabled(true);
@@ -54,36 +56,67 @@ public class MainActivity extends Activity {
              String databasePath = getApplicationContext().getDir("databases", 0).getPath();
              settings.setDatabasePath(databasePath);
          }
-
-        jsBridge = new JsBridge(this);
-        webView.addJavascriptInterface(jsBridge, "AndroidBridge");
-
-        jsBridge.setDirectoryPickerCallback(path -> {
-            webView.post(() -> {
-                webView.evaluateJavascript(
-                        "window._directoryPicked && window._directoryPicked('" + path.replace("'", "\\'") + "')",
-                        null
-                );
-            });
-        });
-
-        executor = Executors.newFixedThreadPool(4);
-
-        new Thread(() -> {
-            try {
-                serverSocket = new ServerSocket(0);
-                int port = serverSocket.getLocalPort();
-                jsBridge.httpServerPort = port;
-                webView.post(() -> webView.loadUrl("http://127.0.0.1:" + port + "/index.html"));
-
-                while (running) {
-                    final Socket client = serverSocket.accept();
-                    executor.execute(() -> handleClient(client));
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }).start();
+ 
+         jsBridge = new JsBridge(this);
+         webView.addJavascriptInterface(jsBridge, "AndroidBridge");
+ 
+         jsBridge.setDirectoryPickerCallback(path -> {
+             webView.post(() -> {
+                 webView.evaluateJavascript(
+                         "window._directoryPicked && window._directoryPicked('" + path.replace("'", "\\'") + "')",
+                         null
+                 );
+             });
+         });
+ 
+         executor = Executors.newFixedThreadPool(4);
+ 
+         // 使用固定端口或保存的端口以确保 IndexedDB origin 一致
+         new Thread(() -> {
+             try {
+                 ServerSocket socket = null;
+                 int port = 0;
+                 
+                 // 尝试从 SharedPreferences 获取上次使用的端口
+                 SharedPreferences prefs = getApplicationContext().getSharedPreferences("MusicPlayer", 0);
+                 int lastPort = prefs.getInt("serverPort", 0);
+                 
+                 // 尝试绑定到常用端口范围 (8888-8899)
+                 int startPort = lastPort > 0 ? lastPort : 8888;
+                 for (int i = 0; i < 10; i++) {
+                     int tryPort = startPort + i;
+                     if (tryPort > 65535) tryPort = 8888 + i;
+                     try {
+                         socket = new ServerSocket(tryPort);
+                         port = tryPort;
+                         break;
+                     } catch (IOException e) {
+                         // 端口被占用，尝试下一个
+                     }
+                 }
+                 
+                 // 如果都失败了，使用随机端口
+                 if (socket == null) {
+                     socket = new ServerSocket(0);
+                     port = socket.getLocalPort();
+                 }
+                 
+                 serverSocket = socket;
+                 jsBridge.httpServerPort = port;
+                 
+                 // 保存端口供下次使用
+                 prefs.edit().putInt("serverPort", port).apply();
+                 
+                 webView.post(() -> webView.loadUrl("http://127.0.0.1:" + port + "/index.html"));
+ 
+                 while (running) {
+                     final Socket client = serverSocket.accept();
+                     executor.execute(() -> handleClient(client));
+                 }
+             } catch (IOException e) {
+                 e.printStackTrace();
+             }
+         }).start();
 
         webView.setWebViewClient(new WebViewClient() {
             public boolean shouldOverrideUrlLoading(WebView view, String url) { return false; }
