@@ -43,20 +43,29 @@ export function Scan({ onNavigate }: ScanProps) {
     toggleSelectedScanFolder(entry.folder)
   }
 
-  const handleScanAll = async () => {
-    if (scanning || folders.length === 0) return
-    setScanning(true)
-    setCompleted(false)
-    setScannedCount(0)
-    setCompletedCount(0)
-    let total = 0
-    for (const entry of folders) {
-      let pathToScan = entry.path
-      if (!pathToScan) {
-        const existingSong = songs.find(s => s.folder === entry.folder)
-        if (existingSong) pathToScan = existingSong.filePath.replace(/\/[^/]+$/, '')
-        if (!pathToScan) continue
-      }
+const handleScanAll = async () => {
+     if (scanning || folders.length === 0) return
+     setScanning(true)
+     setCompleted(false)
+     setScannedCount(0)
+     setCompletedCount(0)
+     let total = 0
+     for (const entry of folders) {
+       let pathToScan = entry.path
+       if (!pathToScan) {
+         const existingSong = songs.find(s => s.folder === entry.folder)
+         if (existingSong) pathToScan = existingSong.filePath.replace(/\/[^/]+$/, '')
+         if (!pathToScan) continue
+       }
+       const result = await scanDirectoryByPath(pathToScan, entry.folder)
+       await addSongs(result.songs, result.lyrics)
+       total += result.songs.length
+       setScannedCount(total)
+     }
+     setCompletedCount(total)
+     setScanning(false)
+     setCompleted(true)
+   }
       const result = await scanDirectoryByPath(pathToScan, entry.folder)
       if (result.songs.length > 0) { await addSongs(result.songs, result.lyrics); total += result.songs.length }
     }
@@ -66,21 +75,30 @@ export function Scan({ onNavigate }: ScanProps) {
     setCompleted(true)
   }
 
-  const startScan = async () => {
-    if (selectedScanFolders.length === 0) return
-    setScanning(true)
-    setCompleted(false)
-    setScannedCount(0)
-    setCompletedCount(0)
-    let total = 0
-    for (const folderName of selectedScanFolders) {
-      const entry = folders.find(f => f.folder === folderName)
-      let pathToScan = entry?.path
-      if (!pathToScan) {
-        const existingSong = songs.find(s => s.folder === folderName)
-        if (existingSong) pathToScan = existingSong.filePath.replace(/\/[^/]+$/, '')
-        if (!pathToScan) continue
-      }
+const startScan = async () => {
+     if (selectedScanFolders.length === 0) return
+     setScanning(true)
+     setCompleted(false)
+     setScannedCount(0)
+     let total = 0
+     for (const folderName of selectedScanFolders) {
+       const entry = folders.find(f => f.folder === folderName)
+       if (!entry) continue
+       let pathToScan = entry.path
+       if (!pathToScan) {
+         const existingSong = songs.find(s => s.folder === folderName)
+         if (existingSong) pathToScan = existingSong.filePath.replace(/\/[^/]+$/, '')
+         if (!pathToScan) continue
+       }
+       const result = await scanDirectoryByPath(pathToScan, folderName)
+       await addSongs(result.songs, result.lyrics)
+       total += result.songs.length
+       setScannedCount(total)
+     }
+     setCompletedCount(total)
+     setScanning(false)
+     setCompleted(true)
+   }
       const result = await scanDirectoryByPath(pathToScan, folderName)
       if (result.songs.length > 0) { await addSongs(result.songs, result.lyrics); total += result.songs.length }
     }
