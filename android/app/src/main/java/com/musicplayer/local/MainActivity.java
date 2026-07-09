@@ -41,13 +41,19 @@ public class MainActivity extends Activity {
         webView = new WebView(this);
         setContentView(webView);
 
-        WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setAllowFileAccess(true);
-        settings.setMediaPlaybackRequiresUserGesture(false);
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setDatabaseEnabled(true);
+         WebSettings settings = webView.getSettings();
+         settings.setJavaScriptEnabled(true);
+         settings.setDomStorageEnabled(true);
+         settings.setDatabaseEnabled(true);
+         settings.setAllowFileAccess(true);
+         settings.setAllowContentAccess(true);
+         settings.setMediaPlaybackRequiresUserGesture(false);
+         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+         // 设置数据库路径以支持 IndexedDB（API 19+ 已废弃但保留兼容性）
+         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.KITKAT) {
+             String databasePath = getApplicationContext().getDir("databases", 0).getPath();
+             settings.setDatabasePath(databasePath);
+         }
 
         jsBridge = new JsBridge(this);
         webView.addJavascriptInterface(jsBridge, "AndroidBridge");

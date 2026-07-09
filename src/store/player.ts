@@ -168,13 +168,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
 // Start playback
      audio.playSong(nextSong, () => {
-       if (useSleepStore.getState().triggerFinish()) return
-       const state = get()
-if (state.repeatMode === 'one') {
-          get().play(state.currentSong as Song, state.songList)
-        } else {
-          get().nextSong()
-        }
+if (useSleepStore.getState().triggerFinish()) return
+        get().nextSong()
      }, (duration) => {
        set({ duration })
      })
@@ -211,13 +206,8 @@ if (state.repeatMode === 'one') {
 
 // Start playback
        audio.playSong(prevSong, () => {
-         if (useSleepStore.getState().triggerFinish()) return
-         const state = get()
-if (state.repeatMode === 'one') {
-          get().play(state.currentSong as Song, state.songList)
-        } else {
+if (useSleepStore.getState().triggerFinish()) return
           get().nextSong()
-        }
        }, (duration) => {
          set({ duration })
        })

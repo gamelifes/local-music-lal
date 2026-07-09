@@ -3,6 +3,26 @@ import type { Song } from '../types/song'
 import * as db from '../lib/db'
 import { usePlayerStore } from './player'
 
+const LIBRARY_STORAGE_KEY = 'librarySongs'
+const LYRICS_STORAGE_KEY = 'libraryLyrics'
+
+function loadFromLocalStorage<T>(key: string, defaultValue: T): T {
+  try {
+    const item = localStorage.getItem(key)
+    return item ? (JSON.parse(item) as T) : defaultValue
+  } catch {
+    return defaultValue
+  }
+}
+
+function saveToLocalStorage<T>(key: string, value: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // ignore
+  }
+}
+
 interface ScanHistoryEntry {
   folder: string
   path?: string
@@ -50,56 +70,85 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   playlistSongs: new Map(),
   isLoading: false,
 
-  loadSongs: async () => {
-    set({ isLoading: true })
-    const [songs, hiddenIds, lyrics, folderEntries, selectedScanFolders] = await Promise.all([
-      db.getAllSongs(),
-      db.getHiddenSongs(),
-      db.getAllLyrics(),
-      db.getScanHistory(),
-      db.loadSelectedScanFolders(),
-    ])
+   loadSongs: async () => {
+     set({ isLoading: true })
+     try {
+       const [songs, hiddenIds, lyrics, folderEntries, selectedScanFolders] = await Promise.all([
+         db.getAllSongs(),
+         db.getHiddenSongs(),
+         db.getAllLyrics(),
+         db.getScanHistory(),
+         db.loadSelectedScanFolders(),
+       ])
 
-    const folders = folderEntries.map(e => ({ folder: e.folder, path: (e as any).path || '' }))
+       const folders = folderEntries.map(e => ({ folder: e.folder, path: (e as any).path || '' }))
 
-    const playlistsRaw = await db.getAllPlaylistsRaw()
-    const allSongRows = await db.getAllPlaylistSongRows()
-    const playlistSongsMap = new Map<string, string[]>()
-    for (const row of allSongRows) {
-      const arr = playlistSongsMap.get(row.playlistId) || []
-      arr.push(row.songId)
-      playlistSongsMap.set(row.playlistId, arr)
-    }
+       const playlistsRaw = await db.getAllPlaylistsRaw()
+       const allSongRows = await db.getAllPlaylistSongRows()
+       const playlistSongsMap = new Map<string, string[]>()
+       for (const row of allSongRows) {
+         const arr = playlistSongsMap.get(row.playlistId) || []
+         arr.push(row.songId)
+         playlistSongsMap.set(row.playlistId, arr)
+       }
 
-    const playlists = playlistsRaw.map((pl: any) => ({
-      id: pl.id,
-      name: pl.name,
-      createdAt: pl.createdAt,
-      updatedAt: pl.updatedAt,
-        songs: ((playlistSongsMap.get(pl.id) || []) as string[]).map((id) => songs.find((s) => s.id === id)).filter(Boolean) as Song[],
-    }))
+       const playlists = playlistsRaw.map((pl: any) => ({
+         id: pl.id,
+         name: pl.name,
+         createdAt: pl.createdAt,
+         updatedAt: pl.updatedAt,
+           songs: ((playlistSongsMap.get(pl.id) || []) as string[]).map((id) => songs.find((s) => s.id === id)).filter(Boolean) as Song[],
+       }))
 
-    set({ songs, hiddenIds, lyrics, folders, selectedScanFolders, playlists, playlistSongs: playlistSongsMap, isLoading: false })
-  },
+       set({ songs, hiddenIds, lyrics, folders, selectedScanFolders, playlists, playlistSongs: playlistSongsMap, isLoading: false })
+     } catch (error) {
+       console.error('Failed to load songs from IndexedDB, falling back to localStorage:', error)
+       // Fallback to localStorage
+       try {
+         const savedSongs = localStorage.getItem(LIBRARY_STORAGE_KEY)
+         const savedLyrics = localStorage.getItem(LYRICS_STORAGE_KEY)
+         if (savedSongs) {
+           const songs = JSON.parse(savedSongs) as Song[]
+           set(state => ({ songs, isLoading: false }))
+         }
+         if (savedLyrics) {
+           const lyricsObj = JSON.parse(savedLyrics) as Record<string, string>
+           const lyrics = new Map<string, string>(Object.entries(lyricsObj))
+           set(state => ({ lyrics }))
+         }
+       } catch (localError) {
+         console.error('Failed to load from localStorage:', localError)
+         set({ isLoading: false })
+       }
+     }
+   },
 
-  addSongs: async (songs, lyrics) => {
-    const existingSongs = get().songs
-    const existingIds = new Set(existingSongs.map(s => s.id))
-    const newSongs = songs.filter(s => !existingIds.has(s.id))
+addSongs: async (songs, lyrics) => {
+     const existingSongs = get().songs
+     const existingIds = new Set(existingSongs.map(s => s.id))
+     const newSongs = songs.filter(s => !existingIds.has(s.id))
 
-    if (newSongs.length > 0) {
-      await db.addSongs(newSongs)
-    }
+     if (newSongs.length > 0) {
+       await db.addSongs(newSongs)
+     }
 
-    if (lyrics && lyrics.size > 0) {
-      await db.saveLyrics(lyrics)
-    }
+     if (lyrics && lyrics.size > 0) {
+       await db.saveLyrics(lyrics)
+     }
 
-    set(state => ({
-      songs: newSongs.length > 0 ? [...state.songs, ...newSongs] : state.songs,
-      lyrics: lyrics ? new Map([...state.lyrics, ...lyrics]) : state.lyrics,
-    }))
-  },
+     set(state => ({
+       songs: newSongs.length > 0 ? [...state.songs, ...newSongs] : state.songs,
+       lyrics: lyrics ? new Map([...state.lyrics, ...lyrics]) : state.lyrics,
+     }))
+
+     // Persist to localStorage as fallback
+     const allSongs = get().songs
+     saveToLocalStorage(LIBRARY_STORAGE_KEY, allSongs)
+     const allLyrics = get().lyrics
+     // Convert Map to serializable object
+     const lyricsObj = Object.fromEntries(allLyrics)
+     saveToLocalStorage(LYRICS_STORAGE_KEY, lyricsObj)
+   },
 
   updateSongDuration: async (songId, duration) => {
     const song = get().songs.find(s => s.id === songId)
