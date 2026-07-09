@@ -15,6 +15,7 @@ interface SongTableProps {
   showIndex?: boolean
   indexWidth?: number
   emptyState?: ReactNode
+  highlightId?: string | null
 }
 
 function formatDuration(seconds: number): string {
@@ -27,7 +28,7 @@ function formatDuration(seconds: number): string {
 export function SongTable({
   title, onBack, onMenu, rightAction, songs, columns,
   onPlaySong, extraColumns, renderSong,
-  showIndex = false, indexWidth = 36, emptyState
+  showIndex = false, indexWidth = 36, emptyState, highlightId = null
 }: SongTableProps) {
   const { currentSong } = usePlayerStore()
   const colCount = (showIndex ? 1 : 0) + columns.length + (extraColumns ? 1 : 0)
@@ -80,7 +81,7 @@ export function SongTable({
 <tr
                    id={song.id}
                    key={song.id}
-                   className={currentSong?.id === song.id ? 'song-playing' : ''}
+                   className={`${currentSong?.id === song.id ? 'song-playing' : ''} ${highlightId === song.id ? 'highlight' : ''}`.trim()}
                    onClick={() => onPlaySong?.(song)}
                    style={{ cursor: onPlaySong ? 'pointer' : undefined }}
                  >

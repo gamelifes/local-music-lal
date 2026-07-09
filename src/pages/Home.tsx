@@ -14,65 +14,77 @@ export function Home({ onNavigate, onToggleDrawer }: HomeProps) {
   const { songs, hiddenIds } = useLibraryStore()
   const { play, currentSong } = usePlayerStore()
   const [addSong, setAddSong] = useState<Song | null>(null)
+  const [highlightId, setHighlightId] = useState<string | null>(null)
 
   const visibleSongs = songs.filter(s => !hiddenIds.has(s.filePath))
 
-  useEffect(() => {
+useEffect(() => {
     if (currentSong) {
-      const el = document.getElementById(currentSong.id ?? '')
+      setHighlightId(currentSong.id);
+      const el = document.getElementById(currentSong.id ?? '');
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
+    } else {
+      setHighlightId(null);
     }
   }, [currentSong])
 
-  const scrollToCurrent = () => {
-    if (currentSong) {
-      const el = document.getElementById(currentSong.id ?? '')
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }
+const scrollToCurrent = () => {
+  if (currentSong) {
+    const el = document.getElementById(currentSong.id ?? '');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
+}
 
-  return (
+
+    return (
     <>
-      <SongTable
-        title="本地音乐"
-        onMenu={onToggleDrawer}
-        rightAction={
-          <button
-            onClick={scrollToCurrent}
-            style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: '20px', cursor: 'pointer', padding: '0 4px' }}
-          >
-            定位
-          </button>
-        }
-        songs={visibleSongs}
-        columns={[
-          { label: '歌名' },
-          { label: '歌手' },
-          { label: '时长', width: 60 }
-        ]}
-        extraColumns={(song) => (
-          <button
-            onClick={(e) => { e.stopPropagation(); setAddSong(song) }}
-            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '16px', padding: '4px' }}
-          >
-            +
-          </button>
-        )}
-        emptyState={
-          <div>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>📁</div>
-            <div style={{ marginBottom: '16px' }}>还没有歌曲</div>
-            <button className="btn primary" onClick={() => onNavigate('scan')}>
-              去扫描
-            </button>
-          </div>
-        }
-        onPlaySong={(song) => play(song, visibleSongs)}
-      />
+<SongTable
+  title="本地音乐"
+  onMenu={onToggleDrawer}
+  rightAction={
+<button
+  onClick={scrollToCurrent}
+  style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer' }}
+>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="12" y1="2" x2="12" y2="6"></line>
+    <line x1="12" y1="18" x2="12" y2="22"></line>
+    <line x1="2" y1="12" x2="6" y2="12"></line>
+    <line x1="18" y1="12" x2="22" y2="12"></line>
+  </svg>
+</button>
+  }
+  songs={visibleSongs}
+  columns={[
+    { label: '歌名' },
+    { label: '歌手' },
+    { label: '时长', width: 60 }
+  ]}
+  extraColumns={(song) => (
+    <button
+      onClick={(e) => { e.stopPropagation(); setAddSong(song) }}
+      style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '16px', padding: '4px' }}
+    >
+      +
+    </button>
+  )}
+  emptyState={
+    <div>
+      <div style={{ fontSize: '48px', marginBottom: '12px' }}>📁</div>
+      <div style={{ marginBottom: '16px' }}>还没有歌曲</div>
+      <button className="btn primary" onClick={() => onNavigate('scan')}>
+        去扫描
+      </button>
+    </div>
+  }
+  onPlaySong={(song) => play(song, visibleSongs)}
+  highlightId={highlightId}
+/>
       {addSong && <AddToPlaylistModal song={addSong} onClose={() => setAddSong(null)} />}
     </>
   )
