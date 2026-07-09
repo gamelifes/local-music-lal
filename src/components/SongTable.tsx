@@ -1,4 +1,4 @@
-﻿import type { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { usePlayerStore } from '../store/player'
 import type { Song } from '../types/song'
 
@@ -77,12 +77,13 @@ export function SongTable({
             ) : (
               songs.map((song, index) => (
                 renderSong ? renderSong(song, index) : (
-                  <tr
-                    key={song.id}
-                    className={currentSong?.id === song.id ? 'song-playing' : ''}
-                    onClick={() => onPlaySong?.(song)}
-                    style={{ cursor: onPlaySong ? 'pointer' : undefined }}
-                  >
+<tr
+                   id={song.id}
+                   key={song.id}
+                   className={currentSong?.id === song.id ? 'song-playing' : ''}
+                   onClick={() => onPlaySong?.(song)}
+                   style={{ cursor: onPlaySong ? 'pointer' : undefined }}
+                 >
                     {showIndex && (
                       <td className="col-index" style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
                         {index + 1}
