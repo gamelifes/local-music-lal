@@ -166,18 +166,18 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       lyrics
     })
 
-    // Start playback
-    audio.playSong(nextSong, () => {
-      if (useSleepStore.getState().triggerFinish()) return
-      const state = get()
-      if (state.currentIndex < state.songList.length - 1) {
-        get().nextSong()
-      } else {
-        set({ isPlaying: false, progress: 0, currentTime: 0 })
-      }
-    }, (duration) => {
-      set({ duration })
-    })
+// Start playback
+     audio.playSong(nextSong, () => {
+       if (useSleepStore.getState().triggerFinish()) return
+       const state = get()
+if (state.repeatMode === 'one') {
+          get().play(state.currentSong as Song, state.songList)
+        } else {
+          get().nextSong()
+        }
+     }, (duration) => {
+       set({ duration })
+     })
   },
   prevSong: async () => {
     const { songList, currentIndex, currentTime } = get()
@@ -209,18 +209,18 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         lyrics
       })
 
-      // Start playback
-      audio.playSong(prevSong, () => {
-        if (useSleepStore.getState().triggerFinish()) return
-        const state = get()
-        if (state.currentIndex < state.songList.length - 1) {
-          get().nextSong()
+// Start playback
+       audio.playSong(prevSong, () => {
+         if (useSleepStore.getState().triggerFinish()) return
+         const state = get()
+if (state.repeatMode === 'one') {
+          get().play(state.currentSong as Song, state.songList)
         } else {
-          set({ isPlaying: false, progress: 0, currentTime: 0 })
+          get().nextSong()
         }
-      }, (duration) => {
-        set({ duration })
-      })
+       }, (duration) => {
+         set({ duration })
+       })
     }
   },
   seek: (position) => {
