@@ -280,10 +280,19 @@ export function Player({ onNavigate }: PlayerProps) {
 
       {/* Progress Bar */}
       <div className="player-progress">
-        <div className="player-progress-bar" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); usePlayerStore.getState().seek(Math.round((e.clientX - r.left) / r.width * 100)) }}>
-          <div className="player-progress-fill" style={{ width: `${prog}%` }}>
-            <div className="player-progress-thumb"></div>
-          </div>
+        <div className="player-progress-track">
+          <div className="player-progress-fill" style={{ width: `${prog}%` }} />
+          <input
+            type="range"
+            className="player-progress-range"
+            min="0"
+            max="100"
+            value={prog}
+            onChange={(e) => {
+              const val = parseInt(e.target.value)
+              usePlayerStore.getState().seek(val)
+            }}
+          />
         </div>
         <div className="player-progress-time">
           <span>{fmt(currentTime)}</span>
