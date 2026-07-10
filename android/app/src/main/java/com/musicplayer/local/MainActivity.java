@@ -51,11 +51,13 @@ public class MainActivity extends Activity {
          settings.setAllowContentAccess(true);
          settings.setMediaPlaybackRequiresUserGesture(false);
          settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-         // 设置数据库路径以支持 IndexedDB（API 19+ 已废弃但保留兼容性）
-         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.KITKAT) {
-             String databasePath = getApplicationContext().getDir("databases", 0).getPath();
-             settings.setDatabasePath(databasePath);
-         }
+          // 设置数据库路径以支持 IndexedDB（对所有 API 级别尝试设置）
+          try {
+              String databasePath = getApplicationContext().getDir("databases", 0).getPath();
+              settings.setDatabasePath(databasePath);
+          } catch (Throwable t) {
+              // 忽略：某些版本可能不支持
+          }
  
          jsBridge = new JsBridge(this);
          webView.addJavascriptInterface(jsBridge, "AndroidBridge");
@@ -101,13 +103,14 @@ public class MainActivity extends Activity {
                      port = socket.getLocalPort();
                  }
                  
-                 serverSocket = socket;
-                 jsBridge.httpServerPort = port;
-                 
-                 // 保存端口供下次使用
-                 prefs.edit().putInt("serverPort", port).apply();
-                 
-                 webView.post(() -> webView.loadUrl("http://127.0.0.1:" + port + "/index.html"));
+serverSocket = socket;
+                  jsBridge.httpServerPort = port;
+
+                  final int httpPort = port;
+                  // 保存端口供下次使用
+                  prefs.edit().putInt("serverPort", port).apply();
+
+                  webView.post(() -> webView.loadUrl("http://127.0.0.1:" + httpPort + "/index.html"));
  
                  while (running) {
                      final Socket client = serverSocket.accept();
