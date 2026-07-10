@@ -8,30 +8,31 @@ interface PlayerProps {
   onNavigate: (page: string) => void
 }
 
-export function Player({ onNavigate }: PlayerProps) {
-  const { currentSong, isPlaying, togglePlay, nextSong, prevSong, progress, updateProgress, viewMode, setViewMode, activeLine, activeWord, setActiveLine, setActiveWord, currentTime, duration, lyrics, repeatMode, toggleRepeatMode, volume, setVolume } = usePlayerStore()
-  const { openModal } = useAppStore()
-  const { hideSong } = useLibraryStore()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [queueOpen, setQueueOpen] = useState(false)
-  const [volumeOpen, setVolumeOpen] = useState(false)
-  const [swipeStart, setSwipeStart] = useState({ x: 0, y: 0 })
-  const [swipeDir, setSwipeDir] = useState<'h' | 'v' | null>(null)
-  const swipeStartVolume = useRef(0)
-  const volumeDragging = useRef(false)
-  const volumeBarRef = useRef<HTMLDivElement>(null)
-  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const lyricsContainerRef = useRef<HTMLDivElement>(null)
+ export function Player({ onNavigate }: PlayerProps) {
+   const { currentSong, isPlaying, togglePlay, nextSong, prevSong, progress, updateProgress, viewMode, setViewMode, activeLine, activeWord, setActiveLine, setActiveWord, currentTime, duration, lyrics, repeatMode, toggleRepeatMode, volume, setVolume } = usePlayerStore()
+   const { openModal } = useAppStore()
+   const { hideSong } = useLibraryStore()
+   const [menuOpen, setMenuOpen] = useState(false)
+   const [queueOpen, setQueueOpen] = useState(false)
+   const [volumeOpen, setVolumeOpen] = useState(false)
+   const [swipeStart, setSwipeStart] = useState({ x: 0, y: 0 })
+   const [swipeDir, setSwipeDir] = useState<'h' | 'v' | null>(null)
+   const [isDraggingProgress, setIsDraggingProgress] = useState(false)
+   const swipeStartVolume = useRef(0)
+   const volumeDragging = useRef(false)
+   const volumeBarRef = useRef<HTMLDivElement>(null)
+   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
+   const lyricsContainerRef = useRef<HTMLDivElement>(null)
 
-  // Progress update
-  useEffect(() => {
-    if (isPlaying) {
-      progressRef.current = setInterval(updateProgress, 250)
-    } else {
-      if (progressRef.current) { clearInterval(progressRef.current); progressRef.current = null }
-    }
-    return () => { if (progressRef.current) clearInterval(progressRef.current) }
-  }, [isPlaying, updateProgress])
+   // Progress update
+   useEffect(() => {
+     if (isPlaying && !isDraggingProgress) {
+       progressRef.current = setInterval(updateProgress, 250)
+     } else {
+       if (progressRef.current) { clearInterval(progressRef.current); progressRef.current = null }
+     }
+     return () => { if (progressRef.current) clearInterval(progressRef.current) }
+   }, [isPlaying, isDraggingProgress, updateProgress])
 
   // Auto-scroll lyrics when active line changes
   useEffect(() => {
@@ -288,8 +289,21 @@ export function Player({ onNavigate }: PlayerProps) {
             min="0"
             max="100"
             value={prog}
-            onChange={(e) => {
-              const val = parseInt(e.target.value)
+            onMouseDown={() => setIsDraggingProgress(true)}
+            onTouchStart={() => setIsDraggingProgress(true)}
+            onMouseUp={(e) => {
+              setIsDraggingProgress(false)
+              const val = parseInt(e.currentTarget.value)
+              usePlayerStore.getState().seek(val)
+            }}
+            onTouchEnd={(e) => {
+              setIsDraggingProgress(false)
+              const val = parseInt((e.target as HTMLInputElement).value)
+              usePlayerStore.getState().seek(val)
+            }}
+            onInput={(e) => {
+              if (!isDraggingProgress) return
+              const val = parseInt(e.currentTarget.value)
               usePlayerStore.getState().seek(val)
             }}
           />
