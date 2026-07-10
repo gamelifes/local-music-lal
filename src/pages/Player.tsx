@@ -18,6 +18,7 @@ interface PlayerProps {
    const [swipeStart, setSwipeStart] = useState({ x: 0, y: 0 })
    const [swipeDir, setSwipeDir] = useState<'h' | 'v' | null>(null)
    const [isDraggingProgress, setIsDraggingProgress] = useState(false)
+   const [dragProgress, setDragProgress] = useState<number | null>(null)
    const swipeStartVolume = useRef(0)
    const volumeDragging = useRef(false)
    const volumeBarRef = useRef<HTMLDivElement>(null)
@@ -279,32 +280,44 @@ interface PlayerProps {
         </button>
       </div>
 
-      {/* Progress Bar */}
+       {/* Progress Bar */}
       <div className="player-progress">
         <div className="player-progress-track">
-          <div className="player-progress-fill" style={{ width: `${prog}%` }} />
+          <div className="player-progress-fill" style={{ width: `${isDraggingProgress && dragProgress !== null ? dragProgress : prog}%` }} />
           <input
             type="range"
             className="player-progress-range"
             min="0"
             max="100"
-            value={prog}
-            onMouseDown={() => setIsDraggingProgress(true)}
-            onTouchStart={() => setIsDraggingProgress(true)}
+            value={isDraggingProgress && dragProgress !== null ? dragProgress : prog}
+            onMouseDown={(e) => {
+              setIsDraggingProgress(true)
+              setDragProgress(prog)
+            }}
+            onTouchStart={(e) => {
+              setIsDraggingProgress(true)
+              setDragProgress(prog)
+            }}
             onMouseUp={(e) => {
-              setIsDraggingProgress(false)
-              const val = parseInt(e.currentTarget.value)
-              usePlayerStore.getState().seek(val)
+              const val = dragProgress !== null ? dragProgress : parseInt(e.currentTarget.value)
+              if (!isNaN(val)) {
+                usePlayerStore.getState().seek(val)
+              }
+              setDragProgress(null)
+              setTimeout(() => setIsDraggingProgress(false), 300)
             }}
             onTouchEnd={(e) => {
-              setIsDraggingProgress(false)
-              const val = parseInt((e.target as HTMLInputElement).value)
-              usePlayerStore.getState().seek(val)
+              const val = dragProgress !== null ? dragProgress : parseInt(e.currentTarget.value)
+              if (!isNaN(val)) {
+                usePlayerStore.getState().seek(val)
+              }
+              setDragProgress(null)
+              setTimeout(() => setIsDraggingProgress(false), 300)
             }}
             onInput={(e) => {
               if (!isDraggingProgress) return
               const val = parseInt(e.currentTarget.value)
-              usePlayerStore.getState().seek(val)
+              setDragProgress(val)
             }}
           />
         </div>

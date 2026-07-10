@@ -140,18 +140,17 @@ addSongs: async (songs, lyrics) => {
        await db.saveLyrics(lyrics)
      }
 
-     set(state => ({
-       songs: newSongs.length > 0 ? [...state.songs, ...newSongs] : state.songs,
-       lyrics: lyrics ? new Map([...state.lyrics, ...lyrics]) : state.lyrics,
-     }))
+      // Merge updated state for both songs and lyrics
+      const mergedSongs = newSongs.length > 0 ? [...existingSongs, ...newSongs] : existingSongs
+      const mergedLyrics = lyrics ? new Map([...get().lyrics, ...lyrics]) : get().lyrics
 
-     // Persist to localStorage as fallback
-     const allSongs = get().songs
-     saveToLocalStorage(LIBRARY_STORAGE_KEY, allSongs)
-     const allLyrics = get().lyrics
-     // Convert Map to serializable object
-     const lyricsObj = Object.fromEntries(allLyrics)
-     saveToLocalStorage(LYRICS_STORAGE_KEY, lyricsObj)
+      // Update state with merged data
+      set({ songs: mergedSongs, lyrics: mergedLyrics })
+
+      // Persist to localStorage as fallback using the same merged data
+      saveToLocalStorage(LIBRARY_STORAGE_KEY, mergedSongs)
+      const lyricsObj = Object.fromEntries(mergedLyrics)
+      saveToLocalStorage(LYRICS_STORAGE_KEY, lyricsObj)
    },
 
   updateSongDuration: async (songId, duration) => {
