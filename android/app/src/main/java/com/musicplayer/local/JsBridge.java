@@ -2,9 +2,15 @@ package com.musicplayer.local;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.webkit.JavascriptInterface;
 import android.provider.DocumentsContract;
+import android.provider.Settings;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -28,6 +34,8 @@ public class JsBridge {
     public JsBridge(Activity activity) {
         this.activity = activity;
     }
+
+    private static final int PERMISSION_REQUEST_CODE = 10001;
 
     public void setDirectoryPickerCallback(DirectoryPickerCallback cb) {
         this.callback = cb;
@@ -124,6 +132,65 @@ public void close(String entryJson) {
     public long getFileSize(String filePath) {
         File file = new File(filePath);
         return file.exists() ? file.length() : 0;
+    }
+
+    @JavascriptInterface
+    public boolean checkStoragePermission() {
+        String perm;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            perm = android.Manifest.permission.READ_MEDIA_AUDIO;
+        } else {
+            perm = android.Manifest.permission.READ_EXTERNAL_STORAGE;
+        }
+        return ContextCompat.checkSelfPermission(activity, perm) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    @JavascriptInterface
+    public void requestStoragePermission() {
+        activity.runOnUiThread(() -> {
+            String[] perms;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                perms = new String[]{
+                    android.Manifest.permission.READ_MEDIA_AUDIO
+                };
+            } else {
+                perms = new String[]{
+                    android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                };
+            }
+            ActivityCompat.requestPermissions(activity, perms, PERMISSION_REQUEST_CODE);
+        });
+    }
+
+    @JavascriptInterface
+    public void openAppSettings() {
+        activity.runOnUiThread(() -> {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.fromParts("package", activity.getPackageName(), null));
+            activity.startActivity(intent);
+        });
+    }
+
+    public void handlePermissionResult(int requestCode, int[] grantResults) {
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            final String result = granted ? "granted" : "denied";
+            final android.webkit.WebView wv = getWebView();
+            if (wv != null) {
+                activity.runOnUiThread(() -> wv.evaluateJavascript("window._onPermissionResult('" + result + "')", null));
+            }
+        }
+    }
+
+    private android.webkit.WebView getWebView() {
+        try {
+            java.lang.reflect.Field f = activity.getClass().getDeclaredField("webView");
+            f.setAccessible(true);
+            return (android.webkit.WebView) f.get(activity);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @JavascriptInterface

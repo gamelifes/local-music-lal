@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLibraryStore } from '../store/library'
 import { pickDirectory, scanDirectoryByPath } from '../lib/scanner'
+import { Capacitor } from '../lib/capacitor-shim'
 
 interface ScanProps {
   onNavigate: (page: string) => void
@@ -26,6 +27,13 @@ export function Scan({ onNavigate }: ScanProps) {
   }
 
   const handleAddFolder = async () => {
+    if (!Capacitor.checkStoragePermission()) {
+      const granted = await Capacitor.requestStoragePermission()
+      if (!granted) {
+        Capacitor.openAppSettings()
+        return
+      }
+    }
     const picked = await pickDirectory()
     if (picked) {
       const isNew = !folders.some(f => f.folder === picked.folderName)

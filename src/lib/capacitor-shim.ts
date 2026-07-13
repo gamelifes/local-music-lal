@@ -5,6 +5,7 @@
 
 declare global {
   interface Window {
+    _onPermissionResult?: (result: string) => void
     AndroidBridge?: {
       getPlatform(): string
       getHttpServerPort(): number
@@ -14,6 +15,9 @@ declare global {
       readFileText(path: string): Promise<string>
       getFileSize(path: string): Promise<number>
       pickDirectory(): Promise<string>
+      checkStoragePermission(): boolean
+      requestStoragePermission(): void
+      openAppSettings(): void
     }
   }
 }
@@ -58,6 +62,27 @@ export const Capacitor = {
       if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) return 'ios'
     }
     return 'web'
+  },
+
+  checkStoragePermission(): boolean {
+    if (window.AndroidBridge) return window.AndroidBridge.checkStoragePermission()
+    return true
+  },
+
+  requestStoragePermission(): Promise<boolean> {
+    const bridge = window.AndroidBridge
+    if (!bridge) return Promise.resolve(true)
+    return new Promise((resolve) => {
+      window._onPermissionResult = (result: string) => {
+        delete (window as any)._onPermissionResult
+        resolve(result === 'granted')
+      }
+      bridge.requestStoragePermission()
+    })
+  },
+
+  openAppSettings(): void {
+    if (window.AndroidBridge) window.AndroidBridge.openAppSettings()
   }
 }
 
