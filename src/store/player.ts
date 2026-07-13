@@ -6,6 +6,8 @@ import * as audio from '../lib/audio'
 import { useLibraryStore } from './library'
 import { useSleepStore } from './sleep'
 
+let lastSeekTime = 0
+
 interface PlayerState {
   currentSong: Song | null
   songList: Song[]
@@ -222,6 +224,7 @@ if (useSleepStore.getState().triggerFinish()) return
   seek: (position) => {
     const { duration } = get()
     const seekTime = (position / 100) * duration
+    lastSeekTime = Date.now()
     audio.seek(seekTime)
     set({ progress: position, currentTime: seekTime })
   },
@@ -232,6 +235,7 @@ if (useSleepStore.getState().triggerFinish()) return
   updateProgress: () => {
     const { isPlaying, lyrics } = get()
     if (!isPlaying) return
+    if (Date.now() - lastSeekTime < 500) return
 
     const position = audio.getPosition()
     const duration = audio.getDuration()
