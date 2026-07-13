@@ -8,6 +8,8 @@ import { useSleepStore } from './sleep'
 
 let lastSeekTime = 0
 let seekTarget: number | null = null
+let progressBaseTime = 0
+let progressBasePos = 0
 
 interface PlayerState {
   currentSong: Song | null
@@ -76,6 +78,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
 
     // Set state first - use song's duration from DB if available
+    progressBaseTime = Date.now()
+    progressBasePos = 0
+    seekTarget = null
     set({
       currentSong: song,
       songList,
@@ -157,6 +162,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
 
     // Set state first
+    progressBaseTime = Date.now()
+    progressBasePos = 0
+    seekTarget = null
     set({
       currentSong: nextSong,
       currentIndex: nextIndex,
@@ -186,6 +194,9 @@ if (useSleepStore.getState().triggerFinish()) return
   prevSong: async () => {
     const { songList, currentIndex, currentTime } = get()
     if (currentTime > 3) {
+      progressBaseTime = Date.now()
+      progressBasePos = 0
+      seekTarget = null
       audio.seek(0)
       set({ progress: 0, currentTime: 0 })
     } else if (currentIndex > 0) {
@@ -201,6 +212,9 @@ if (useSleepStore.getState().triggerFinish()) return
       }
 
       // Set state first
+      progressBaseTime = Date.now()
+      progressBasePos = 0
+      seekTarget = null
       set({
         currentSong: prevSong,
         currentIndex: prevIndex,
@@ -223,10 +237,13 @@ if (useSleepStore.getState().triggerFinish()) return
     }
   },
   seek: (position) => {
-    const { duration } = get()
+    const duration = audio.getDuration() || get().duration
+    if (duration === 0) return
     const seekTime = (position / 100) * duration
     lastSeekTime = Date.now()
     seekTarget = position
+    progressBaseTime = Date.now()
+    progressBasePos = seekTime
     audio.seek(seekTime)
     set({ progress: position, currentTime: seekTime })
   },
@@ -238,21 +255,13 @@ if (useSleepStore.getState().triggerFinish()) return
     const { isPlaying, lyrics } = get()
     if (!isPlaying) return
 
-    const position = audio.getPosition()
-    const duration = audio.getDuration()
+    const duration = audio.getDuration() || get().duration
     if (duration === 0) return
 
-    const audioProgress = (position / duration) * 100
+    const elapsed = (Date.now() - progressBaseTime) / 1000
+    const position = Math.min(progressBasePos + elapsed, duration)
+    const progress = (position / duration) * 100
 
-    if (seekTarget !== null) {
-      if (Math.abs(audioProgress - seekTarget) < 3 || Date.now() - lastSeekTime > 3000) {
-        seekTarget = null
-      } else {
-        return
-      }
-    }
-
-    // Update karaoke state based on lyrics
     let newActiveLine = 0
     let newActiveWord = -1
 
@@ -275,7 +284,7 @@ if (useSleepStore.getState().triggerFinish()) return
       }
     }
 
-    set({ progress: audioProgress, currentTime: position, duration, activeLine: newActiveLine, activeWord: newActiveWord })
+    set({ progress, currentTime: position, duration, activeLine: newActiveLine, activeWord: newActiveWord })
   },
   setVolume: (volume) => { audio.setVolume(volume); set({ volume }) },
   setViewMode: (mode) => set({ viewMode: mode }),
