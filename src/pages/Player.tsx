@@ -17,8 +17,8 @@ interface PlayerProps {
    const [volumeOpen, setVolumeOpen] = useState(false)
    const [swipeStart, setSwipeStart] = useState({ x: 0, y: 0 })
    const [swipeDir, setSwipeDir] = useState<'h' | 'v' | null>(null)
-   const [isDraggingProgress, setIsDraggingProgress] = useState(false)
-   const rangeRef = useRef<HTMLInputElement>(null)
+   const progressDragging = useRef(false)
+   const progressBarRef = useRef<HTMLDivElement>(null)
    const swipeStartVolume = useRef(0)
    const volumeDragging = useRef(false)
    const volumeBarRef = useRef<HTMLDivElement>(null)
@@ -27,13 +27,13 @@ interface PlayerProps {
 
    // Progress update
    useEffect(() => {
-     if (isPlaying && !isDraggingProgress) {
+     if (isPlaying) {
        progressRef.current = setInterval(updateProgress, 250)
      } else {
        if (progressRef.current) { clearInterval(progressRef.current); progressRef.current = null }
      }
      return () => { if (progressRef.current) clearInterval(progressRef.current) }
-   }, [isPlaying, isDraggingProgress, updateProgress])
+   }, [isPlaying, updateProgress])
 
   // Auto-scroll lyrics when active line changes
   useEffect(() => {
@@ -89,6 +89,34 @@ interface PlayerProps {
     }
   }, [handleVolumeFromEvent])
 
+  // Progress bar drag handlers (same pattern as volume)
+  const handleProgressFromEvent = useCallback((clientX: number) => {
+    if (!progressBarRef.current) return
+    const r = progressBarRef.current.getBoundingClientRect()
+    const pct = Math.max(0, Math.min(100, Math.round(((clientX - r.left) / r.width) * 100)))
+    usePlayerStore.getState().seek(pct)
+  }, [])
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!progressDragging.current) return
+      e.preventDefault()
+      const x = 'touches' in e ? e.touches[0].clientX : e.clientX
+      handleProgressFromEvent(x)
+    }
+    const onUp = () => { progressDragging.current = false }
+    window.addEventListener('mousemove', onMove, { passive: false })
+    window.addEventListener('mouseup', onUp)
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchend', onUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', onUp)
+    }
+  }, [handleProgressFromEvent])
+
   // Cover area swipe → view switch (horizontal) or volume (vertical)
   const onStart = (x: number, y: number) => { setSwipeStart({ x, y }); setSwipeDir(null); swipeStartVolume.current = usePlayerStore.getState().volume }
   const onMove = (x: number, y: number) => {
@@ -134,13 +162,6 @@ interface PlayerProps {
 
    const prog = progress
    const fmt = (s: number) => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0')
-
-   // Sync range input value from store when not dragging
-   useEffect(() => {
-     if (!isDraggingProgress && rangeRef.current) {
-       rangeRef.current.value = String(Math.round(prog))
-     }
-   }, [prog, isDraggingProgress])
 
    return (
     <div className="page active player-page">
@@ -289,34 +310,16 @@ interface PlayerProps {
 
        {/* Progress Bar */}
       <div className="player-progress">
-        <div className="player-progress-track">
-          <div className="player-progress-fill" style={{ width: `${prog}%` }} />
-          <input
-            ref={rangeRef}
-            type="range"
-            className="player-progress-range"
-            min="0"
-            max="100"
-            defaultValue={Math.round(prog)}
-            onInput={(e) => {
-              if (!isDraggingProgress) return
-              const val = parseInt((e.target as HTMLInputElement).value)
-              const fill = document.querySelector('.player-progress-fill') as HTMLElement
-              if (fill) fill.style.width = `${val}%`
-            }}
-            onMouseDown={() => setIsDraggingProgress(true)}
-            onTouchStart={() => setIsDraggingProgress(true)}
-            onMouseUp={(e) => {
-              const val = parseInt((e.target as HTMLInputElement).value)
-              usePlayerStore.getState().seek(val)
-              setIsDraggingProgress(false)
-            }}
-            onTouchEnd={(e) => {
-              const val = parseInt((e.target as HTMLInputElement).value)
-              usePlayerStore.getState().seek(val)
-              setIsDraggingProgress(false)
-            }}
-          />
+        <div
+          ref={progressBarRef}
+          className="player-progress-track"
+          onClick={(e) => handleProgressFromEvent(e.clientX)}
+          onMouseDown={(e) => { progressDragging.current = true; handleProgressFromEvent(e.clientX) }}
+          onTouchStart={(e) => { progressDragging.current = true; handleProgressFromEvent(e.touches[0].clientX) }}
+        >
+          <div className="player-progress-fill" style={{ width: `${prog}%` }}>
+            <div className="player-progress-thumb" />
+          </div>
         </div>
         <div className="player-progress-time">
           <span>{fmt(currentTime)}</span>
