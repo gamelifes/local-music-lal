@@ -152,6 +152,14 @@ serverSocket = socket;
             String rawPath = parts[1];
             String path = decodeUri(rawPath);
 
+            String rangeHeader = null;
+            for (int i = 1; i < lines.length; i++) {
+                if (lines[i].toLowerCase().startsWith("range:")) {
+                    rangeHeader = lines[i].substring(6).trim();
+                    break;
+                }
+            }
+
             if (path.equals("/") || path.equals("/index.html")) {
                 serveAsset(client, "index.html", "text/html");
                 return;
@@ -160,7 +168,7 @@ serverSocket = socket;
             if (path.startsWith("/ext/")) {
                 String rel = path.substring(5);
                 String absPath = "/storage/emulated/0/" + rel;
-                serveFile(client, absPath);
+                serveFile(client, absPath, rangeHeader);
                 return;
             }
 
@@ -207,15 +215,41 @@ serverSocket = socket;
         }
     }
 
-    private void serveFile(Socket client, String absPath) throws IOException {
+    private void serveFile(Socket client, String absPath, String rangeHeader) throws IOException {
         File file = new File(absPath);
         if (!file.exists() || !file.isFile()) {
             sendResponse(client, 404, "text/plain", "Not Found".getBytes(StandardCharsets.UTF_8));
             return;
         }
-        byte[] data = Files.readAllBytes(file.toPath());
+
+        long fileLength = file.length();
         String mime = mimeFor(absPath);
-        sendResponse(client, 200, mime, data);
+
+        if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
+            try {
+                String rangeSpec = rangeHeader.substring(6);
+                String[] rangeParts = rangeSpec.split("-");
+                long start = Long.parseLong(rangeParts[0]);
+                long end = rangeParts.length > 1 && !rangeParts[1].isEmpty()
+                        ? Long.parseLong(rangeParts[1]) : fileLength - 1;
+                if (end >= fileLength) end = fileLength - 1;
+                long contentLength = end - start + 1;
+
+                java.io.RandomAccessFile raf = new java.io.RandomAccessFile(file, "r");
+                raf.seek(start);
+                byte[] data = new byte[(int) contentLength];
+                raf.readFully(data);
+                raf.close();
+
+                sendRangeResponse(client, 206, mime, data, start, end, fileLength);
+            } catch (Exception e) {
+                byte[] data = Files.readAllBytes(file.toPath());
+                sendResponse(client, 200, mime, data);
+            }
+        } else {
+            byte[] data = Files.readAllBytes(file.toPath());
+            sendResponse(client, 200, mime, data);
+        }
     }
 
     private void sendResponse(Socket client, int status, String mime, byte[] body) throws IOException {
@@ -223,6 +257,25 @@ serverSocket = socket;
         String statusLine = "HTTP/1.1 " + status + " " + statusText(status) + "\r\n";
         String headers = "Content-Type: " + mime + "\r\n" +
                          "Content-Length: " + body.length + "\r\n" +
+                         "Accept-Ranges: bytes\r\n" +
+                         "Connection: close\r\n" +
+                         "Access-Control-Allow-Origin: *\r\n" +
+                         "\r\n";
+        out.write(statusLine.getBytes(StandardCharsets.UTF_8));
+        out.write(headers.getBytes(StandardCharsets.UTF_8));
+        out.write(body);
+        out.flush();
+        client.close();
+    }
+
+    private void sendRangeResponse(Socket client, int status, String mime, byte[] body,
+                                   long start, long end, long total) throws IOException {
+        OutputStream out = client.getOutputStream();
+        String statusLine = "HTTP/1.1 " + status + " " + statusText(status) + "\r\n";
+        String headers = "Content-Type: " + mime + "\r\n" +
+                         "Content-Length: " + body.length + "\r\n" +
+                         "Content-Range: bytes " + start + "-" + end + "/" + total + "\r\n" +
+                         "Accept-Ranges: bytes\r\n" +
                          "Connection: close\r\n" +
                          "Access-Control-Allow-Origin: *\r\n" +
                          "\r\n";
