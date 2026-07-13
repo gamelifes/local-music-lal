@@ -1,8 +1,7 @@
-import { Howl, Howler } from 'howler'
 import { Capacitor, getFileHandle } from './capacitor-shim'
 import type { Song } from '../types/song'
 
-let currentHowl: Howl | null = null
+let audio: HTMLAudioElement | null = null
 let currentSongId: string | null = null
 let onEndCallback: (() => void) | null = null
 let onLoadCallback: ((duration: number) => void) | null = null
@@ -12,23 +11,19 @@ function getWebPath(filePath: string): string {
 }
 
 export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duration: number) => void) {
-  console.log('playSong:', song.filePath, 'platform:', Capacitor.getPlatform())
   onEndCallback = onEnd || null
   onLoadCallback = onLoad || null
 
-  if (currentSongId !== song.id && currentHowl) {
-    currentHowl.stop()
-    currentHowl.unload()
-    currentHowl = null
+  if (currentSongId !== song.id && audio) {
+    audio.pause()
+    audio.src = ''
+    audio = null
   }
 
   let url: string
 
-  console.log('playSong filePath:', JSON.stringify(song.filePath), 'platform:', Capacitor.getPlatform())
-
   if (Capacitor.getPlatform() === 'android') {
     url = getWebPath(song.filePath)
-    console.log('playSong resolved URL:', url)
   } else if (getFileHandle(song.filePath)) {
     const fileHandle = getFileHandle(song.filePath)!
     const file = await fileHandle.getFile()
@@ -38,59 +33,50 @@ export async function playSong(song: Song, onEnd?: () => void, onLoad?: (duratio
     return
   }
 
-  console.log('Audio URL:', url)
+  if (!audio || currentSongId !== song.id) {
+    audio = new Audio()
+    audio.src = url
+    audio.preload = 'auto'
+
+    audio.addEventListener('ended', () => onEndCallback?.())
+
+    audio.addEventListener('loadedmetadata', () => {
+      const duration = audio?.duration || 0
+      if (duration > 0 && duration < Infinity) {
+        onLoadCallback?.(duration)
+      }
+    })
+
+    audio.addEventListener('error', (e) => {
+      console.error('Audio error:', e)
+    })
+
+    currentSongId = song.id
+  }
 
   try {
-    if (!currentHowl || currentSongId !== song.id) {
-      currentHowl = new Howl({
-        src: [url],
-        html5: true,
-        onplay: () => {},
-        onend: () => onEndCallback?.(),
-        onload: () => {
-          const duration = currentHowl?.duration() || 0
-          console.log('Audio loaded, duration:', duration)
-          onLoadCallback?.(duration)
-        },
-        onloaderror: (_id, err) => console.error('Load error:', err),
-        onplayerror: (_id, err) => console.error('Play error:', err),
-      })
-      currentSongId = song.id
-    }
-
-    currentHowl.play()
-
-    const checkDuration = setInterval(() => {
-      if (currentHowl && currentSongId === song.id) {
-        const duration = currentHowl.duration()
-        if (duration > 0) {
-          clearInterval(checkDuration)
-          onLoadCallback?.(duration)
-        }
-      }
-    }, 500)
-    setTimeout(() => clearInterval(checkDuration), 5000)
+    await audio.play()
   } catch (err) {
     console.error('Failed to play song:', err)
   }
 }
 
-export function pause() { currentHowl?.pause() }
-export function resume() { currentHowl?.play() }
+export function pause() { audio?.pause() }
+export function resume() { audio?.play() }
 export function stop() {
-  currentHowl?.stop()
-  currentHowl = null
+  if (audio) {
+    audio.pause()
+    audio.src = ''
+    audio = null
+  }
   currentSongId = null
 }
-export function seek(position: number) { currentHowl?.seek(position) }
-export function getPosition(): number {
-  if (!currentHowl) return 0
-  const pos = currentHowl.seek()
-  return typeof pos === 'number' ? pos : 0
-}
+export function seek(position: number) { if (audio) audio.currentTime = position }
+export function getPosition(): number { return audio?.currentTime || 0 }
 export function getDuration(): number {
-  if (!currentHowl) return 0
-  return currentHowl.duration() || 0
+  if (!audio) return 0
+  const d = audio.duration
+  return (d && isFinite(d)) ? d : 0
 }
-export function isPlaying(): boolean { return currentHowl?.playing() || false }
-export function setVolume(volume: number) { Howler.volume(volume) }
+export function isPlaying(): boolean { return audio ? !audio.paused : false }
+export function setVolume(volume: number) { if (audio) audio.volume = volume }
