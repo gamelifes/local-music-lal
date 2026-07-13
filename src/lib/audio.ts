@@ -82,29 +82,8 @@ export function stop() {
   currentHowl = null
   currentSongId = null
 }
-export function seek(position: number) {
-  if (!currentHowl) return
-  try {
-    const sounds = (currentHowl as any)?._sounds
-    if (sounds && sounds.length > 0) {
-      const sound = sounds[0]
-      if (sound._node) {
-        sound._node.currentTime = position
-        sound._seek = position
-        sound._ended = false
-        return
-      }
-    }
-  } catch (_) {}
-  currentHowl.seek(position)
-}
+export function seek(position: number) { currentHowl?.seek(position) }
 export function getPosition(): number {
-  try {
-    const sounds = (currentHowl as any)?._sounds
-    if (sounds && sounds.length > 0 && sounds[0]._node) {
-      return sounds[0]._node.currentTime || 0
-    }
-  } catch (_) {}
   if (!currentHowl) return 0
   const pos = currentHowl.seek()
   return typeof pos === 'number' ? pos : 0
