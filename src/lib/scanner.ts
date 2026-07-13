@@ -113,7 +113,11 @@ export async function pickDirectory(): Promise<{ path: string; relativePath: str
   }
 }
 
-export async function scanDirectoryByPath(dirPath: string, folderName: string): Promise<ScanResult> {
+export async function scanDirectoryByPath(
+  dirPath: string,
+  folderName: string,
+  onProgress?: (count: number) => void
+): Promise<ScanResult> {
   const songs: Song[] = []
   const lyrics = new Map<string, string>()
 
@@ -182,6 +186,7 @@ export async function scanDirectoryByPath(dirPath: string, folderName: string): 
             cover: meta.cover,
           }
           songs.push(song)
+          onProgress?.(songs.length)
         }
       }
     }

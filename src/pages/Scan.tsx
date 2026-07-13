@@ -57,10 +57,12 @@ const handleScanAll = async () => {
          if (existingSong) pathToScan = existingSong.filePath.replace(/\/[^/]+$/, '')
          if (!pathToScan) continue
        }
-       const result = await scanDirectoryByPath(pathToScan, entry.folder)
-       await addSongs(result.songs, result.lyrics)
-       total += result.songs.length
-       setScannedCount(total)
+         const result = await scanDirectoryByPath(pathToScan, entry.folder, (count) => {
+           setScannedCount(total + count)
+         })
+         await addSongs(result.songs, result.lyrics)
+         total += result.songs.length
+         setScannedCount(total)
      }
      setCompletedCount(total)
      setScanning(false)
@@ -83,10 +85,12 @@ const startScan = async () => {
          if (existingSong) pathToScan = existingSong.filePath.replace(/\/[^/]+$/, '')
          if (!pathToScan) continue
        }
-       const result = await scanDirectoryByPath(pathToScan, folderName)
-       await addSongs(result.songs, result.lyrics)
-       total += result.songs.length
-       setScannedCount(total)
+        const result = await scanDirectoryByPath(pathToScan, folderName, (count) => {
+          setScannedCount(total + count)
+        })
+        await addSongs(result.songs, result.lyrics)
+        total += result.songs.length
+        setScannedCount(total)
      }
      setCompletedCount(total)
      setScanning(false)
