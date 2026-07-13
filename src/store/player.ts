@@ -7,6 +7,7 @@ import { useLibraryStore } from './library'
 import { useSleepStore } from './sleep'
 
 let lastSeekTime = 0
+let seekTarget: number | null = null
 
 interface PlayerState {
   currentSong: Song | null
@@ -225,6 +226,7 @@ if (useSleepStore.getState().triggerFinish()) return
     const { duration } = get()
     const seekTime = (position / 100) * duration
     lastSeekTime = Date.now()
+    seekTarget = position
     audio.seek(seekTime)
     set({ progress: position, currentTime: seekTime })
   },
@@ -235,20 +237,26 @@ if (useSleepStore.getState().triggerFinish()) return
   updateProgress: () => {
     const { isPlaying, lyrics } = get()
     if (!isPlaying) return
-    if (Date.now() - lastSeekTime < 500) return
 
     const position = audio.getPosition()
     const duration = audio.getDuration()
     if (duration === 0) return
 
-    const progress = (position / duration) * 100
+    const audioProgress = (position / duration) * 100
+
+    if (seekTarget !== null) {
+      if (Math.abs(audioProgress - seekTarget) < 3 || Date.now() - lastSeekTime > 3000) {
+        seekTarget = null
+      } else {
+        return
+      }
+    }
 
     // Update karaoke state based on lyrics
     let newActiveLine = 0
     let newActiveWord = -1
 
     if (lyrics.length > 0) {
-      // Find the current line
       for (let i = lyrics.length - 1; i >= 0; i--) {
         if (position >= lyrics[i].time) {
           newActiveLine = i
@@ -256,7 +264,6 @@ if (useSleepStore.getState().triggerFinish()) return
         }
       }
 
-      // Find the current word within the line
       const currentLine = lyrics[newActiveLine]
       if (currentLine && currentLine.words.length > 0) {
         for (let i = currentLine.words.length - 1; i >= 0; i--) {
@@ -268,7 +275,7 @@ if (useSleepStore.getState().triggerFinish()) return
       }
     }
 
-    set({ progress, currentTime: position, duration, activeLine: newActiveLine, activeWord: newActiveWord })
+    set({ progress: audioProgress, currentTime: position, duration, activeLine: newActiveLine, activeWord: newActiveWord })
   },
   setVolume: (volume) => { audio.setVolume(volume); set({ volume }) },
   setViewMode: (mode) => set({ viewMode: mode }),
