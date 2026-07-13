@@ -169,7 +169,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 // Start playback
      audio.playSong(nextSong, () => {
 if (useSleepStore.getState().triggerFinish()) return
-        get().nextSong()
+       const state = get()
+       const { repeatMode } = state
+       if (repeatMode === 'one') {
+         get().play(nextSong, songList)
+       } else {
+         get().nextSong()
+       }
      }, (duration) => {
        set({ duration })
      })
