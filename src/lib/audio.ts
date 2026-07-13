@@ -84,13 +84,27 @@ export function stop() {
 }
 export function seek(position: number) {
   if (!currentHowl) return
-  currentHowl.seek(position)
   try {
-    const node = (currentHowl as any)?._sounds?.[0]?._node
-    if (node) node.currentTime = position
+    const sounds = (currentHowl as any)?._sounds
+    if (sounds && sounds.length > 0) {
+      const sound = sounds[0]
+      if (sound._node) {
+        sound._node.currentTime = position
+        sound._seek = position
+        sound._ended = false
+        return
+      }
+    }
   } catch (_) {}
+  currentHowl.seek(position)
 }
 export function getPosition(): number {
+  try {
+    const sounds = (currentHowl as any)?._sounds
+    if (sounds && sounds.length > 0 && sounds[0]._node) {
+      return sounds[0]._node.currentTime || 0
+    }
+  } catch (_) {}
   if (!currentHowl) return 0
   const pos = currentHowl.seek()
   return typeof pos === 'number' ? pos : 0

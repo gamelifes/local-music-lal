@@ -258,8 +258,18 @@ if (useSleepStore.getState().triggerFinish()) return
     const duration = audio.getDuration() || get().duration
     if (duration === 0) return
 
-    const elapsed = (Date.now() - progressBaseTime) / 1000
-    const position = Math.min(progressBasePos + elapsed, duration)
+    const audioPosition = audio.getPosition()
+    let position: number
+
+    if (audioPosition > 0) {
+      position = audioPosition
+      progressBaseTime = Date.now()
+      progressBasePos = audioPosition
+    } else {
+      const elapsed = (Date.now() - progressBaseTime) / 1000
+      position = Math.min(progressBasePos + elapsed, duration)
+    }
+
     const progress = (position / duration) * 100
 
     let newActiveLine = 0
