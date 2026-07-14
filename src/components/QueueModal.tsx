@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { usePlayerStore } from '../store/player'
 
 interface QueueModalProps {
@@ -7,6 +8,24 @@ interface QueueModalProps {
 
 export function QueueModal({ visible, onClose }: QueueModalProps) {
   const { songList, currentIndex, isPlaying, play } = usePlayerStore()
+  const listRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (visible && listRef.current && songList.length > 0) {
+      const container = listRef.current
+      const items = container.querySelectorAll('[data-queue-item]')
+      if (items[currentIndex]) {
+        const item = items[currentIndex] as HTMLElement
+        const containerHeight = container.clientHeight
+        const itemTop = item.offsetTop
+        const itemHeight = item.offsetHeight
+        container.scrollTo({
+          top: Math.max(0, itemTop - containerHeight / 2 + itemHeight / 2),
+          behavior: 'smooth'
+        })
+      }
+    }
+  }, [visible, currentIndex, songList.length])
 
   if (!visible) return null
 
@@ -14,8 +33,11 @@ export function QueueModal({ visible, onClose }: QueueModalProps) {
     <>
       <div className="context-menu-overlay active" onClick={onClose}></div>
       <div className="context-menu active" style={{ maxHeight: '60vh', display: 'flex', flexDirection: 'column' }}>
-        <div className="context-menu-title">播放队列</div>
-        <div style={{ flex: 1, overflowY: 'auto', marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
+          <div className="context-menu-title">播放队列</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{songList.length} 首</div>
+        </div>
+        <div ref={listRef} style={{ flex: 1, overflowY: 'auto', marginBottom: 8 }}>
           {songList.length === 0 ? (
             <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>
               暂无歌曲
@@ -24,6 +46,7 @@ export function QueueModal({ visible, onClose }: QueueModalProps) {
             songList.map((song, idx) => (
               <div
                 key={song.id}
+                data-queue-item
                 onClick={() => {
                   play(song, songList)
                 }}
