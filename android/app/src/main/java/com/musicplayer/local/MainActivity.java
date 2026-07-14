@@ -37,6 +37,7 @@ public class MainActivity extends Activity {
 
      @Override
      public void onCreate(Bundle savedInstanceState) {
+         setTheme(R.style.AppTheme_NoActionBar);
          super.onCreate(savedInstanceState);
          getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
  
