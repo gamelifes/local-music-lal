@@ -3,8 +3,8 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Letter L -->
+    <!-- Large L filling the canvas -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M36,28 L46,28 L46,76 L70,76 L70,86 L36,86 Z" />
+        android:pathData="M24,16 L44,16 L44,88 L88,88 L88,100 L24,100 Z" />
 </vector>
