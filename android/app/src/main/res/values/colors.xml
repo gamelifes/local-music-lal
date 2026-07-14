@@ -3,5 +3,5 @@
     <color name="colorPrimary">#FFD700</color>
     <color name="colorPrimaryDark">#B8860B</color>
     <color name="colorAccent">#FFA500</color>
-    <color name="ic_launcher_background">#1A1A18</color>
+    <color name="ic_launcher_background">#FFD700</color>
 </resources>
