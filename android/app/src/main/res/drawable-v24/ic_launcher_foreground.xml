@@ -3,28 +3,8 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Right note stem -->
+    <!-- Letter L -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M62,28 L64,28 L64,68 L62,68 Z" />
-    <!-- Left note stem -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M42,32 L44,32 L44,72 L42,72 Z" />
-    <!-- Top beam -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M44,32 L64,28 L64,34 L44,38 Z" />
-    <!-- Bottom beam -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M44,38 L64,34 L64,40 L44,44 Z" />
-    <!-- Left note head -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M33,76 C33,70 37.5,65 43.5,65 C49.5,65 54,70 54,76 C54,82 49.5,87 43.5,87 C37.5,87 33,82 33,76 Z" />
-    <!-- Right note head -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M53,72 C53,66 57.5,61 63.5,61 C69.5,61 74,66 74,72 C74,78 69.5,83 63.5,83 C57.5,83 53,78 53,72 Z" />
+        android:pathData="M36,28 L46,28 L46,76 L70,76 L70,86 L36,86 Z" />
 </vector>
