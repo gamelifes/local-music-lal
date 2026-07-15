@@ -358,9 +358,13 @@ serverSocket = socket;
     @Override
     protected void onResume() {
         super.onResume();
-        Intent intent = new Intent(this, FloatingService.class);
-        intent.setAction("STOP");
-        startService(intent);
+        try {
+            Intent intent = new Intent(this, FloatingService.class);
+            intent.setAction("STOP");
+            startService(intent);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

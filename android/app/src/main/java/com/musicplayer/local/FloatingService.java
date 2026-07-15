@@ -106,20 +106,28 @@ public class FloatingService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && "STOP".equals(intent.getAction())) {
-            hideFloating();
-            stopForeground(true);
-            stopSelf();
-            return START_NOT_STICKY;
-        }
+        try {
+            if (intent != null && "STOP".equals(intent.getAction())) {
+                hideFloating();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    stopForeground(STOP_FOREGROUND_REMOVE);
+                } else {
+                    stopForeground(true);
+                }
+                stopSelf();
+                return START_NOT_STICKY;
+            }
 
-        if (intent != null) {
-            String title = intent.getStringExtra("title");
-            String artist = intent.getStringExtra("artist");
-            if (title != null) showFloating(title, artist);
-        }
+            if (intent != null) {
+                String title = intent.getStringExtra("title");
+                String artist = intent.getStringExtra("artist");
+                if (title != null) showFloating(title, artist);
+            }
 
-        startForeground(NOTIFICATION_ID, buildNotification());
+            startForeground(NOTIFICATION_ID, buildNotification());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return START_STICKY;
     }
 
