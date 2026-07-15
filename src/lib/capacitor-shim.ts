@@ -26,6 +26,7 @@ declare global {
       showFloatingPlayer(title: string, artist: string): void
       hideFloatingPlayer(): void
       updateFloatingState(playing: boolean): void
+      updateSongInfo(title: string, artist: string, playing: boolean): void
     }
   }
 }
@@ -112,6 +113,10 @@ export const Capacitor = {
 
   updateFloatingState(playing: boolean): void {
     window.AndroidBridge?.updateFloatingState(playing)
+  },
+
+  updateSongInfo(title: string, artist: string, playing: boolean): void {
+    window.AndroidBridge?.updateSongInfo(title, artist, playing)
   },
 
   onFloatingAction(callback: (action: string) => void): void {

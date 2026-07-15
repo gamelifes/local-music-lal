@@ -7,6 +7,10 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.PixelFormat;
+import android.media.AudioManager;
+import android.media.MediaSession2Service;
+import android.media.session.MediaSession;
+import android.media.session.PlaybackState;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
@@ -16,8 +20,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.RemoteViews;
 import android.widget.TextView;
 
 public class FloatingService extends Service {
@@ -28,6 +30,7 @@ public class FloatingService extends Service {
     private View floatingView;
     private WindowManager.LayoutParams params;
     private PowerManager.WakeLock wakeLock;
+    private MediaSession mediaSession;
 
     private boolean isExpanded = false;
     private String songTitle = "";
@@ -51,10 +54,54 @@ public class FloatingService extends Service {
         super.onCreate();
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         createNotificationChannel();
-        
+
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LMusic::PlaybackLock");
         wakeLock.acquire();
+
+        setupMediaSession();
+    }
+
+    private void setupMediaSession() {
+        mediaSession = new MediaSession(this, "LMusicSession");
+        mediaSession.setCallback(new MediaSession.Callback() {
+            @Override
+            public void onPlay() {
+                if (callback != null) callback.onPlayPause();
+                updatePlaybackState(true);
+            }
+
+            @Override
+            public void onPause() {
+                if (callback != null) callback.onPlayPause();
+                updatePlaybackState(false);
+            }
+
+            @Override
+            public void onSkipToNext() {
+                if (callback != null) callback.onNext();
+            }
+
+            @Override
+            public void onSkipToPrevious() {
+                if (callback != null) callback.onPrev();
+            }
+        });
+        mediaSession.setActive(true);
+    }
+
+    private void updatePlaybackState(boolean playing) {
+        PlaybackState.Builder stateBuilder = new PlaybackState.Builder()
+                .setActions(
+                    PlaybackState.ACTION_PLAY |
+                    PlaybackState.ACTION_PAUSE |
+                    PlaybackState.ACTION_PLAY_PAUSE |
+                    PlaybackState.ACTION_SKIP_TO_NEXT |
+                    PlaybackState.ACTION_SKIP_TO_PREVIOUS
+                )
+                .setState(playing ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
+                    PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1.0f);
+        mediaSession.setPlaybackState(stateBuilder.build());
     }
 
     @Override
@@ -104,18 +151,25 @@ public class FloatingService extends Service {
         setupListeners();
         updateContent();
 
-        windowManager.addView(floatingView, params);
+        try {
+            windowManager.addView(floatingView, params);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void hideFloating() {
         if (floatingView != null) {
-            windowManager.removeView(floatingView);
+            try {
+                windowManager.removeView(floatingView);
+            } catch (Exception e) {}
             floatingView = null;
             isExpanded = false;
         }
     }
 
     public void updateState(boolean playing) {
+        updatePlaybackState(playing);
         if (floatingView == null) return;
         ImageButton playBtn = floatingView.findViewById(R.id.floating_play_pause);
         if (playBtn != null) {
@@ -199,10 +253,8 @@ public class FloatingService extends Service {
 
     private void updateContent() {
         if (floatingView == null) return;
-
         TextView titleView = floatingView.findViewById(R.id.floating_title);
         TextView artistView = floatingView.findViewById(R.id.floating_artist);
-
         if (titleView != null) titleView.setText(songTitle);
         if (artistView != null) artistView.setText(songArtist);
     }
@@ -249,6 +301,10 @@ public class FloatingService extends Service {
     @Override
     public void onDestroy() {
         hideFloating();
+        if (mediaSession != null) {
+            mediaSession.setActive(false);
+            mediaSession.release();
+        }
         if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();
         }

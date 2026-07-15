@@ -347,17 +347,20 @@ serverSocket = socket;
     @Override
     protected void onStop() {
         super.onStop();
-        if (webView != null) {
-            webView.evaluateJavascript("window._onAppBackground && window._onAppBackground()", null);
+        if (jsBridge != null && !jsBridge.lastSongTitle.isEmpty()) {
+            Intent intent = new Intent(this, FloatingService.class);
+            intent.putExtra("title", jsBridge.lastSongTitle);
+            intent.putExtra("artist", jsBridge.lastSongArtist);
+            startService(intent);
         }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (webView != null) {
-            webView.evaluateJavascript("window._onAppForeground && window._onAppForeground()", null);
-        }
+        Intent intent = new Intent(this, FloatingService.class);
+        intent.setAction("STOP");
+        startService(intent);
     }
 
     @Override

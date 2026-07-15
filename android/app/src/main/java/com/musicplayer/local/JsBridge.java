@@ -27,9 +27,11 @@ public class JsBridge {
     private DirectoryPickerCallback callback;
     public int httpServerPort = 0;
 
+    public static String lastSongTitle = "";
+    public static String lastSongArtist = "";
+    public static boolean lastPlaying = false;
+
     public interface DirectoryPickerCallback {
-        void onResult(String path);
-    }
 
     public JsBridge(Activity activity) {
         this.activity = activity;
@@ -132,6 +134,13 @@ public void close(String entryJson) {
     public long getFileSize(String filePath) {
         File file = new File(filePath);
         return file.exists() ? file.length() : 0;
+    }
+
+    @JavascriptInterface
+    public void updateSongInfo(String title, String artist, boolean playing) {
+        lastSongTitle = title;
+        lastSongArtist = artist;
+        lastPlaying = playing;
     }
 
     @JavascriptInterface
