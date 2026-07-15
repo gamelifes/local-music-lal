@@ -32,6 +32,8 @@ public class JsBridge {
     public static boolean lastPlaying = false;
 
     public interface DirectoryPickerCallback {
+        void onResult(String path);
+    }
 
     public JsBridge(Activity activity) {
         this.activity = activity;
