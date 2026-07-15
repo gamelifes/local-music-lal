@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -26,6 +27,7 @@ public class FloatingService extends Service {
     private WindowManager windowManager;
     private View floatingView;
     private WindowManager.LayoutParams params;
+    private PowerManager.WakeLock wakeLock;
 
     private boolean isExpanded = false;
     private String songTitle = "";
@@ -49,6 +51,10 @@ public class FloatingService extends Service {
         super.onCreate();
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         createNotificationChannel();
+        
+        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LMusic::PlaybackLock");
+        wakeLock.acquire();
     }
 
     @Override
@@ -243,6 +249,9 @@ public class FloatingService extends Service {
     @Override
     public void onDestroy() {
         hideFloating();
+        if (wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+        }
         super.onDestroy();
     }
 }

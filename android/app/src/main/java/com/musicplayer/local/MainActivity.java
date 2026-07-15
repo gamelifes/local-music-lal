@@ -345,6 +345,22 @@ serverSocket = socket;
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        if (webView != null) {
+            webView.evaluateJavascript("window._onAppBackground && window._onAppBackground()", null);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) {
+            webView.evaluateJavascript("window._onAppForeground && window._onAppForeground()", null);
+        }
+    }
+
+    @Override
     public void onDestroy() {
         running = false;
         if (webView != null) webView.destroy();

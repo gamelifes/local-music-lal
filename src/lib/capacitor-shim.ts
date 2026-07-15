@@ -7,6 +7,8 @@ declare global {
   interface Window {
     _onPermissionResult?: (result: string) => void
     _onFloatingAction?: (action: string) => void
+    _onAppBackground?: () => void
+    _onAppForeground?: () => void
     AndroidBridge?: {
       getPlatform(): string
       getHttpServerPort(): number
