@@ -194,7 +194,7 @@ public void close(String entryJson) {
         activity.runOnUiThread(() -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        android.Uri.parse("package:" + activity.getPackageName()));
+                        Uri.parse("package:" + activity.getPackageName()));
                 activity.startActivity(intent);
             }
         });
