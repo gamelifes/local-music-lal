@@ -183,6 +183,68 @@ public void close(String entryJson) {
         }
     }
 
+    @JavascriptInterface
+    public boolean checkOverlayPermission() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                && android.provider.Settings.canDrawOverlays(activity);
+    }
+
+    @JavascriptInterface
+    public void requestOverlayPermission() {
+        activity.runOnUiThread(() -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        android.Uri.parse("package:" + activity.getPackageName()));
+                activity.startActivity(intent);
+            }
+        });
+    }
+
+    @JavascriptInterface
+    public void showFloatingPlayer(String title, String artist) {
+        activity.runOnUiThread(() -> {
+            Intent intent = new Intent(activity, FloatingService.class);
+            intent.putExtra("title", title);
+            intent.putExtra("artist", artist);
+            activity.startService(intent);
+        });
+    }
+
+    @JavascriptInterface
+    public void hideFloatingPlayer() {
+        activity.runOnUiThread(() -> {
+            Intent intent = new Intent(activity, FloatingService.class);
+            intent.setAction("STOP");
+            activity.startService(intent);
+        });
+    }
+
+    @JavascriptInterface
+    public void updateFloatingState(boolean playing) {
+        FloatingService.setCallback(new FloatingService.FloatingCallback() {
+            @Override public void onPlayPause() {
+                final android.webkit.WebView wv = getWebView();
+                if (wv != null) activity.runOnUiThread(() ->
+                    wv.evaluateJavascript("window._onFloatingAction('togglePlay')", null));
+            }
+            @Override public void onNext() {
+                final android.webkit.WebView wv = getWebView();
+                if (wv != null) activity.runOnUiThread(() ->
+                    wv.evaluateJavascript("window._onFloatingAction('next')", null));
+            }
+            @Override public void onPrev() {
+                final android.webkit.WebView wv = getWebView();
+                if (wv != null) activity.runOnUiThread(() ->
+                    wv.evaluateJavascript("window._onFloatingAction('prev')", null));
+            }
+            @Override public void onClick() {
+                final android.webkit.WebView wv = getWebView();
+                if (wv != null) activity.runOnUiThread(() ->
+                    wv.evaluateJavascript("window._onFloatingAction('open')", null));
+            }
+        });
+    }
+
     private android.webkit.WebView getWebView() {
         try {
             java.lang.reflect.Field f = activity.getClass().getDeclaredField("webView");

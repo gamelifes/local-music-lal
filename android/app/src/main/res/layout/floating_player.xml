@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/floating_bg">
+
+    <LinearLayout
+        android:id="@+id/floating_collapsed"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="8dp"
+        android:clickable="true"
+        android:focusable="true">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginEnd="8dp">
+
+            <TextView
+                android:id="@+id/floating_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="未知歌曲"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:maxWidth="160dp"
+                android:ellipsize="end"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/floating_artist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="未知歌手"
+                android:textColor="#99FFFFFF"
+                android:textSize="11sp"
+                android:maxWidth="160dp"
+                android:ellipsize="end"
+                android:singleLine="true" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/floating_play_pause"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_media_pause"
+            android:scaleType="centerInside"
+            android:contentDescription="播放/暂停" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/floating_expanded"
+        android:layout_width="240dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingTop="4dp"
+        android:paddingBottom="8dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:visibility="gone">
+
+        <ImageButton
+            android:id="@+id/floating_prev"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_media_previous"
+            android:scaleType="centerInside"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="上一曲" />
+
+        <ImageButton
+            android:id="@+id/floating_next"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_media_next"
+            android:scaleType="centerInside"
+            android:layout_marginStart="16dp"
+            android:contentDescription="下一曲" />
+
+        <ImageButton
+            android:id="@+id/floating_close"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:scaleType="centerInside"
+            android:layout_marginStart="16dp"
+            android:contentDescription="关闭" />
+    </LinearLayout>
+</LinearLayout>
