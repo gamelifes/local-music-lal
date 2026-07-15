@@ -70,10 +70,6 @@ public class FloatingService extends Service {
         return START_STICKY;
     }
 
-        startForeground(NOTIFICATION_ID, buildNotification());
-        return START_STICKY;
-    }
-
     public void showFloating(String title, String artist) {
         this.songTitle = title;
         this.songArtist = artist;
