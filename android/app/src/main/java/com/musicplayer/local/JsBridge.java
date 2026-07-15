@@ -27,10 +27,6 @@ public class JsBridge {
     private DirectoryPickerCallback callback;
     public int httpServerPort = 0;
 
-    public static String lastSongTitle = "";
-    public static String lastSongArtist = "";
-    public static boolean lastPlaying = false;
-
     public interface DirectoryPickerCallback {
         void onResult(String path);
     }
@@ -139,13 +135,6 @@ public void close(String entryJson) {
     }
 
     @JavascriptInterface
-    public void updateSongInfo(String title, String artist, boolean playing) {
-        lastSongTitle = title;
-        lastSongArtist = artist;
-        lastPlaying = playing;
-    }
-
-    @JavascriptInterface
     public boolean checkStoragePermission() {
         String perm;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -192,68 +181,6 @@ public void close(String entryJson) {
                 activity.runOnUiThread(() -> wv.evaluateJavascript("window._onPermissionResult('" + result + "')", null));
             }
         }
-    }
-
-    @JavascriptInterface
-    public boolean checkOverlayPermission() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-                && android.provider.Settings.canDrawOverlays(activity);
-    }
-
-    @JavascriptInterface
-    public void requestOverlayPermission() {
-        activity.runOnUiThread(() -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:" + activity.getPackageName()));
-                activity.startActivity(intent);
-            }
-        });
-    }
-
-    @JavascriptInterface
-    public void showFloatingPlayer(String title, String artist) {
-        activity.runOnUiThread(() -> {
-            Intent intent = new Intent(activity, FloatingService.class);
-            intent.putExtra("title", title);
-            intent.putExtra("artist", artist);
-            activity.startService(intent);
-        });
-    }
-
-    @JavascriptInterface
-    public void hideFloatingPlayer() {
-        activity.runOnUiThread(() -> {
-            Intent intent = new Intent(activity, FloatingService.class);
-            intent.setAction("STOP");
-            activity.startService(intent);
-        });
-    }
-
-    @JavascriptInterface
-    public void updateFloatingState(boolean playing) {
-        FloatingService.setCallback(new FloatingService.FloatingCallback() {
-            @Override public void onPlayPause() {
-                final android.webkit.WebView wv = getWebView();
-                if (wv != null) activity.runOnUiThread(() ->
-                    wv.evaluateJavascript("window._onFloatingAction('togglePlay')", null));
-            }
-            @Override public void onNext() {
-                final android.webkit.WebView wv = getWebView();
-                if (wv != null) activity.runOnUiThread(() ->
-                    wv.evaluateJavascript("window._onFloatingAction('next')", null));
-            }
-            @Override public void onPrev() {
-                final android.webkit.WebView wv = getWebView();
-                if (wv != null) activity.runOnUiThread(() ->
-                    wv.evaluateJavascript("window._onFloatingAction('prev')", null));
-            }
-            @Override public void onClick() {
-                final android.webkit.WebView wv = getWebView();
-                if (wv != null) activity.runOnUiThread(() ->
-                    wv.evaluateJavascript("window._onFloatingAction('open')", null));
-            }
-        });
     }
 
     private android.webkit.WebView getWebView() {

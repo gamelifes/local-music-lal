@@ -21,10 +21,8 @@ import { AlbumDetail } from './pages/AlbumDetail'
 import { Debug } from './pages/Debug'
 import { Playlists } from './pages/Playlists'
 import { PlaylistDetail } from './pages/PlaylistDetail'
-import { useFloatingIsland } from './hooks/useFloatingIsland'
 
 function App() {
-  useFloatingIsland()
   const [currentPage, setCurrentPage] = useState('home')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [selectedArtist, setSelectedArtist] = useState('')

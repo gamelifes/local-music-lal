@@ -6,9 +6,6 @@
 declare global {
   interface Window {
     _onPermissionResult?: (result: string) => void
-    _onFloatingAction?: (action: string) => void
-    _onAppBackground?: () => void
-    _onAppForeground?: () => void
     AndroidBridge?: {
       getPlatform(): string
       getHttpServerPort(): number
@@ -21,12 +18,6 @@ declare global {
       checkStoragePermission(): boolean
       requestStoragePermission(): void
       openAppSettings(): void
-      checkOverlayPermission(): boolean
-      requestOverlayPermission(): void
-      showFloatingPlayer(title: string, artist: string): void
-      hideFloatingPlayer(): void
-      updateFloatingState(playing: boolean): void
-      updateSongInfo(title: string, artist: string, playing: boolean): void
     }
   }
 }
@@ -92,35 +83,6 @@ export const Capacitor = {
 
   openAppSettings(): void {
     if (window.AndroidBridge) window.AndroidBridge.openAppSettings()
-  },
-
-  checkOverlayPermission(): boolean {
-    if (window.AndroidBridge) return window.AndroidBridge.checkOverlayPermission()
-    return false
-  },
-
-  requestOverlayPermission(): void {
-    window.AndroidBridge?.requestOverlayPermission()
-  },
-
-  showFloatingPlayer(title: string, artist: string): void {
-    window.AndroidBridge?.showFloatingPlayer(title, artist)
-  },
-
-  hideFloatingPlayer(): void {
-    window.AndroidBridge?.hideFloatingPlayer()
-  },
-
-  updateFloatingState(playing: boolean): void {
-    window.AndroidBridge?.updateFloatingState(playing)
-  },
-
-  updateSongInfo(title: string, artist: string, playing: boolean): void {
-    window.AndroidBridge?.updateSongInfo(title, artist, playing)
-  },
-
-  onFloatingAction(callback: (action: string) => void): void {
-    window._onFloatingAction = callback
   }
 }
 

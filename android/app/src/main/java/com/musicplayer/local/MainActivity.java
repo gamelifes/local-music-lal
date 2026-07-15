@@ -345,22 +345,6 @@ serverSocket = socket;
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
-        if (jsBridge != null && !jsBridge.lastSongTitle.isEmpty()) {
-            Intent intent = new Intent(this, FloatingService.class);
-            intent.putExtra("title", jsBridge.lastSongTitle);
-            intent.putExtra("artist", jsBridge.lastSongArtist);
-            startService(intent);
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-    }
-
-    @Override
     public void onDestroy() {
         running = false;
         if (webView != null) webView.destroy();
